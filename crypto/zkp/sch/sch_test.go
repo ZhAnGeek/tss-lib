@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package zkpsch
+package zkpsch_test
 
 import (
 	"testing"
@@ -14,6 +14,7 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/tss"
+	. "github.com/binance-chain/tss-lib/crypto/zkp/sch"
 )
 
 func TestSchnorrProof(t *testing.T) {

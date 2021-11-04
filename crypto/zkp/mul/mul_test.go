@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package zkpmul
+package zkpmul_test
 
 import (
 	"testing"
@@ -15,6 +15,7 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/tss"
+	. "github.com/binance-chain/tss-lib/crypto/zkp/mul"
 )
 
 // Using a modulus length of 2048 is recommended in the GG18 spec

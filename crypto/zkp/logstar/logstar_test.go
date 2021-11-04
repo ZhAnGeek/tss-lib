@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package zkplogstar
+package zkplogstar_test
 
 import (
     "math/big"
@@ -17,6 +17,7 @@ import (
     "github.com/binance-chain/tss-lib/crypto"
     "github.com/binance-chain/tss-lib/crypto/paillier"
     "github.com/binance-chain/tss-lib/tss"
+    . "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
 )
 
 // Using a modulus length of 2048 is recommended in the GG18 spec
