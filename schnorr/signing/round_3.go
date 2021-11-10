@@ -66,7 +66,7 @@ func (round *round3) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.Wrapf(err, "NewECPoint(Ej)"), Pj)
 		}
-		proofE, err := r2msg.UnmarshalZKProofD(round.Params().EC())
+		proofE, err := r2msg.UnmarshalZKProofE(round.Params().EC())
 		if err != nil {
 			return round.WrapError(errors.New("failed to unmarshal Ej proof"), Pj)
 		}
@@ -114,13 +114,22 @@ func (round *round3) Start() *tss.Error {
 
 	c := common.SHA512_256i(R.X(), R.Y(), round.key.PubKey.X(), round.key.PubKey.Y(), M)
 
-	modN := common.ModInt(round.EC().Params().N)
-	zi := modN.Add(round.temp.di, modN.Mul(round.temp.ei, round.temp.rhos[i]))
-	zi = modN.Add(zi, modN.Mul(round.temp.wi, c))
+	Y2 := round.temp.bigWs[i]
+	for j := range round.Parties().IDs() {
+		if j == i {
+			continue
+		}
+		Y2, _ = Y2.Add(round.temp.bigWs[j])
 
+	}
+	
+	modQ := common.ModInt(round.EC().Params().N) // TODO
+	zi := modQ.Add(round.temp.di, modQ.Mul(round.temp.ei, round.temp.rhos[i]))
+	zi = modQ.Add(zi, modQ.Mul(round.temp.wi, c))
+
+	round.temp.zi = zi
 	round.temp.c = c
 	round.temp.R = R
-	round.temp.M = M
 	// broadcast zi to other parties
 	r3msg := NewSignRound3Message(round.PartyID(), zi)
 	round.temp.signRound3Messages[i] = r3msg

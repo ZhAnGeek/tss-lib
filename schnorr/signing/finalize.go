@@ -16,13 +16,15 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, M *big.Int, Y *crypto.ECPoint) bool {
+func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *crypto.ECPoint) bool {
+	M := new(big.Int).SetBytes(m)
 	c := common.SHA512_256i(R.X(), R.Y(), Y.X(), Y.Y(), M)
-	R2, err := crypto.ScalarBaseMult(ec, z).Add(Y.ScalarMult(new(big.Int).Neg(c)))
+	LHS := crypto.ScalarBaseMult(ec, z)
+	RHS, err := R.Add(Y.ScalarMult(c))
 	if err != nil {
 		return false
 	}
-	return R2.Equals(R)
+	return LHS.Equals(RHS)
 }
 
 func (round *finalization) Start() *tss.Error {
@@ -37,7 +39,7 @@ func (round *finalization) Start() *tss.Error {
 	round.ok[i] = true
 
 	sumZ := round.temp.zi
-	modN := common.ModInt(round.EC().Params().N)
+	modQ := common.ModInt(round.EC().Params().N)
 	for j, Pj := range round.Parties().IDs() {
 		round.ok[j] = true
 		if j == i {
@@ -47,11 +49,14 @@ func (round *finalization) Start() *tss.Error {
 		zj := r3msg.UnmarshalZi()
 
 		LHS := crypto.ScalarBaseMult(round.EC(), zj)
-		RHS := round.key.BigXj[j].ScalarMult(round.temp.c)
+		RHS, err := round.temp.Rjs[j].Add(round.temp.bigWs[j].ScalarMult(round.temp.c))
+		if err != nil {
+			return round.WrapError(errors.New("zj check failed"), Pj)
+		}
 		if !LHS.Equals(RHS) {
 			return round.WrapError(errors.New("zj check failed"), Pj)
 		}
-		sumZ = modN.Add(sumZ, zj)
+		sumZ = modQ.Add(sumZ, zj)
 	}
 
 	// save the signature for final output
@@ -60,9 +65,9 @@ func (round *finalization) Start() *tss.Error {
 	round.data.S = sumZ.Bytes()
 	round.data.M = round.temp.m
 
-	ok := VerirySig(round.EC(), round.temp.R, sumZ, round.temp.M, round.key.PubKey)
+	ok := VerirySig(round.EC(), round.temp.R, sumZ, round.temp.m, round.key.PubKey)
 	if !ok {
-		return round.WrapError(errors.New("signature verification failed"))
+		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}
 
 	//pk := edwards.PublicKey{

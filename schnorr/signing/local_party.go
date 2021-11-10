@@ -47,8 +47,9 @@ type (
 		localMessageStore
 
 		// temp data (thrown away after sign) / round 1
-		wi,
-		di *big.Int
+		wi       *big.Int
+		bigWs    []*crypto.ECPoint
+		di       *big.Int
 		ei       *big.Int
 		m        []byte
 		pointDi  *crypto.ECPoint
@@ -56,15 +57,14 @@ type (
 		deCommit cmt.HashDeCommitment
 
 		// round 2
-		cjs []*big.Int
-		zi  *big.Int
-		Djs []*crypto.ECPoint
-		Ejs []*crypto.ECPoint
-		Rjs []*crypto.ECPoint
+		cjs  []*big.Int
+		zi   *big.Int
+		Djs  []*crypto.ECPoint
+		Ejs  []*crypto.ECPoint
+		Rjs  []*crypto.ECPoint
 		rhos []*big.Int
-		c *big.Int
-		M *big.Int
-		R *crypto.ECPoint
+		c    *big.Int
+		R    *crypto.ECPoint
 
 		// round 3
 		r *big.Int
@@ -96,7 +96,7 @@ func NewLocalParty(
 	// temp data init
 	p.temp.m = msg
 	p.temp.cjs = make([]*big.Int, partyCount)
-	
+
 	p.temp.Djs = make([]*crypto.ECPoint, partyCount)
 	p.temp.Ejs = make([]*crypto.ECPoint, partyCount)
 	p.temp.Rjs = make([]*crypto.ECPoint, partyCount)

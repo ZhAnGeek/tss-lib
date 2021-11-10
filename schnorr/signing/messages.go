@@ -80,7 +80,7 @@ func NewSignRound2Message(
 
 func (m *SignRound2Message) ValidateBasic() bool {
 	return m != nil &&
-		common.NonEmptyMultiBytes(m.DeCommitment, 3) &&
+		common.NonEmptyMultiBytes(m.DeCommitment, 5) &&
 		common.NonEmptyMultiBytes(m.ProofD, zkpsch.ProofSchBytesParts) &&
 		common.NonEmptyMultiBytes(m.ProofE, zkpsch.ProofSchBytesParts)
 }

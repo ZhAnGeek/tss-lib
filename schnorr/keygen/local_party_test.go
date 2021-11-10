@@ -55,7 +55,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 
 	updater := test.SharedPartyUpdater
 
-	//startGR := runtime.NumGoroutine()
+	startGR := runtime.NumGoroutine()
 
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
@@ -159,50 +159,23 @@ keygen:
 					}
 					u = new(big.Int).Add(u, uj)
 				}
-				//u = new(big.Int).Mod(u, tss.S256().Params().N)
-				//scalar := make([]byte, 0, 32)
-				//copy(scalar, u.Bytes())
+				u = new(big.Int).Mod(u, tss.S256().Params().N)
+				pkX, pkY := save.PubKey.X(), save.PubKey.Y()
 
-				// build key pair
-				//pkX, pkY := save.PubKey.X(), save.PubKey.Y()
-				//pk := edwards.PublicKey{
-				//	Curve: tss.S256(),
-				//	X:     pkX,
-				//	Y:     pkY,
-				//}
-				//println("u len: ", len(u.Bytes()))
-				//sk, _, err := edwards.PrivKeyFromScalar(u.Bytes())
-				//// fmt.Println("err: ", err.Error())
+				// public key tests
+				assert.NotZero(t, u, "u should not be zero")
+				ourPkX, ourPkY := tss.S256().ScalarBaseMult(u.Bytes())
+				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
+				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
+				t.Log("Public key tests done.")
 
-				//// test pub key, should be on curve and match pkX, pkY
-				//assert.True(t, pk.IsOnCurve(pkX, pkY), "public key must be on curve")
-
-				//// public key tests
-				//assert.NotZero(t, u, "u should not be zero")
-				//ourPkX, ourPkY := tss.S256().ScalarBaseMult(u.Bytes())
-				//assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
-				//assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
-				//t.Log("Public key tests done.")
-
-				//// make sure everyone has the same Schnorr public key
-				//for _, Pj := range parties {
-				//	assert.Equal(t, pkX, Pj.data.PubKey.X())
-				//	assert.Equal(t, pkY, Pj.data.PubKey.Y())
-				//}
-				//t.Log("Public key distribution test done.")
-
-				//// test sign/verify
-				//data := make([]byte, 32)
-				//for i := range data {
-				//	data[i] = byte(i)
-				//}
-				//r, s, err := edwards.Sign(sk, data)
-				//assert.NoError(t, err, "sign should not throw an error")
-				//ok := edwards.Verify(&pk, data, r, s)
-				//assert.True(t, ok, "signature should be ok")
-				//t.Log("Schnorr signing test done.")
-
-				//t.Logf("Start goroutines: %d, End goroutines: %d", startGR, runtime.NumGoroutine())
+				// make sure everyone has the same Schnorr public key
+				for _, Pj := range parties {
+					assert.Equal(t, pkX, Pj.data.PubKey.X())
+					assert.Equal(t, pkY, Pj.data.PubKey.Y())
+				}
+				t.Log("Public key distribution test done.")
+				t.Logf("Start goroutines: %d, End goroutines: %d", startGR, runtime.NumGoroutine())
 
 				break keygen
 			}

@@ -102,8 +102,9 @@ func (round *round1) prepare() error {
 		// TODO: this should not panic
 		return fmt.Errorf("t+1=%d is not consistent with the key count %d", round.Threshold()+1, len(ks))
 	}
-	wi := PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks)
+	wi, bigWs := PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, round.key.BigXj)
 
 	round.temp.wi = wi
+	round.temp.bigWs = bigWs
 	return nil
 }
