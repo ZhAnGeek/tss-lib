@@ -16,7 +16,7 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-// These messages were generated from Protocol Buffers definitions into eddsa-signing.pb.go
+// These messages were generated from Protocol Buffers definitions into schnorr-signing.pb.go
 // The following messages are registered on the Protocol Buffers "wire"
 
 var (

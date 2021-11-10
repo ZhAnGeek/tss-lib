@@ -141,7 +141,7 @@ func (x *SignRound2Message) GetProofE() [][]byte {
 }
 
 //
-// Represents a BROADCAST message sent to all parties during Round 3 of the EDDSA TSS signing protocol.
+// Represents a BROADCAST message sent to all parties during Round 3 of the Schnorr TSS signing protocol.
 type SignRound3Message struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

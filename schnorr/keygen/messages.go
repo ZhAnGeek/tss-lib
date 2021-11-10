@@ -17,7 +17,7 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-// These messages were generated from Protocol Buffers definitions into eddsa-keygen.pb.go
+// These messages were generated from Protocol Buffers definitions into schnorr-keygen.pb.go
 // The following messages are registered on the Protocol Buffers "wire"
 
 var (

@@ -7,12 +7,23 @@
 package signing
 
 import (
+	"crypto/elliptic"
 	"errors"
+	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/tss"
 )
+
+func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, M *big.Int, Y *crypto.ECPoint) bool {
+	c := common.SHA512_256i(R.X(), R.Y(), Y.X(), Y.Y(), M)
+	R2, err := crypto.ScalarBaseMult(ec, z).Add(Y.ScalarMult(new(big.Int).Neg(c)))
+	if err != nil {
+		return false
+	}
+	return R2.Equals(R)
+}
 
 func (round *finalization) Start() *tss.Error {
 	if round.started {
@@ -44,10 +55,15 @@ func (round *finalization) Start() *tss.Error {
 	}
 
 	// save the signature for final output
-	round.data.Signature = append(bigIntToEncodedBytes(round.temp.r)[:], sumZ.Bytes()[:]...)
-	round.data.R = round.temp.r.Bytes()
+	//round.data.Signature = append(bigIntToEncodedBytes(round.temp.r)[:], sumZ.Bytes()[:]...)
+	round.data.R = append(round.temp.R.X().Bytes(), round.temp.R.Y().Bytes()...)
 	round.data.S = sumZ.Bytes()
 	round.data.M = round.temp.m
+
+	ok := VerirySig(round.EC(), round.temp.R, sumZ, round.temp.M, round.key.PubKey)
+	if !ok {
+		return round.WrapError(errors.New("signature verification failed"))
+	}
 
 	//pk := edwards.PublicKey{
 	//	Curve: round.EC(),
@@ -56,9 +72,6 @@ func (round *finalization) Start() *tss.Error {
 	//}
 
 	//ok := edwards.Verify(&pk, round.temp.m, round.temp.r, s)
-	//if !ok {
-	//	return round.WrapError(fmt.Errorf("signature verification failed"))
-	//}
 	round.end <- *round.data
 
 	return nil

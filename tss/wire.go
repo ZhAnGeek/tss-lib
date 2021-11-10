@@ -15,8 +15,9 @@ import (
 )
 
 const (
-	ECDSAProtoNamePrefix = "binance.tss-lib.ecdsa."
-	EDDSAProtoNamePrefix = "binance.tss-lib.eddsa."
+	ECDSAProtoNamePrefix   = "binance.tss-lib.ecdsa."
+	EDDSAProtoNamePrefix   = "binance.tss-lib.eddsa."
+	SchnorrProtoNamePrefix = "binance.tss-lib.schnorr."
 )
 
 // Used externally to update a LocalParty with a valid ParsedMessage

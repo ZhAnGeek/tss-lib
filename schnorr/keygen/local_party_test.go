@@ -15,7 +15,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
@@ -56,12 +55,12 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 
 	updater := test.SharedPartyUpdater
 
-	startGR := runtime.NumGoroutine()
+	//startGR := runtime.NumGoroutine()
 
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold)
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		} else {
@@ -129,21 +128,21 @@ keygen:
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),
 							//Share:     new(big.Int).SetBytes(share),
-							Share:     new(big.Int).SetBytes(share.Bytes()),
+							Share: new(big.Int).SetBytes(share.Bytes()),
 						}
 						pShares = append(pShares, shareStruct)
 					}
-					uj, err := pShares[:threshold+1].ReConstruct(tss.Edwards())
+					uj, err := pShares[:threshold+1].ReConstruct(tss.S256())
 					assert.NoError(t, err, "vss.ReConstruct should not throw error")
 
 					// uG test: u*G[j] == V[0]
 					assert.Equal(t, uj, Pj.temp.ui)
-					uG := crypto.ScalarBaseMult(tss.Edwards(), uj)
+					uG := crypto.ScalarBaseMult(tss.S256(), uj)
 					assert.True(t, uG.Equals(Pj.temp.vs[0]), "ensure u*G[j] == V_0")
 
 					// xj tests: BigXj == xj*G
 					xj := Pj.data.Xi
-					gXj := crypto.ScalarBaseMult(tss.Edwards(), xj)
+					gXj := crypto.ScalarBaseMult(tss.S256(), xj)
 					BigXj := Pj.data.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 
@@ -151,59 +150,59 @@ keygen:
 					{
 						badShares := pShares[:threshold]
 						badShares[len(badShares)-1].Share.Set(big.NewInt(0))
-						uj, err := pShares[:threshold].ReConstruct(tss.Edwards())
+						uj, err := pShares[:threshold].ReConstruct(tss.S256())
 						assert.NoError(t, err)
 						assert.NotEqual(t, parties[j].temp.ui, uj)
-						BigXjX, BigXjY := tss.Edwards().ScalarBaseMult(uj.Bytes())
+						BigXjX, BigXjY := tss.S256().ScalarBaseMult(uj.Bytes())
 						assert.NotEqual(t, BigXjX, Pj.temp.vs[0].X())
 						assert.NotEqual(t, BigXjY, Pj.temp.vs[0].Y())
 					}
 					u = new(big.Int).Add(u, uj)
 				}
-				u = new(big.Int).Mod(u, tss.Edwards().Params().N)
-				scalar := make([]byte, 0, 32)
-				copy(scalar, u.Bytes())
+				//u = new(big.Int).Mod(u, tss.S256().Params().N)
+				//scalar := make([]byte, 0, 32)
+				//copy(scalar, u.Bytes())
 
-				// build eddsa key pair
-				pkX, pkY := save.PubKey.X(), save.PubKey.Y()
-				pk := edwards.PublicKey{
-					Curve: tss.Edwards(),
-					X:     pkX,
-					Y:     pkY,
-				}
-				println("u len: ", len(u.Bytes()))
-				sk, _, err := edwards.PrivKeyFromScalar(u.Bytes())
-				// fmt.Println("err: ", err.Error())
+				// build key pair
+				//pkX, pkY := save.PubKey.X(), save.PubKey.Y()
+				//pk := edwards.PublicKey{
+				//	Curve: tss.S256(),
+				//	X:     pkX,
+				//	Y:     pkY,
+				//}
+				//println("u len: ", len(u.Bytes()))
+				//sk, _, err := edwards.PrivKeyFromScalar(u.Bytes())
+				//// fmt.Println("err: ", err.Error())
 
-				// test pub key, should be on curve and match pkX, pkY
-				assert.True(t, pk.IsOnCurve(pkX, pkY), "public key must be on curve")
+				//// test pub key, should be on curve and match pkX, pkY
+				//assert.True(t, pk.IsOnCurve(pkX, pkY), "public key must be on curve")
 
-				// public key tests
-				assert.NotZero(t, u, "u should not be zero")
-				ourPkX, ourPkY := tss.Edwards().ScalarBaseMult(u.Bytes())
-				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
-				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
-				t.Log("Public key tests done.")
+				//// public key tests
+				//assert.NotZero(t, u, "u should not be zero")
+				//ourPkX, ourPkY := tss.S256().ScalarBaseMult(u.Bytes())
+				//assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
+				//assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
+				//t.Log("Public key tests done.")
 
-				// make sure everyone has the same EDDSA public key
-				for _, Pj := range parties {
-					assert.Equal(t, pkX, Pj.data.PubKey.X())
-					assert.Equal(t, pkY, Pj.data.PubKey.Y())
-				}
-				t.Log("Public key distribution test done.")
+				//// make sure everyone has the same Schnorr public key
+				//for _, Pj := range parties {
+				//	assert.Equal(t, pkX, Pj.data.PubKey.X())
+				//	assert.Equal(t, pkY, Pj.data.PubKey.Y())
+				//}
+				//t.Log("Public key distribution test done.")
 
-				// test sign/verify
-				data := make([]byte, 32)
-				for i := range data {
-					data[i] = byte(i)
-				}
-				r, s, err := edwards.Sign(sk, data)
-				assert.NoError(t, err, "sign should not throw an error")
-				ok := edwards.Verify(&pk, data, r, s)
-				assert.True(t, ok, "signature should be ok")
-				t.Log("EDDSA signing test done.")
+				//// test sign/verify
+				//data := make([]byte, 32)
+				//for i := range data {
+				//	data[i] = byte(i)
+				//}
+				//r, s, err := edwards.Sign(sk, data)
+				//assert.NoError(t, err, "sign should not throw an error")
+				//ok := edwards.Verify(&pk, data, r, s)
+				//assert.True(t, ok, "signature should be ok")
+				//t.Log("Schnorr signing test done.")
 
-				t.Logf("Start goroutines: %d, End goroutines: %d", startGR, runtime.NumGoroutine())
+				//t.Logf("Start goroutines: %d, End goroutines: %d", startGR, runtime.NumGoroutine())
 
 				break keygen
 			}

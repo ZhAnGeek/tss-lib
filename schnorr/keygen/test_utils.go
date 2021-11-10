@@ -28,7 +28,7 @@ const (
 	TestThreshold    = test.TestParticipants / 2
 )
 const (
-	testFixtureDirFormat  = "%s/../../test/_eddsa_fixtures"
+	testFixtureDirFormat  = "%s/../../test/_schnorr_fixtures"
 	testFixtureFileFormat = "keygen_data_%d.json"
 )
 
@@ -53,9 +53,9 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.Edwards())
+			kbxj.SetCurve(tss.S256())
 		}
-		key.PubKey.SetCurve(tss.Edwards())
+		key.PubKey.SetCurve(tss.S256())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -91,9 +91,9 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.Edwards())
+			kbxj.SetCurve(tss.S256())
 		}
-		key.PubKey.SetCurve(tss.Edwards())
+		key.PubKey.SetCurve(tss.S256())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))

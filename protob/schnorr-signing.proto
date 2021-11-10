@@ -25,7 +25,7 @@ message SignRound2Message {
 }
 
 /*
- * Represents a BROADCAST message sent to all parties during Round 3 of the EDDSA TSS signing protocol.
+ * Represents a BROADCAST message sent to all parties during Round 3 of the Schnorr TSS signing protocol.
  */
 message SignRound3Message {
     bytes zi = 1;

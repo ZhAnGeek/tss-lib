@@ -63,6 +63,8 @@ type (
 		Rjs []*crypto.ECPoint
 		rhos []*big.Int
 		c *big.Int
+		M *big.Int
+		R *crypto.ECPoint
 
 		// round 3
 		r *big.Int

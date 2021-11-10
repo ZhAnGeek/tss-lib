@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	TaskName = "eddsa-keygen"
+	TaskName = "schnorr-keygen"
 )
 
 type (

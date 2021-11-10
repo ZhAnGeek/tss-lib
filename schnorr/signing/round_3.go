@@ -119,6 +119,8 @@ func (round *round3) Start() *tss.Error {
 	zi = modN.Add(zi, modN.Mul(round.temp.wi, c))
 
 	round.temp.c = c
+	round.temp.R = R
+	round.temp.M = M
 	// broadcast zi to other parties
 	r3msg := NewSignRound3Message(round.PartyID(), zi)
 	round.temp.signRound3Messages[i] = r3msg

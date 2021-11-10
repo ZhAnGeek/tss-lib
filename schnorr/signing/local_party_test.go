@@ -7,18 +7,15 @@
 package signing
 
 import (
-	"fmt"
 	"math/big"
 	"sync/atomic"
 	"testing"
 
-	"github.com/agl/ed25519/edwards25519"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/eddsa/keygen"
+	"github.com/binance-chain/tss-lib/schnorr/keygen"
 	"github.com/binance-chain/tss-lib/test"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -34,7 +31,7 @@ func setUp(level string) {
 	}
 
 	// only for test
-	tss.SetCurve(tss.Edwards())
+	tss.SetCurve(tss.S256())
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -62,7 +59,7 @@ func TestE2EConcurrent(t *testing.T) {
 	msg := big.NewInt(200).Bytes()
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
@@ -102,40 +99,40 @@ signing:
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
 				t.Logf("Done. Received save data from %d participants", ended)
-				R := parties[0].temp.r
+				//R := parties[0].temp.r
 
-				// BEGIN check s correctness
-				sumS := parties[0].temp.zi
-				for i, p := range parties {
-					if i == 0 {
-						continue
-					}
+				//// BEGIN check s correctness
+				//sumS := parties[0].temp.zi
+				//for i, p := range parties {
+				//	if i == 0 {
+				//		continue
+				//	}
 
-					var tmpSumS [32]byte
-					edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), p.temp.zi)
-					sumS = &tmpSumS
-				}
-				fmt.Printf("S: %s\n", encodedBytesToBigInt(sumS).String())
-				fmt.Printf("R: %s\n", R.String())
-				// END check s correctness
+				//	var tmpSumS [32]byte
+				//	edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), p.temp.zi)
+				//	sumS = &tmpSumS
+				//}
+				//fmt.Printf("S: %s\n", encodedBytesToBigInt(sumS).String())
+				//fmt.Printf("R: %s\n", R.String())
+				//// END check s correctness
 
-				// BEGIN EDDSA verify
-				pkX, pkY := keys[0].EDDSAPub.X(), keys[0].EDDSAPub.Y()
-				pk := edwards.PublicKey{
-					Curve: tss.Edwards(),
-					X:     pkX,
-					Y:     pkY,
-				}
+				//// BEGIN Schnorr verify
+				//pkX, pkY := keys[0].Pub.X(), keys[0].Pub.Y()
+				//pk := edwards.PublicKey{
+				//	Curve: tss.Edwards(),
+				//	X:     pkX,
+				//	Y:     pkY,
+				//}
 
-				newSig, err := edwards.ParseSignature(parties[0].data.Signature)
-				if err != nil {
-					println("new sig error, ", err.Error())
-				}
+				//newSig, err := edwards.ParseSignature(parties[0].data.Signature)
+				//if err != nil {
+				//	println("new sig error, ", err.Error())
+				//}
 
-				ok := edwards.Verify(&pk, msg, newSig.R, newSig.S)
-				assert.True(t, ok, "eddsa verify must pass")
-				t.Log("EDDSA signing test done.")
-				// END EDDSA verify
+				//ok := edwards.Verify(&pk, msg, newSig.R, newSig.S)
+				//assert.True(t, ok, "schnorr verify must pass")
+				//t.Log("Schnorr signing test done.")
+				//// END Schnorr verify
 
 				break signing
 			}
