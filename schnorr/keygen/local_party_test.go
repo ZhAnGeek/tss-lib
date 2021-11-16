@@ -165,6 +165,9 @@ keygen:
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")
 				ourPkX, ourPkY := tss.S256().ScalarBaseMult(u.Bytes())
+				if ourPkY.Bit(0) != 0 {
+					ourPkY = new(big.Int).Sub(tss.S256().Params().P, ourPkY)
+				}
 				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
 				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")

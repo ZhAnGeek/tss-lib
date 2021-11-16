@@ -10,8 +10,6 @@ import (
 	"errors"
 	"math/big"
 
-	errors2 "github.com/pkg/errors"
-
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
@@ -39,7 +37,6 @@ func (round *round3) Start() *tss.Error {
 		}
 		xi = new(big.Int).Add(xi, round.temp.r2msg1Shares[j])
 	}
-	round.save.Xi = new(big.Int).Mod(xi, round.EC().Params().N)
 
 	Vc := make(vss.Vs, round.Threshold()+1)
 	for c := range Vc {
@@ -85,7 +82,29 @@ func (round *round3) Start() *tss.Error {
 		}
 	}
 
-	// compute Xj for each Pj
+	// compute and SAVE the public key
+	PubKey, err := crypto.NewECPoint(round.Params().EC(), Vc[0].X(), Vc[0].Y())
+	if err != nil {
+		return round.WrapError(errors.New("public key is not on the curve"))
+	}
+
+	needsNeg := PubKey.Y().Bit(0) != 0
+	if needsNeg {
+		Y2 := new(big.Int).Sub(round.EC().Params().P, PubKey.Y())
+		PubKey2, err := crypto.NewECPoint(round.EC(), Vc[0].X(), Y2)
+		if err != nil {
+			return round.WrapError(err)
+		}
+		PubKey = PubKey2
+	}
+	round.save.PubKey = PubKey
+
+	round.save.Xi = new(big.Int).Mod(xi, round.EC().Params().N)
+	if needsNeg {
+		xi2 := new(big.Int).Sub(round.EC().Params().N, xi)
+		round.save.Xi = new(big.Int).Mod(xi2, round.EC().Params().N)
+	}
+	// compute BigXj for each Pj
 	{
 		var err error
 		modQ := common.ModInt(round.EC().Params().N)
@@ -101,15 +120,17 @@ func (round *round3) Start() *tss.Error {
 				}
 			}
 			round.save.BigXj[j] = BigXj
+			if needsNeg {
+				Yj2 := new(big.Int).Sub(round.EC().Params().P, BigXj.Y())
+				BigXj2, err := crypto.NewECPoint(round.EC(), BigXj.X(), Yj2)
+				if err != nil {
+					return round.WrapError(err)
+				}
+				round.save.BigXj[j] = BigXj2
+
+			}
 		}
 	}
-
-	// compute and SAVE the public key
-	PubKey, err := crypto.NewECPoint(round.Params().EC(), Vc[0].X(), Vc[0].Y())
-	if err != nil {
-		return round.WrapError(errors2.Wrapf(err, "public key is not on the curve"))
-	}
-	round.save.PubKey = PubKey
 
 	// PRINT public key & private share
 	common.Logger.Debugf("%s public key: %x", round.PartyID(), PubKey)

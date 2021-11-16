@@ -17,6 +17,11 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
+var (
+	TagNonce     = "BIP0340/nonce"
+	TagChallenge = "BIP0340/challenge"
+)
+
 func (round *round3) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
@@ -91,7 +96,7 @@ func (round *round3) Start() *tss.Error {
 	DEFlat := append(DjFlat, EjFlat...)
 
 	for j, Pj := range round.Parties().IDs() {
-		rho := common.SHA512_256i(append(DEFlat, M, big.NewInt(int64(j)))...)
+		rho := common.SHA512_256i_TAGGED([]byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
 		Rj, err := round.temp.Djs[j].Add(round.temp.Ejs[j].ScalarMult(rho))
 		if err != nil {
 			return round.WrapError(errors.New("error in computing Ri"), Pj)
@@ -100,6 +105,7 @@ func (round *round3) Start() *tss.Error {
 		round.temp.rhos[j] = rho
 	}
 
+	// compute R
 	R := round.temp.Rjs[i]
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
@@ -112,18 +118,41 @@ func (round *round3) Start() *tss.Error {
 		}
 	}
 
-	c := common.SHA512_256i(R.X(), R.Y(), round.key.PubKey.X(), round.key.PubKey.Y(), M)
-
-	Y2 := round.temp.bigWs[i]
-	for j := range round.Parties().IDs() {
-		if j == i {
-			continue
+	modQ := common.ModInt(round.EC().Params().N)
+	needsNeg := R.Y().Bit(0) != 0
+	if needsNeg {
+		// Neg R
+		YNeg := new(big.Int).Sub(round.EC().Params().P, R.Y())
+		R2, err := crypto.NewECPoint(round.EC(), R.X(), YNeg)
+		if err != nil {
+			return round.WrapError(err, round.PartyID())
 		}
-		Y2, _ = Y2.Add(round.temp.bigWs[j])
+		R = R2
 
+		// Neg Rj
+		for j, Pj := range round.Parties().IDs() {
+			if j == i {
+				continue
+			}
+
+			YjNeg := new(big.Int).Sub(round.EC().Params().P, round.temp.Rjs[j].Y())
+			Rj2, err := crypto.NewECPoint(round.EC(), round.temp.Rjs[j].X(), YjNeg)
+			if err != nil {
+				return round.WrapError(err, Pj)
+			}
+			round.temp.Rjs[j] = Rj2
+		}
+
+		// Neg di, ei
+		round.temp.di = modQ.Sub(zero, round.temp.di)
+		round.temp.ei = modQ.Sub(zero, round.temp.ei)
 	}
-	
-	modQ := common.ModInt(round.EC().Params().N) // TODO
+
+	// compute challenge
+	c_ := common.SHA512_256_TAGGED([]byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
+	c := new(big.Int).SetBytes(c_)
+
+	// compute signature share zi
 	zi := modQ.Add(round.temp.di, modQ.Mul(round.temp.ei, round.temp.rhos[i]))
 	zi = modQ.Add(zi, modQ.Mul(round.temp.wi, c))
 

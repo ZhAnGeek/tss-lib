@@ -67,7 +67,6 @@ type (
 		R    *crypto.ECPoint
 
 		// round 3
-		r *big.Int
 	}
 )
 

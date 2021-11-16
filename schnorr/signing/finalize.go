@@ -17,8 +17,8 @@ import (
 )
 
 func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *crypto.ECPoint) bool {
-	M := new(big.Int).SetBytes(m)
-	c := common.SHA512_256i(R.X(), R.Y(), Y.X(), Y.Y(), M)
+	c_ := common.SHA512_256_TAGGED([]byte(TagChallenge), R.X().Bytes(), Y.X().Bytes(), m)
+	c := new(big.Int).SetBytes(c_)
 	LHS := crypto.ScalarBaseMult(ec, z)
 	RHS, err := R.Add(Y.ScalarMult(c))
 	if err != nil {
@@ -60,9 +60,9 @@ func (round *finalization) Start() *tss.Error {
 	}
 
 	// save the signature for final output
-	//round.data.Signature = append(bigIntToEncodedBytes(round.temp.r)[:], sumZ.Bytes()[:]...)
-	round.data.R = append(round.temp.R.X().Bytes(), round.temp.R.Y().Bytes()...)
+	round.data.R = round.temp.R.X().Bytes()
 	round.data.S = sumZ.Bytes()
+	round.data.Signature = append(round.temp.R.X().Bytes(), sumZ.Bytes()...)
 	round.data.M = round.temp.m
 
 	ok := VerirySig(round.EC(), round.temp.R, sumZ, round.temp.m, round.key.PubKey)
@@ -70,13 +70,6 @@ func (round *finalization) Start() *tss.Error {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}
 
-	//pk := edwards.PublicKey{
-	//	Curve: round.EC(),
-	//	X:     round.key.PubKey.X(),
-	//	Y:     round.key.PubKey.Y(),
-	//}
-
-	//ok := edwards.Verify(&pk, round.temp.m, round.temp.r, s)
 	round.end <- *round.data
 
 	return nil
