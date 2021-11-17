@@ -7,12 +7,12 @@
 package resharing
 
 import (
-	"github.com/binance-chain/tss-lib/eddsa/keygen"
+	"github.com/binance-chain/tss-lib/schnorr/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
 const (
-	TaskName = "eddsa-resharing"
+	TaskName = "schnorr-resharing"
 )
 
 type (

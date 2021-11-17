@@ -11,15 +11,14 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/eddsa/keygen"
-	. "github.com/binance-chain/tss-lib/eddsa/resharing"
-	"github.com/binance-chain/tss-lib/eddsa/signing"
+	"github.com/binance-chain/tss-lib/schnorr/keygen"
+	. "github.com/binance-chain/tss-lib/schnorr/resharing"
+	"github.com/binance-chain/tss-lib/schnorr/signing"
 	"github.com/binance-chain/tss-lib/test"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -35,7 +34,7 @@ func setUp(level string) {
 	}
 
 	// only for test
-	tss.SetCurve(tss.Edwards())
+	tss.SetCurve(tss.S256())
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -68,14 +67,14 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
-		params := tss.NewReSharingParameters(tss.Edwards(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
 		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 
 	// init the new parties
 	for _, pID := range newPIDs {
-		params := tss.NewReSharingParameters(tss.Edwards(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
 		save := keygen.NewLocalPartySaveData(newPCount)
 		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
 		newCommittee = append(newCommittee, P)
@@ -142,7 +141,7 @@ func TestE2EConcurrent(t *testing.T) {
 				for j, key := range newKeys {
 					// xj test: BigXj == xj*G
 					xj := key.Xi
-					gXj := crypto.ScalarBaseMult(tss.Edwards(), xj)
+					gXj := crypto.ScalarBaseMult(tss.S256(), xj)
 					BigXj := key.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 				}
@@ -164,7 +163,7 @@ signing:
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.Edwards(), signP2pCtx, signPID, len(signPIDs), newThreshold)
+		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold)
 		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
@@ -198,30 +197,31 @@ signing:
 				go updater(signParties[dest[0].Index], msg, signErrCh)
 			}
 
-		case signData := <-signEndCh:
+		//case signData := <-signEndCh:
+		case <-signEndCh:
 			atomic.AddInt32(&signEnded, 1)
 			if atomic.LoadInt32(&signEnded) == int32(len(signPIDs)) {
 				t.Logf("Signing done. Received sign data from %d participants", signEnded)
 
-				// BEGIN EDDSA verify
-				pkX, pkY := signKeys[0].EDDSAPub.X(), signKeys[0].EDDSAPub.Y()
-				pk := edwards.PublicKey{
-					Curve: tss.Edwards(),
-					X:     pkX,
-					Y:     pkY,
-				}
+				//// BEGIN Schnorr verify
+				//pkX, pkY := signKeys[0].PubKey.X(), signKeys[0].PubKey.Y()
+				//pk := edwards.PublicKey{
+				//	Curve: tss.Edwards(),
+				//	X:     pkX,
+				//	Y:     pkY,
+				//}
 
-				newSig, err := edwards.ParseSignature(signData.Signature)
-				if err != nil {
-					println("new sig error, ", err.Error())
-				}
+				//newSig, err := edwards.ParseSignature(signData.Signature)
+				//if err != nil {
+				//	println("new sig error, ", err.Error())
+				//}
 
-				ok := edwards.Verify(&pk, big.NewInt(42).Bytes(),
-					newSig.R, newSig.S)
+				//ok := edwards.Verify(&pk, big.NewInt(42).Bytes(),
+				//	newSig.R, newSig.S)
 
-				assert.True(t, ok, "eddsa verify must pass")
-				t.Log("EDDSA signing test done.")
-				// END EDDSA verify
+				//assert.True(t, ok, "schnorr verify must pass")
+				//t.Log("Schnorr signing test done.")
+				//// END Schnorr verify
 
 				return
 			}

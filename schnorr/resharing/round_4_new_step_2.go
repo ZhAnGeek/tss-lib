@@ -88,7 +88,7 @@ func (round *round4) Start() *tss.Error {
 	}
 
 	// 13-15.
-	if !Vc[0].Equals(round.save.EDDSAPub) {
+	if !Vc[0].Equals(round.save.PubKey) {
 		return round.WrapError(errors.New("assertion failed: V_0 != y"), round.PartyID())
 	}
 

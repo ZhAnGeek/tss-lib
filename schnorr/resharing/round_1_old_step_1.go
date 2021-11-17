@@ -13,12 +13,12 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
-	"github.com/binance-chain/tss-lib/eddsa/keygen"
-	"github.com/binance-chain/tss-lib/eddsa/signing"
+	"github.com/binance-chain/tss-lib/schnorr/keygen"
+	"github.com/binance-chain/tss-lib/schnorr/signing"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-// round 1 represents round 1 of the keygen part of the EDDSA TSS spec
+// round 1 represents round 1 of the reshare part of the Schnorr TSS spec
 func newRound1(params *tss.ReSharingParameters, input, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
 	return &round1{
 		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1}}
@@ -47,7 +47,7 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks)), round.PartyID())
 	}
 	newKs := round.NewParties().IDs().Keys()
-	wi := signing.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks)
+	wi, _ := signing.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks, round.input.BigXj)
 
 	// 2.
 	vi, shares, err := vss.Create(round.Params().EC(), round.NewThreshold(), wi, newKs)
@@ -69,7 +69,7 @@ func (round *round1) Start() *tss.Error {
 	// 5. "broadcast" C_i to members of the NEW committee
 	r1msg := NewDGRound1Message(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		round.input.EDDSAPub, vCmt.C)
+		round.input.PubKey, vCmt.C)
 	round.temp.dgRound1Messages[i] = r1msg
 	round.out <- r1msg
 
@@ -99,18 +99,18 @@ func (round *round1) Update() (bool, *tss.Error) {
 		}
 		round.oldOK[j] = true
 
-		// save the eddsa pub received from the old committee
+		// save the schnorr pub received from the old committee
 		r1msg := round.temp.dgRound1Messages[0].Content().(*DGRound1Message)
-		candidate, err := r1msg.UnmarshalEDDSAPub(round.Params().EC())
+		candidate, err := r1msg.UnmarshalPubKey(round.Params().EC())
 		if err != nil {
-			return false, round.WrapError(errors.New("unable to unmarshal the eddsa pub key"), msg.GetFrom())
+			return false, round.WrapError(errors.New("unable to unmarshal the schnorr pub key"), msg.GetFrom())
 		}
-		if round.save.EDDSAPub != nil &&
-			!candidate.Equals(round.save.EDDSAPub) {
+		if round.save.PubKey != nil &&
+			!candidate.Equals(round.save.PubKey) {
 			// uh oh - anomaly!
-			return false, round.WrapError(errors.New("eddsa pub key did not match what we received previously"), msg.GetFrom())
+			return false, round.WrapError(errors.New("schnorr pub key did not match what we received previously"), msg.GetFrom())
 		}
-		round.save.EDDSAPub = candidate
+		round.save.PubKey = candidate
 	}
 	return true, nil
 }

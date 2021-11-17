@@ -36,16 +36,7 @@ type (
 		end chan<- LocalPartySaveData
 	}
 
-	//localMessageStore struct {
-	//	kgRound1Messages,
-	//	kgRound2Message1s,
-	//	kgRound2Message2s,
-	//	kgRound3Messages []tss.ParsedMessage
-	//}
-
 	localTempData struct {
-		//localMessageStore
-
 		// temp data (thrown away after keygen)
 		ui            *big.Int // used for tests
 		KGCs          []cmt.HashCommitment
@@ -77,11 +68,6 @@ func NewLocalParty(
 		end:       end,
 	}
 	// msgs init
-	//p.temp.kgRound1Messages = make([]tss.ParsedMessage, partyCount)
-	//p.temp.kgRound2Message1s = make([]tss.ParsedMessage, partyCount)
-	//p.temp.kgRound2Message2s = make([]tss.ParsedMessage, partyCount)
-	//p.temp.kgRound3Messages = make([]tss.ParsedMessage, partyCount)
-
 	p.temp.r2msg1Shares = make([]*big.Int, partyCount)
 	p.temp.r2msg2Decommit = make([][]*big.Int, partyCount)
 	p.temp.r2msg2Proof = make([]*zkpsch.ProofSch, partyCount)

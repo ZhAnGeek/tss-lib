@@ -17,7 +17,7 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-// These messages were generated from Protocol Buffers definitions into eddsa-resharing.pb.go
+// These messages were generated from Protocol Buffers definitions into schnorr-resharing.pb.go
 
 var (
 	// Ensure that signing messages implement ValidateBasic
@@ -34,7 +34,7 @@ var (
 func NewDGRound1Message(
 	to []*tss.PartyID,
 	from *tss.PartyID,
-	eddsaPub *crypto.ECPoint,
+	PubKey *crypto.ECPoint,
 	vct cmt.HashCommitment,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
@@ -44,8 +44,8 @@ func NewDGRound1Message(
 		IsToOldCommittee: false,
 	}
 	content := &DGRound1Message{
-		EddsaPubX:   eddsaPub.X().Bytes(),
-		EddsaPubY:   eddsaPub.Y().Bytes(),
+		PubX:   PubKey.X().Bytes(),
+		PubY:   PubKey.Y().Bytes(),
 		VCommitment: vct.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
@@ -54,16 +54,16 @@ func NewDGRound1Message(
 
 func (m *DGRound1Message) ValidateBasic() bool {
 	return m != nil &&
-		common.NonEmptyBytes(m.EddsaPubX) &&
-		common.NonEmptyBytes(m.EddsaPubY) &&
+		common.NonEmptyBytes(m.PubX) &&
+		common.NonEmptyBytes(m.PubY) &&
 		common.NonEmptyBytes(m.VCommitment)
 }
 
-func (m *DGRound1Message) UnmarshalEDDSAPub(ec elliptic.Curve) (*crypto.ECPoint, error) {
+func (m *DGRound1Message) UnmarshalPubKey(ec elliptic.Curve) (*crypto.ECPoint, error) {
 	return crypto.NewECPoint(
 		ec,
-		new(big.Int).SetBytes(m.EddsaPubX),
-		new(big.Int).SetBytes(m.EddsaPubY))
+		new(big.Int).SetBytes(m.PubX),
+		new(big.Int).SetBytes(m.PubY))
 }
 
 func (m *DGRound1Message) UnmarshalVCommitment() *big.Int {
