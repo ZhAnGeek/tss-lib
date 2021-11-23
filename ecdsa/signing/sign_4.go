@@ -8,6 +8,7 @@ package signing
 
 import (
 	"errors"
+	"math/big"
 	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -39,6 +40,8 @@ func (round *sign4) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+		
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
@@ -46,7 +49,7 @@ func (round *sign4) Start() *tss.Error {
 			BigDeltaSharej := round.temp.r3msgBigDeltaShare[j]
 			proofLogstar := round.temp.r3msgProofLogstar[j]
 
-			ok := proofLogstar.Verify([]byte("TODO"), round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("proof verify failed"), Pj)
 				return

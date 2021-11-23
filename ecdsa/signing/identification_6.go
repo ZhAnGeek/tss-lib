@@ -8,6 +8,7 @@ package signing
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
@@ -31,10 +32,11 @@ func (round *identification6) Start() *tss.Error {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
+	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// Fig 7. Output.2
 	H, _ := round.key.PaillierSK.HomoMult(round.temp.KShare, round.temp.G)
-	proofH, _ := zkpmul.NewProof([]byte("TODO"), round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, round.temp.KNonce)
+	proofH, _ := zkpmul.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, round.temp.KNonce)
 	DeltaShareEnc := H
 	for j := range round.Parties().IDs() {
 		if j == i {
@@ -48,7 +50,7 @@ func (round *identification6) Start() *tss.Error {
 		if j == i {
 			continue
 		}
-		proofDeltaShare, _ := zkpdec.NewProof([]byte("TODO"), round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.DeltaShare, round.temp.GNonce)
+		proofDeltaShare, _ := zkpdec.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.DeltaShare, round.temp.GNonce)
 		
 		r6msg := NewIdentificationRound6Message(Pj, round.PartyID(), H, proofH, DeltaShareEnc, proofDeltaShare)
 		round.out <- r6msg

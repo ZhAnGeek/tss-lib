@@ -8,6 +8,7 @@ package signing
 
 import (
 	"errors"
+	"math/big"
 	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -46,9 +47,10 @@ func (round *presign2) Start() *tss.Error {
 			
 			Kj := round.temp.r1msgK[j]
 			proof := round.temp.r1msgProof[j]
-			ok := proof.Verify([]byte("TODO"), round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj)
+			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ok := proof.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj)
 			if !ok {
-				errChs <- round.WrapError(errors.New("round2: proofenc verify failed"), Pj)
+				errChs <- round.WrapError(errors.New("round2: proofEnc verify failed"), Pj)
 				return
 			}
 		}(j, Pj)
@@ -60,7 +62,7 @@ func (round *presign2) Start() *tss.Error {
 		culprits = append(culprits, err.Culprits()...)
 	}
 	if len(culprits) > 0 {
-		return round.WrapError(errors.New("round2: proofenc verify failed"), culprits...)
+		return round.WrapError(errors.New("round2: proofEnc verify failed"), culprits...)
 	}
 
 	// Fig 7. Round 2.2 compute MtA and generate proofs
@@ -72,6 +74,8 @@ func (round *presign2) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+
+		ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
@@ -85,7 +89,7 @@ func (round *presign2) Start() *tss.Error {
 			wgj.Add(1)
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
-				DeltaMtA, err := NewMtA(round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+				DeltaMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 				if err != nil {
 					errChs <- round.WrapError(errors.New("MtADelta failed"))
 					return
@@ -96,7 +100,7 @@ func (round *presign2) Start() *tss.Error {
 			wgj.Add(1)
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
-				ChiMtA, err := NewMtA(round.EC(), Kj, round.temp.w, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+				ChiMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.w, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 				if err != nil {
 					errChs <- round.WrapError(errors.New("MtAChi failed"))
 					return
@@ -107,7 +111,7 @@ func (round *presign2) Start() *tss.Error {
 			wgj.Add(1)
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
-				ProofLogstar, err := zkplogstar.NewProof([]byte("TODO"), round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, BigGammaShare, g ,round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.GammaShare, round.temp.GNonce)
+				ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, BigGammaShare, g ,round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.GammaShare, round.temp.GNonce)
 				if err != nil {
 					errChs <- round.WrapError(errors.New("prooflogstar failed"))
 					return

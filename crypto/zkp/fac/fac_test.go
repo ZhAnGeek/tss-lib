@@ -44,8 +44,8 @@ func TestEnc(test *testing.T) {
 	ok := proof.Verify(Session, ec, N0, NCap, s, t)
 	assert.True(test, ok, "proof must verify")
 
-	N0p = common.GetRandomPrimeInt(2048)
-	N0q = common.GetRandomPrimeInt(10)
+	N0p = common.GetRandomPrimeInt(1548)
+	N0q = common.GetRandomPrimeInt(500)
 	N0 = new(big.Int).Mul(N0p, N0q)
 
 	proof, err = NewProof(Session, ec, N0, NCap, s, t, N0p, N0q)

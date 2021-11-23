@@ -8,6 +8,7 @@ package signing
 
 import (
 	"errors"
+	"math/big"
 	sync "sync"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -38,19 +39,21 @@ func (round *identification7) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			
 			proofMul := round.temp.r6msgProofMul[j]
-			ok := proofMul.Verify([]byte("TODO"), round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j], round.temp.r1msgG[j], round.temp.r6msgH[j])
+			ok := proofMul.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j], round.temp.r1msgG[j], round.temp.r6msgH[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round7: proofmul verify failed"), Pj)
 				return
 			}
 
 			proofDec := round.temp.r6msgProofDec[j]
-			ok = proofDec.Verify([]byte("TODO"), round.EC(), round.key.PaillierPKs[j], round.temp.r6msgDeltaShareEnc[j], round.temp.r3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r6msgDeltaShareEnc[j], round.temp.r3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round7: proofdec verify failed"), Pj)
 				return

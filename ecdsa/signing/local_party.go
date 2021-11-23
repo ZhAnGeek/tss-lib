@@ -42,16 +42,9 @@ type (
 		startRndNum int
 	}
 
-	// localMessageStore struct {
-	// 	presignRound1Messages,
-	// 	presignRound2Messages,
-	// 	presignRound3Messages,
-	// 	signRound1Messages []tss.ParsedMessage
-	// }
-
 	localTempData struct {
-		// localMessageStore
 		// temp data (thrown away after sign) / round 1
+		ssid                []byte
 		w                   *big.Int
 		BigWs               []*crypto.ECPoint
 		KShare              *big.Int
@@ -132,11 +125,6 @@ func NewLocalParty(
 	} else {
 		p.startRndNum = 1
 	}
-	// msgs init
-	// p.temp.presignRound1Messages = make([]tss.ParsedMessage, partyCount)
-	// p.temp.presignRound2Messages = make([]tss.ParsedMessage, partyCount)
-	// p.temp.presignRound3Messages = make([]tss.ParsedMessage, partyCount)
-	// p.temp.signRound1Messages = make([]tss.ParsedMessage, partyCount)
 	// temp data init
 	p.temp.keyDerivationDelta = keyDerivationDelta
 	p.temp.m = msg

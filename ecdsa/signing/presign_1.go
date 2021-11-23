@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/crypto"
 	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
@@ -37,7 +38,22 @@ func (round *presign1) Start() *tss.Error {
 	round.resetOK()
 
 	i := round.PartyID().Index
+	Pi := round.PartyID()
 	round.ok[i] = true
+
+	// Fig 7. Round 1. generate ssid
+	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().B, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
+	ssidList = append(ssidList, round.Parties().IDs().Keys()...) // parties
+	BigXjList, err := crypto.FlattenECPoints(round.key.BigXj)
+	if err != nil {
+		return round.WrapError(errors.New("read BigXj failed"), Pi)
+	}
+	ssidList = append(ssidList, BigXjList...) // BigXj
+	ssidList = append(ssidList, round.key.NTildej...) // NCap
+	ssidList = append(ssidList, round.key.H1j...) // s
+	ssidList = append(ssidList, round.key.H2j...) // t
+	ssid := common.SHA512_256i(ssidList...).Bytes()
+
 
 	// Fig 7. Round 1. sample k and gamma
 	KShare := common.GetRandomPositiveInt(round.EC().Params().N)
@@ -62,7 +78,8 @@ func (round *presign1) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proof, err := zkpenc.NewProof([]byte("TODO"), round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
+			ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
+			proof, err := zkpenc.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err))
 				return
@@ -78,6 +95,7 @@ func (round *presign1) Start() *tss.Error {
 		return err
 	}
 
+	round.temp.ssid = ssid
 	round.temp.KShare = KShare
 	round.temp.GammaShare = GammaShare
 	round.temp.G = G

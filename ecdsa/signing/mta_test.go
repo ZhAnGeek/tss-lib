@@ -24,6 +24,10 @@ const (
     testPaillierKeyLength = 2048
 )
 
+var (
+	Session = []byte ("session")
+)
+
 func TestAffg(test *testing.T) {
     ec := tss.EC()
     q := ec.Params().N
@@ -47,7 +51,7 @@ func TestAffg(test *testing.T) {
     NCap, s, t, err := keygen.LoadNTildeH1H2FromTestFixture(1)
     assert.NoError(test, err)
 
-    MtaOut, err := NewMtA(ec, Kj, gammai, BigGammai, pkj, pki, NCap, s, t)
+    MtaOut, err := NewMtA(Session, ec, Kj, gammai, BigGammai, pkj, pki, NCap, s, t)
     assert.NoError(test, err)
 
     alphaj, err := skj.Decrypt(MtaOut.Dji)
@@ -59,6 +63,6 @@ func TestAffg(test *testing.T) {
     rhs := modN.Mul(kj, gammai)
     test.Log(lhs, rhs)
     assert.Equal(test, 0, lhs.Cmp(rhs))
-    ok := MtaOut.Proofji.Verify([]byte("TODO"), ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai)
+    ok := MtaOut.Proofji.Verify(Session, ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai)
     assert.True(test, ok)
 }
