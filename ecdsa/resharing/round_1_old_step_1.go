@@ -9,7 +9,9 @@ package resharing
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
@@ -41,6 +43,20 @@ func (round *round1) Start() *tss.Error {
 	Pi := round.PartyID()
 	i := Pi.Index
 
+	// 0. ssid
+	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().B, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
+	ssidList = append(ssidList, round.OldParties().IDs().Keys()...) // old parties
+	ssidList = append(ssidList, round.NewParties().IDs().Keys()...) // new parties
+	BigXjList, err := crypto.FlattenECPoints(round.input.BigXj)
+	if err != nil {
+		return round.WrapError(errors.New("read BigXj failed"), Pi)
+	}
+	ssidList = append(ssidList, BigXjList...) // BigXj
+	ssidList = append(ssidList, round.input.NTildej...) // NCap
+	ssidList = append(ssidList, round.input.H1j...) // s
+	ssidList = append(ssidList, round.input.H2j...) // t
+	ssid := common.SHA512_256i(ssidList...).Bytes()
+
 	// 1. PrepareForSigning() -> w_i
 	xi, ks, bigXj := round.input.Xi, round.input.Ks, round.input.BigXj
 	if round.Threshold()+1 > len(ks) {
@@ -69,9 +85,11 @@ func (round *round1) Start() *tss.Error {
 	// 5. "broadcast" C_i to members of the NEW committee
 	r1msg := NewDGRound1Message(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		round.input.ECDSAPub, vCmt.C)
+		round.input.ECDSAPub, vCmt.C, ssid)
 	round.temp.dgRound1Messages[i] = r1msg
 	round.out <- r1msg
+
+	round.temp.SSID = ssid
 
 	return nil
 }
@@ -117,5 +135,8 @@ func (round *round1) Update() (bool, *tss.Error) {
 
 func (round *round1) NextRound() tss.Round {
 	round.started = false
-	return &round2{round}
+	if round.IsNewCommittee() {
+		return &round2{round}
+	}
+	return &round3{&round2{round}}
 }

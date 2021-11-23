@@ -49,6 +49,7 @@ type (
 		localMessageStore
 
 		// temp data (thrown away after rounds)
+		SSID      []byte
 		NewVs     vss.Vs
 		NewShares vss.Shares
 		VD        cmt.HashDeCommitment

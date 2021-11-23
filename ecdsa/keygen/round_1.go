@@ -49,7 +49,7 @@ func (round *round1) Start() *tss.Error {
 	alphai, Ai := zkpsch.NewAlpha(round.EC())
 
 	// Fig 5. Round 1. Session id
-	ridBz, err := common.GetRandomBytes(safeBitLen)
+	ridBz, err := common.GetRandomBytes(SafeBitLen)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -57,8 +57,8 @@ func (round *round1) Start() *tss.Error {
 
 	// Fig 6. Round 1. preparams
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
-	contextI := big.NewInt(int64(i)).Bytes()
-	proofPrm, err := zkpprm.NewProof(contextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
+	ContextI := big.NewInt(int64(i)).Bytes()
+	proofPrm, err := zkpprm.NewProof(ContextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
 	}
@@ -79,7 +79,7 @@ func (round *round1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	cmtRandomnessBz, err := common.GetRandomBytes(safeBitLen)
+	cmtRandomnessBz, err := common.GetRandomBytes(SafeBitLen)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}

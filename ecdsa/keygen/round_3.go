@@ -51,7 +51,7 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			if round.save.NTildej[j].BitLen() != safeBitLen*2 {
+			if round.save.NTildej[j].BitLen() != SafeBitLen*2 {
 				errChs <- round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
 			}
 			proofPrmList := append(round.temp.r2msgpfprm[j].A[:], round.temp.r2msgpfprm[j].Z[:]...)

@@ -16,6 +16,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -41,28 +42,51 @@ func (round *round4) Start() *tss.Error {
 	culprits := make([]*tss.PartyID, 0, len(round.NewParties().IDs())) // who caused the error(s)
 	for _, msg := range round.temp.dgRound2Message1s {
 		r2msg1 := msg.Content().(*DGRound2Message1)
-		paiPK, proof := r2msg1.UnmarshalPaillierPK(), r2msg1.UnmarshalPaillierProof()
-		if ok, err := proof.Verify(paiPK.N, msg.GetFrom().KeyInt(), round.save.ECDSAPub); !ok || err != nil {
-			culprits = append(culprits, msg.GetFrom())
-			common.Logger.Warningf("paillier verify failed for party %s", msg.GetFrom())
+		Pj := msg.GetFrom()
+		j := Pj.Index
+		Nj, H1, H2 := r2msg1.UnmarshalNTilde(), r2msg1.UnmarshalH1(), r2msg1.UnmarshalH2()
+		if Nj.BitLen() != keygen.SafeBitLen*2 {
+			return round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
+		}
+		proofPrm, err := r2msg1.UnmarshalProofPrm()
+		if err != nil {
+			return round.WrapError(errors.New("proofPrm failed"), Pj)
+		}
+		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
+		if ok := proofPrm.Verify(ContextJ, H1, H2, Nj); !ok {
+			culprits = append(culprits, Pj)
+			common.Logger.Warningf("proofPrm verify failed for party %s", Pj)
 			continue
 		}
-		common.Logger.Debugf("paillier verify passed for party %s", msg.GetFrom())
+		proofFac, err := r2msg1.UnmarshalProofFac()
+		if err != nil {
+			return round.WrapError(errors.New("proofFac failed"), Pj)
+		}
+		if ok := proofFac.Verify(ContextJ, round.EC(), Nj, Nj, H1, H2); !ok {
+			culprits = append(culprits, Pj)
+			common.Logger.Warningf("proofFac verify failed for party %s", Pj)
+			continue
+
+		}
+		round.save.NTildej[j] = Nj
+		round.save.H1j[j] = H1
+		round.save.H2j[j] = H2
+		common.Logger.Debugf("paillier verify passed for party %s", Pj)
 	}
 	if len(culprits) > 0 {
 		return round.WrapError(errors.New("paillier verify failed"), culprits...)
 	}
 
-	// save NTilde_j, h1_j, h2_j received in NewCommitteeStep1 here
-	for j, msg := range round.temp.dgRound2Message1s {
-		if j == i {
-			continue
-		}
-		r2msg1 := msg.Content().(*DGRound2Message1)
-		round.save.NTildej[j] = new(big.Int).SetBytes(r2msg1.NTilde)
-		round.save.H1j[j] = new(big.Int).SetBytes(r2msg1.H1)
-		round.save.H2j[j] = new(big.Int).SetBytes(r2msg1.H2)
-	}
+	//// save NTilde_j, h1_j, h2_j received in NewCommitteeStep1 here
+	//for j, msg := range round.temp.dgRound2Message1s {
+	//	if j == i {
+	//		continue
+	//	}
+	//	r2msg1 := msg.Content().(*DGRound2Message1)
+	//	round.save.NTildej[j] = r2msg1.UnmarshalNTilde()
+	//	round.save.H1j[j] = r2msg1.UnmarshalH1()
+	//	round.save.H2j[j] = r2msg1.UnmarshalH2()
+	//}
 
 	// 4.
 	newXi := big.NewInt(0)

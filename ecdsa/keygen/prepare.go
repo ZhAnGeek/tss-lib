@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	safeBitLen = 1024
+	SafeBitLen = 1024
 )
 
 var (
@@ -43,7 +43,7 @@ func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 
 	common.Logger.Info("generating the safe primes for the signing proofs, please wait...")
 	start := time.Now()
-	sgps, err := common.GetRandomSafePrimesConcurrent(safeBitLen, 2, timeout, concurrency)
+	sgps, err := common.GetRandomSafePrimesConcurrent(SafeBitLen, 2, timeout, concurrency)
 	if err != nil {
 		return nil, err
 	}

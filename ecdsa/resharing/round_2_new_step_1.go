@@ -7,9 +7,13 @@
 package resharing
 
 import (
+	"bytes"
 	"errors"
+	"math/big"
 
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
+	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -28,6 +32,20 @@ func (round *round2) Start() *tss.Error {
 
 	Pi := round.PartyID()
 	i := Pi.Index
+
+	// check consistency of SSID
+	r1msg := round.temp.dgRound1Messages[0].Content().(*DGRound1Message)
+	SSID := r1msg.UnmarshalSSID()
+	for j, Pj := range round.OldParties().IDs() {
+		if j == 0 || j == i {
+			continue
+		}
+		r1msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)
+		SSIDj := r1msg.UnmarshalSSID()
+		if !bytes.Equal(SSID, SSIDj) {
+			return round.WrapError(errors.New("ssid mismatch"), Pj)
+		}
+	}
 
 	// 2. "broadcast" "ACK" members of the OLD committee
 	r2msg1 := NewDGRound2Message2(
@@ -53,19 +71,30 @@ func (round *round2) Start() *tss.Error {
 	round.save.LocalPreParams = *preParams
 	round.save.NTildej[i] = preParams.NTildei
 	round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
+	round.save.PaillierPKs[i] = &preParams.PaillierSK.PublicKey
 
-	paillierPf := preParams.PaillierSK.Proof(Pi.KeyInt(), round.save.ECDSAPub)
+	//paillierPf := preParams.PaillierSK.Proof(Pi.KeyInt(), round.save.ECDSAPub)
+	ContextI := append(SSID, big.NewInt(int64(i)).Bytes()...)
+	Phi := new(big.Int).Mul(new(big.Int).Lsh(preParams.P, 1), new(big.Int).Lsh(preParams.Q, 1))
+	proofPrm, err := zkpprm.NewProof(ContextI, preParams.H1i, preParams.H2i, preParams.NTildei, Phi, preParams.Beta)
+	if err != nil {
+		return round.WrapError(errors.New("create proofPrm failed"), Pi)
+	}
+	SP := new(big.Int).Add(new(big.Int).Lsh(preParams.P, 1), big.NewInt(1))
+	SQ := new(big.Int).Add(new(big.Int).Lsh(preParams.Q, 1), big.NewInt(1))
+	proofFac, err := zkpfac.NewProof(ContextI, round.EC(), preParams.NTildei, preParams.NTildei, preParams.H1i, preParams.H2i, SP, SQ)
+	if err != nil {
+		return round.WrapError(errors.New("create proofFac failed"), Pi)
+	}
+
+
 	r2msg2 := NewDGRound2Message1(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		&preParams.PaillierSK.PublicKey, paillierPf, preParams.NTildei, preParams.H1i, preParams.H2i)
+		&preParams.PaillierSK.PublicKey, proofPrm, preParams.NTildei, preParams.H1i, preParams.H2i, proofFac)
 	round.temp.dgRound2Message1s[i] = r2msg2
 	round.out <- r2msg2
 
-	// for this P: SAVE de-commitments, paillier keys for round 2
-	round.save.PaillierSK = preParams.PaillierSK
-	round.save.PaillierPKs[i] = &preParams.PaillierSK.PublicKey
-	round.save.NTildej[i] = preParams.NTildei
-	round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
+	round.temp.SSID = SSID
 
 	return nil
 }
@@ -131,5 +160,8 @@ func (round *round2) Update() (bool, *tss.Error) {
 
 func (round *round2) NextRound() tss.Round {
 	round.started = false
-	return &round3{round}
+	if round.IsOldCommittee() {
+		return &round3{round}
+	}
+	return &round4{&round3{round}}
 }
