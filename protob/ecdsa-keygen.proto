@@ -27,6 +27,7 @@ message KGRound2Message {
     repeated bytes Ai = 6;
     bytes rid = 7;
     bytes cmtRandomness = 8;
+    repeated bytes prm_proof = 9;
 }
 
 /*
@@ -35,12 +36,12 @@ message KGRound2Message {
 message KGRound3Message {
     bytes share = 1;
     repeated bytes mod_proof = 2;
-    repeated bytes prm_proof = 3;
+    repeated bytes fac_proof = 3;
 }
 
 /*
  * Represents a BROADCAST message sent to each party during Round 3 of the ECDSA TSS keygen protocol.
  */
 message KGRound4Message {
-    repeated bytes proof = 1;
+    repeated bytes sch_proof = 1;
 }

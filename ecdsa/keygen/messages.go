@@ -17,6 +17,7 @@ import (
 	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
+	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -68,6 +69,7 @@ func NewKGRound2Message(
 	nTildeI, h1I, h2I *big.Int,
 	Ai *crypto.ECPoint,
 	rid, cmtRandomness *big.Int,
+	proofPrm *zkpprm.ProofPrm,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -79,6 +81,7 @@ func NewKGRound2Message(
 		vsbzs[i] = item.Bytes()
 	}
 	AiBzs := Ai.Bytes()
+	proofPrmBzs := proofPrm.Bytes()
 	content := &KGRound2Message{
 		Vs:            vsbzs[:],
 		PaillierN:     paillierPK.N.Bytes(),
@@ -88,6 +91,7 @@ func NewKGRound2Message(
 		Ai:            AiBzs[:],
 		Rid:           rid.Bytes(),
 		CmtRandomness: cmtRandomness.Bytes(),
+		PrmProof:      proofPrmBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -101,7 +105,8 @@ func (m *KGRound2Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.GetH2()) && 
 		common.NonEmptyMultiBytes(m.GetAi(), 2) &&
 		common.NonEmptyBytes(m.GetRid()) &&
-		common.NonEmptyBytes(m.GetCmtRandomness())
+		common.NonEmptyBytes(m.GetCmtRandomness()) &&
+		common.NonEmptyMultiBytes(m.GetPrmProof(), zkpprm.ProofPrmBytesParts)
 }
 
 func (m *KGRound2Message) UnmarshalVs(ec elliptic.Curve) ([]*crypto.ECPoint, error) {
@@ -145,13 +150,17 @@ func (m *KGRound2Message) UnmarshalCmtRandomness() *big.Int {
 	return new(big.Int).SetBytes(m.GetCmtRandomness())
 }
 
+func (m *KGRound2Message) UnmarshalProofPrm() (*zkpprm.ProofPrm, error) {
+	return zkpprm.NewProofFromBytes(m.GetPrmProof())
+}
+
 // ----- //
 
 func NewKGRound3Message(
 	to, from *tss.PartyID,
 	share *big.Int,
 	proofMod *zkpmod.ProofMod,
-	proofPrm *zkpprm.ProofPrm,
+	proofFac *zkpfac.ProofFac,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -159,11 +168,11 @@ func NewKGRound3Message(
 		IsBroadcast: false,
 	}
 	proofModBzs := proofMod.Bytes()
-	proofPrmBzs := proofPrm.Bytes()
+	proofFacBzs := proofFac.Bytes()
 	content := &KGRound3Message{
 		Share: share.Bytes(),
 		ModProof: proofModBzs[:],
-		PrmProof: proofPrmBzs[:],
+		FacProof: proofFacBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -173,7 +182,7 @@ func (m *KGRound3Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetShare()) &&
 		common.NonEmptyMultiBytes(m.GetModProof(), zkpmod.ProofModBytesParts) &&
-		common.NonEmptyMultiBytes(m.GetPrmProof(), zkpprm.ProofPrmBytesParts)
+		common.NonEmptyMultiBytes(m.GetFacProof(), zkpfac.ProofFacBytesParts)
 }
 
 func (m *KGRound3Message) UnmarshalShare() *big.Int {
@@ -184,23 +193,23 @@ func (m *KGRound3Message) UnmarshalProofMod() (*zkpmod.ProofMod, error) {
 	return zkpmod.NewProofFromBytes(m.GetModProof())
 }
 
-func (m *KGRound3Message) UnmarshalProofPrm() (*zkpprm.ProofPrm, error) {
-	return zkpprm.NewProofFromBytes(m.GetPrmProof())
+func (m *KGRound3Message) UnmarshalProofFac() (*zkpfac.ProofFac, error) {
+	return zkpfac.NewProofFromBytes(m.GetFacProof())
 }
 
 // ----- //
 
 func NewKGRound4Message(
 	from *tss.PartyID,
-	proof *zkpsch.ProofSch,
+	proofSch *zkpsch.ProofSch,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
 		IsBroadcast: true,
 	}
-	pfBzs := proof.Bytes()
+	proofSchBzs := proofSch.Bytes()
 	content := &KGRound4Message{
-		Proof: pfBzs[:],
+		SchProof: proofSchBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -208,9 +217,9 @@ func NewKGRound4Message(
 
 func (m *KGRound4Message) ValidateBasic() bool {
 	return m != nil &&
-		common.NonEmptyMultiBytes(m.GetProof(), zkpsch.ProofSchBytesParts)
+		common.NonEmptyMultiBytes(m.GetSchProof(), zkpsch.ProofSchBytesParts)
 }
 
 func (m *KGRound4Message) UnmarshalProof(ec elliptic.Curve) (*zkpsch.ProofSch, error) {
-	return zkpsch.NewProofFromBytes(ec, m.GetProof())
+	return zkpsch.NewProofFromBytes(ec, m.GetSchProof())
 }

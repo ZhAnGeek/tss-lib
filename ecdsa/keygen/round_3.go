@@ -15,8 +15,8 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/tss"
 
+	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
-	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 )
 
 func (round *round3) Start() *tss.Error {
@@ -32,7 +32,7 @@ func (round *round3) Start() *tss.Error {
 	round.ok[i] = true
 
 	// Fig 5. Round 3.1 / Fig 6. Round 3.1
-	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
+	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*2)
 	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
@@ -41,15 +41,26 @@ func (round *round3) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
+			contextJ := big.NewInt(int64(j)).Bytes()
+			if ok := round.temp.r2msgpfprm[j].Verify(contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
+				errChs <- round.WrapError(errors.New("proofPrm verify failed"), Pj)
+			}
+		}(j, Pj)
+
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
 
 			if round.save.NTildej[j].BitLen() != safeBitLen*2 {
 				errChs <- round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
 			}
+			proofPrmList := append(round.temp.r2msgpfprm[j].A[:], round.temp.r2msgpfprm[j].Z[:]...)
 			listToHash, err := crypto.FlattenECPoints(round.temp.r2msgVss[j])
 			if err != nil {
 				errChs <- round.WrapError(err, Pj)
 			}
 			listToHash = append(listToHash, round.save.PaillierPKs[j].N, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.r2msgAs[j].X(), round.temp.r2msgAs[j].Y(), round.temp.r2msgRids[j], round.temp.r2msgCmtRandomness[j])
+			listToHash = append(listToHash, proofPrmList...)
 			VjHash := common.SHA512_256i(listToHash...)
 			if VjHash.Cmp(round.temp.r1msgVHashs[j]) != 0 {
 				errChs <- round.WrapError(errors.New("verify hash failed"), Pj)
@@ -66,18 +77,30 @@ func (round *round3) Start() *tss.Error {
 		return round.WrapError(errors.New("round3: failed stage 3.1"), culprits...)
 	}
 
-	// Fig 5. Round 3.2 / Fig 6. Round 3.2
+	// Fig 5. Round 3.2 / Fig 6. Round 3.2 compute round id
+	Rid_all := round.temp.rid
+	for j := range round.Parties().IDs() {
+		if j == i {
+			continue
+		}
+		Rid_all = new(big.Int).Xor(Rid_all, round.temp.r2msgRids[j])
+	}
+	RidAllBz := Rid_all.Bytes()
+	// Fig 5. Round 3.2 / Fig 6. Round 3.2 proofs
 	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
-	proofMod, err := zkpmod.NewProof([]byte("TODO"), round.save.NTildei, SP, SQ)
+
+	ContextI := append(RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
+	proofMod, err := zkpmod.NewProof(ContextI, round.save.NTildei, SP, SQ)
 	if err != nil {
-		return round.WrapError(errors.New("create proofmod failed"))
+		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}
-	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
-	proofPrm, err := zkpprm.NewProof([]byte("TODO"), round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
-	if err != nil {
-		return round.WrapError(errors.New("create proofPrm failed"))
-	}
+
+	//Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
+	//proofPrm, err := zkpprm.NewProof([]byte("TODO"), round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
+	//if err != nil {
+	//	return round.WrapError(errors.New("create proofPrm failed"))
+	//}
 
 	errChs = make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg = sync.WaitGroup{}
@@ -89,20 +112,28 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
+			proofFac, err := zkpfac.NewProof(ContextI, round.EC(), round.save.NTildei, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+			if err != nil {
+				errChs <- round.WrapError(errors.New("create proofFac failed"), Pi)
+			}
+
 			Cij, err := round.save.PaillierPKs[j].Encrypt(round.temp.shares[j].Share)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("encrypt error"), Pi)
 			}
 			
-			r3msg := NewKGRound3Message(Pj, round.PartyID(), Cij, proofMod, proofPrm)
+			r3msg := NewKGRound3Message(Pj, round.PartyID(), Cij, proofMod, proofFac)
 			round.out <- r3msg
 		}(j, Pj)
+
 	}
 	wg.Wait()
 	close(errChs)
 	for err := range errChs {
 		return err
 	}
+
+	round.temp.RidAllBz = RidAllBz
 
 	return nil
 }

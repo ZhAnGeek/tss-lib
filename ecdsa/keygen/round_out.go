@@ -8,6 +8,7 @@ package keygen
 
 import (
 	"errors"
+	"math/big"
 	"sync"
 
 	"github.com/binance-chain/tss-lib/tss"
@@ -30,13 +31,15 @@ func (round *roundout) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+		ContextJ := append(round.temp.RidAllBz, big.NewInt(int64(j)).Bytes()[:]...)
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			Session := []byte ("fake session") // TODO FAKE session #############################################################
-			if ok := round.temp.r4msgpf[j].Verify(Session, round.save.BigXj[j]); !ok {
-				errChs <- round.WrapError(errors.New("proof sch verify failed"), Pj)
+
+			ok := round.temp.r4msgpfsch[j].Verify(ContextJ, round.save.BigXj[j])
+			if !ok || !round.temp.r4msgpfsch[j].A.Equals(round.temp.r2msgAs[j]) {
+				errChs <- round.WrapError(errors.New("proofSch verify failed"), Pj)
 			}
 		}(j, Pj)
 	}
@@ -47,7 +50,7 @@ func (round *roundout) Start() *tss.Error {
 		culprits = append(culprits, err.Culprits()...)
 	}
 	if len(culprits) > 0 {
-		return round.WrapError(errors.New("round_out: proof sch verify failed"), culprits...)
+		return round.WrapError(errors.New("round_out: proofSch verify failed"), culprits...)
 	}
 
 	round.end <- *round.save

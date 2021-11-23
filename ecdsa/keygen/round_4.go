@@ -36,11 +36,12 @@ func (round *round4) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+		ContextJ := append(round.temp.RidAllBz, big.NewInt(int64(j)).Bytes()[:]...)
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r3msgpfmod[j].Verify([]byte("TODO"), round.save.NTildej[j]); !ok {
+			if ok := round.temp.r3msgpfmod[j].Verify(ContextJ, round.save.NTildej[j]); !ok {
 				errChs <- round.WrapError(errors.New("proofMod verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -48,8 +49,8 @@ func (round *round4) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r3msgpfprm[j].Verify([]byte("TODO"), round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
-				errChs <- round.WrapError(errors.New("proofPrm verify failed"), Pj)
+			if ok := round.temp.r3msgpffac[j].Verify(ContextJ, round.EC(), round.save.NTildej[j], round.save.NTildei, round.save.H1i, round.save.H2i); !ok {
+				errChs <- round.WrapError(errors.New("proofFac verify failed"), Pj)
 			}
 		}(j, Pj)
 
@@ -144,8 +145,9 @@ func (round *round4) Start() *tss.Error {
 	// PRINT public key & private share
 	common.Logger.Debugf("%s public key: %x", round.PartyID(), ecdsaPubKey)
 
-	Session := []byte ("fake session") // TODO FAKE session #############################################################
-	proof, err := zkpsch.NewProof(Session, round.save.BigXj[i], round.save.Xi)
+	ContextI := append(round.temp.RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
+	//proof, err := zkpsch.NewProof(ContextI, round.save.BigXj[i], round.save.Xi)
+	proof, err := zkpsch.NewProofWithAlpha(ContextI, round.save.BigXj[i], round.temp.Ai, round.temp.alphai, round.save.Xi)
 	if err != nil {
 		return round.WrapError(err)
 	}
@@ -164,7 +166,7 @@ func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round4) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r4msgpf {
+	for j, msg := range round.temp.r4msgpfsch {
 		if round.ok[j] {
 			continue
 		}

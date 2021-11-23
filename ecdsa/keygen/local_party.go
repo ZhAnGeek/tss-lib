@@ -17,6 +17,7 @@ import (
 	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
+	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -42,21 +43,24 @@ type (
 		// temp data (thrown away after keygen)
 		ui            *big.Int // used for tests
 		shares        vss.Shares
-		vs                 vss.Vs
+		vs            vss.Vs
 		alphai        *big.Int // pfsch randomness
 		Ai            *crypto.ECPoint
 		rid           *big.Int
 		cmtRandomness *big.Int
+		proofPrm      *zkpprm.ProofPrm
+		RidAllBz      []byte
 
 		r1msgVHashs        []*big.Int
 		r2msgVss           [][]*crypto.ECPoint
 		r2msgAs            []*crypto.ECPoint
 		r2msgRids          []*big.Int
 		r2msgCmtRandomness []*big.Int
+		r2msgpfprm         []*zkpprm.ProofPrm
 		r3msgxij           []*big.Int
 		r3msgpfmod         []*zkpmod.ProofMod
-		r3msgpfprm         []*zkpprm.ProofPrm
-		r4msgpf            []*zkpsch.ProofSch
+		r3msgpffac         []*zkpfac.ProofFac
+		r4msgpfsch         []*zkpsch.ProofSch
 	}
 )
 
@@ -93,10 +97,11 @@ func NewLocalParty(
 	p.temp.r2msgAs = make([]*crypto.ECPoint, partyCount)
 	p.temp.r2msgRids = make([]*big.Int, partyCount)
 	p.temp.r2msgCmtRandomness = make([]*big.Int, partyCount)
+	p.temp.r2msgpfprm = make([]*zkpprm.ProofPrm, partyCount)
 	p.temp.r3msgxij = make([]*big.Int, partyCount)
 	p.temp.r3msgpfmod = make([]*zkpmod.ProofMod, partyCount)
-	p.temp.r3msgpfprm = make([]*zkpprm.ProofPrm, partyCount)
-	p.temp.r4msgpf = make([]*zkpsch.ProofSch, partyCount)
+	p.temp.r3msgpffac = make([]*zkpfac.ProofFac, partyCount)
+	p.temp.r4msgpfsch = make([]*zkpsch.ProofSch, partyCount)
 	return p
 }
 
@@ -161,6 +166,11 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		}
 		p.temp.r2msgRids[fromPIdx] = r2msg.UnmarshalRid()
 		p.temp.r2msgCmtRandomness[fromPIdx] = r2msg.UnmarshalCmtRandomness()
+		proofPrm, err := r2msg.UnmarshalProofPrm()
+		if err != nil {
+			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
+		}
+		p.temp.r2msgpfprm[fromPIdx] = proofPrm
 	case *KGRound3Message:
 		r3msg := msg.Content().(*KGRound3Message)
 		xij, err := p.data.PaillierSK.Decrypt(r3msg.UnmarshalShare())
@@ -173,27 +183,20 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
 		p.temp.r3msgpfmod[fromPIdx] = proofMod
-		// if ok := proofMod.Verify(p.data.NTildej[fromPIdx]); !ok {
-		// 	return false, p.WrapError(errors.New("proofMod verify failed"), p.params.Parties().IDs()[fromPIdx])
-		// }
 
-		proofPrm, err := r3msg.UnmarshalProofPrm()
+		proofFac, err := r3msg.UnmarshalProofFac()
 		if err != nil {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
-		// if ok := proofPrm.Verify(p.data.H1j[fromPIdx], p.data.H2j[fromPIdx], p.data.NTildej[fromPIdx]); !ok {
-		// 	return false, p.WrapError(errors.New("proofPrm verify failed"), p.params.Parties().IDs()[fromPIdx])
-		// }
-		p.temp.r3msgpfprm[fromPIdx] = proofPrm
+		p.temp.r3msgpffac[fromPIdx] = proofFac
 
 	case *KGRound4Message:
-		//p.temp.kgRound4Messages[fromPIdx] = msg
 		r4msg := msg.Content().(*KGRound4Message)
 		proof, err := r4msg.UnmarshalProof(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err, p.params.Parties().IDs()[fromPIdx])
 		}
-		p.temp.r4msgpf[fromPIdx] = proof
+		p.temp.r4msgpfsch[fromPIdx] = proof
 
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)

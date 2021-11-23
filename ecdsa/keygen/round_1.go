@@ -14,6 +14,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
+	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -53,8 +54,17 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 	rid := new(big.Int).SetBytes(ridBz)
+
+	// Fig 6. Round 1. preparams
+	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
+	contextI := big.NewInt(int64(i)).Bytes()
+	proofPrm, err := zkpprm.NewProof(contextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
+	if err != nil {
+		return round.WrapError(errors.New("create proofPrm failed"), Pi)
+	}
+	proofPrmList := append(proofPrm.A[:], proofPrm.Z[:]...)
 	
-	// Fig 6. Round 1.
+	// Fig 6. Round 1. preparams
 	var preParams *LocalPreParams
 	if round.save.LocalPreParams.Validate() {
 		preParams = &round.save.LocalPreParams
@@ -75,12 +85,14 @@ func (round *round1) Start() *tss.Error {
 	}
 	cmtRandomness := new(big.Int).SetBytes(cmtRandomnessBz)
 	listToHash = append(listToHash, preParams.PaillierSK.PublicKey.N, preParams.NTildei, preParams.H1i, preParams.H2i, Ai.X(), Ai.Y(), rid, cmtRandomness)
+	listToHash = append(listToHash, proofPrmList...)
 	VHash := common.SHA512_256i(listToHash...)
 	{
 		msg := NewKGRound1Message(round.PartyID(), VHash)
 		round.out <- msg
 	}
 
+	round.temp.proofPrm = proofPrm
 	round.temp.alphai = alphai
 	round.temp.Ai = Ai
 	round.temp.cmtRandomness = cmtRandomness
