@@ -23,6 +23,10 @@ const (
     testSafePrimeBits = 1024
 )
 
+var (
+	Session = []byte ("session")
+)
+
 func TestMul(test *testing.T) {
     ec := tss.EC()
     q := ec.Params().N
@@ -42,9 +46,9 @@ func TestMul(test *testing.T) {
 	C, err := pk.HomoMult(x, Y)
 	assert.NoError(test, err)
 
-    proof, err := NewProof(ec, pk, X, Y, C, x, rhox)
+    proof, err := NewProof(Session, ec, pk, X, Y, C, x, rhox)
     assert.NoError(test, err)
 
-    ok := proof.Verify(ec, pk, X, Y, C)
+    ok := proof.Verify(Session, ec, pk, X, Y, C)
     assert.True(test, ok, "proof must verify")
 }

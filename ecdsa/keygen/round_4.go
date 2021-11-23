@@ -40,7 +40,7 @@ func (round *round4) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r3msgpfmod[j].Verify(round.save.NTildej[j]); !ok {
+			if ok := round.temp.r3msgpfmod[j].Verify([]byte("TODO"), round.save.NTildej[j]); !ok {
 				errChs <- round.WrapError(errors.New("proofMod verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -48,7 +48,7 @@ func (round *round4) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r3msgpfprm[j].Verify(round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
+			if ok := round.temp.r3msgpfprm[j].Verify([]byte("TODO"), round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
 				errChs <- round.WrapError(errors.New("proofPrm verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -144,7 +144,8 @@ func (round *round4) Start() *tss.Error {
 	// PRINT public key & private share
 	common.Logger.Debugf("%s public key: %x", round.PartyID(), ecdsaPubKey)
 
-	proof, err := zkpsch.NewProof(round.save.BigXj[i], round.save.Xi)
+	Session := []byte ("fake session") // TODO FAKE session #############################################################
+	proof, err := zkpsch.NewProof(Session, round.save.BigXj[i], round.save.Xi)
 	if err != nil {
 		return round.WrapError(err)
 	}

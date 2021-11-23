@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	safePrimeBitLen = 1024
+	safeBitLen = 1024
 )
 
 var (
@@ -43,9 +43,8 @@ func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 
 	common.Logger.Info("generating the safe primes for the signing proofs, please wait...")
 	start := time.Now()
-	sgps, err := common.GetRandomSafePrimesConcurrent(safePrimeBitLen, 2, timeout, concurrency)
+	sgps, err := common.GetRandomSafePrimesConcurrent(safeBitLen, 2, timeout, concurrency)
 	if err != nil {
-		// ch <- nil
 		return nil, err
 	}
 	common.Logger.Infof("safe primes generated. took %s\n", time.Since(start))
@@ -57,7 +56,8 @@ func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 	}
 
 	P, Q := sgps[0].SafePrime(), sgps[1].SafePrime()
-	paiPK := &paillier.PublicKey{N: new(big.Int).Mul(P, Q)}
+	NTildei := new(big.Int).Mul(P, Q)
+	paiPK := &paillier.PublicKey{N: NTildei}
 	// phiN = P-1 * Q-1
 	PMinus1, QMinus1 := new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one)
 	phiN := new(big.Int).Mul(PMinus1, QMinus1)
@@ -65,7 +65,6 @@ func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 	gcd := new(big.Int).GCD(nil, nil, PMinus1, QMinus1)
 	lambdaN := new(big.Int).Div(phiN, gcd)
 	paiSK := &paillier.PrivateKey{PublicKey: *paiPK, LambdaN: lambdaN, PhiN: phiN}
-	NTildei := new(big.Int).Mul(P, Q)
 	modNTildeI := common.ModInt(NTildei)
 
 	p, q := sgps[0].Prime(), sgps[1].Prime()

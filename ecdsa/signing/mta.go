@@ -53,7 +53,7 @@ func NewMtA(ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.E
     // q := ec.Params().N
     beta := common.ModInt(q).Sub(zero, betaNeg)
 
-    Psiji, err := zkpaffg.NewProof(ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
+    Psiji, err := zkpaffg.NewProof([]byte("TODO"), ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
     if err != nil {
         return nil, err
     }

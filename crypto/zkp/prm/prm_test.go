@@ -17,6 +17,10 @@ import (
 	. "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 )
 
+var (
+	Session = []byte ("session")
+)
+
 func TestPrm(test *testing.T) {
 	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
 	assert.NoError(test, err)
@@ -25,13 +29,13 @@ func TestPrm(test *testing.T) {
 	P2, Q2 := new(big.Int).Lsh(P, 1), new(big.Int).Lsh(Q, 1)
 	Phi := new(big.Int).Mul(P2, Q2)
 
-    proof, err := NewProof(s, t, N, Phi, lambda)
+    proof, err := NewProof(Session, s, t, N, Phi, lambda)
     assert.NoError(test, err)
 	
 	proofBzs := proof.Bytes()
 	proof, err = NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
 
-    ok := proof.Verify(s, t, N)
+    ok := proof.Verify(Session, s, t, N)
     assert.True(test, ok, "proof must verify")
 }

@@ -31,7 +31,7 @@ type (
 )
 
 // NewProof implements proofaff-g
-func NewProof(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint, x, y, rho, rhoy *big.Int) (*ProofAffg, error) {
+func NewProof(Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint, x, y, rho, rhoy *big.Int) (*ProofAffg, error) {
     if ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil || x == nil || y == nil || rho == nil || rhoy == nil {
         return nil, errors.New("ProveBob() received a nil argument")
     }
@@ -79,7 +79,7 @@ func NewProof(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKe
     // Fig 15.2
     var e *big.Int
     {
-        eHash := common.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, Bx.X(), Bx.Y(), By, S, T, A, E, F)...)
+        eHash := common.SHA512_256i_TAGGED(Session, append([]*big.Int{}, pk0.N, pk1.N, NCap, s, t, C, D, Y, X.X(), X.Y(), S, T, A, Bx.X(), Bx.Y(), By, E, F)...)
         e = common.RejectionSample(q, eHash)
     }
 
@@ -133,7 +133,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofAffg, error) {
 }
 
 // ProveAffg.Verify implements verification of aff-g proof
-func (pf *ProofAffg) Verify(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint) bool {
+func (pf *ProofAffg) Verify(Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint) bool {
     if pf == nil || !pf.ValidateBasic() || ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil {
         return false
     }
@@ -154,7 +154,7 @@ func (pf *ProofAffg) Verify(ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *pai
 
     var e *big.Int
     {
-        eHash := common.SHA512_256i(append([]*big.Int{}, pk0.N, pk1.N, Y, X.X(), X.Y(), C, D, pf.Bx.X(), pf.Bx.Y(), pf.By, pf.S, pf.T, pf.A, pf.E, pf.F)...)
+        eHash := common.SHA512_256i_TAGGED(Session, append([]*big.Int{}, pk0.N, pk1.N, NCap, s, t, C, D, Y, X.X(), X.Y(), pf.S, pf.T, pf.A, pf.Bx.X(), pf.Bx.Y(), pf.By, pf.E, pf.F)...)
         e = common.RejectionSample(q, eHash)
     }
 

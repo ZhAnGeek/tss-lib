@@ -13,11 +13,8 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/vss"
+	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
 	"github.com/binance-chain/tss-lib/tss"
-)
-
-var (
-	zero = big.NewInt(0)
 )
 
 func newRound1(params *tss.Parameters, save *LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- LocalPartySaveData) tss.Round {
@@ -47,6 +44,16 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 
+	// Fig 5. Round 1. ProofSch first message
+	alphai, Ai := zkpsch.NewAlpha(round.EC())
+
+	// Fig 5. Round 1. Session id
+	ridBz, err := common.GetRandomBytes(safeBitLen)
+	if err != nil {
+		return round.WrapError(err, Pi)
+	}
+	rid := new(big.Int).SetBytes(ridBz)
+	
 	// Fig 6. Round 1.
 	var preParams *LocalPreParams
 	if round.save.LocalPreParams.Validate() {
@@ -62,13 +69,22 @@ func (round *round1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	listToHash = append(listToHash, preParams.PaillierSK.PublicKey.N, preParams.NTildei, preParams.H1i, preParams.H2i)
+	cmtRandomnessBz, err := common.GetRandomBytes(safeBitLen)
+	if err != nil {
+		return round.WrapError(err, Pi)
+	}
+	cmtRandomness := new(big.Int).SetBytes(cmtRandomnessBz)
+	listToHash = append(listToHash, preParams.PaillierSK.PublicKey.N, preParams.NTildei, preParams.H1i, preParams.H2i, Ai.X(), Ai.Y(), rid, cmtRandomness)
 	VHash := common.SHA512_256i(listToHash...)
 	{
 		msg := NewKGRound1Message(round.PartyID(), VHash)
 		round.out <- msg
 	}
 
+	round.temp.alphai = alphai
+	round.temp.Ai = Ai
+	round.temp.cmtRandomness = cmtRandomness
+	round.temp.rid = rid
 	round.temp.vs = vs
 	round.temp.ui = ui
 	round.save.Ks = ids

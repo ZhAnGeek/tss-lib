@@ -46,7 +46,7 @@ func (round *sign4) Start() *tss.Error {
 			BigDeltaSharej := round.temp.r3msgBigDeltaShare[j]
 			proofLogstar := round.temp.r3msgProofLogstar[j]
 
-			ok := proofLogstar.Verify(round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok := proofLogstar.Verify([]byte("TODO"), round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("proof verify failed"), Pj)
 				return

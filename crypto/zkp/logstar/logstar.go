@@ -30,7 +30,7 @@ type (
 )
 
 // NewProof implements prooflogstar
-func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t, x, rho *big.Int) (*ProofLogstar, error) {
+func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t, x, rho *big.Int) (*ProofLogstar, error) {
     if ec == nil || pk == nil || C == nil || X == nil || g == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
         return nil, errors.New("ProveLogstar constructor received nil value(s)")
     }
@@ -64,7 +64,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.E
     // Fig 25.2 e
     var e *big.Int
     {
-        eHash := common.SHA512_256i(append(pk.AsInts(), S, Y.X(), Y.Y(), A, D)...)
+        eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), C, X.X(), X.Y(), g.X(), g.Y(), S, A, Y.X(), Y.Y(), D)...)
         e = common.RejectionSample(q, eHash)
     }
 
@@ -103,7 +103,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofLogstar, error) {
     }, nil
 }
 
-func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t *big.Int) bool {
+func (pf *ProofLogstar) Verify(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t *big.Int) bool {
     if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || C == nil || X == nil || NCap == nil || s == nil || t == nil {
         return false
     }
@@ -119,7 +119,7 @@ func (pf *ProofLogstar) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C *big
 
     var e *big.Int
     {
-        eHash := common.SHA512_256i(append(pk.AsInts(), pf.S, pf.Y.X(), pf.Y.Y(), pf.A, pf.D)...)
+        eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), C, X.X(), X.Y(), g.X(), g.Y(), pf.S, pf.A, pf.Y.X(), pf.Y.Y(), pf.D)...)
         e = common.RejectionSample(q, eHash)
     }
 

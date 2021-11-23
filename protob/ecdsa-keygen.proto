@@ -24,6 +24,9 @@ message KGRound2Message {
     bytes n_tilde = 3;
     bytes h1 = 4;
     bytes h2 = 5;
+    repeated bytes Ai = 6;
+    bytes rid = 7;
+    bytes cmtRandomness = 8;
 }
 
 /*

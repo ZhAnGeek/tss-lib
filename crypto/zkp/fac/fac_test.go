@@ -23,6 +23,10 @@ const (
 	testSafePrimeBits = 1024
 )
 
+var (
+	Session = []byte ("session")
+)
+
 func TestEnc(test *testing.T) {
 	ec := tss.EC()
 	//q := ec.Params().N
@@ -34,19 +38,19 @@ func TestEnc(test *testing.T) {
 	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits), common.GetRandomPrimeInt(testSafePrimeBits)}
 	NCap, s, t, err := crypto.GenerateNTildei(primes)
 	assert.NoError(test, err)
-	proof, err := NewProof(ec, N0, NCap, s, t, N0p, N0q)
+	proof, err := NewProof(Session, ec, N0, NCap, s, t, N0p, N0q)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(ec, N0, NCap, s, t)
+	ok := proof.Verify(Session, ec, N0, NCap, s, t)
 	assert.True(test, ok, "proof must verify")
 
 	N0p = common.GetRandomPrimeInt(2048)
 	N0q = common.GetRandomPrimeInt(10)
 	N0 = new(big.Int).Mul(N0p, N0q)
 
-	proof, err = NewProof(ec, N0, NCap, s, t, N0p, N0q)
+	proof, err = NewProof(Session, ec, N0, NCap, s, t, N0p, N0q)
 	assert.NoError(test, err)
 
-	ok = proof.Verify(ec, N0, NCap, s, t)
+	ok = proof.Verify(Session, ec, N0, NCap, s, t)
 	assert.False(test, ok, "proof must verify")
 }

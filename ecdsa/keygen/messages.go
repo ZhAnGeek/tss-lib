@@ -66,6 +66,8 @@ func NewKGRound2Message(
 	vs vss.Vs,
 	paillierPK *paillier.PublicKey,
 	nTildeI, h1I, h2I *big.Int,
+	Ai *crypto.ECPoint,
+	rid, cmtRandomness *big.Int,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -76,12 +78,16 @@ func NewKGRound2Message(
 	for i, item := range(vs_flat) {
 		vsbzs[i] = item.Bytes()
 	}
+	AiBzs := Ai.Bytes()
 	content := &KGRound2Message{
-		Vs:         vsbzs[:],
-		PaillierN:  paillierPK.N.Bytes(),
-		NTilde:     nTildeI.Bytes(),
-		H1:         h1I.Bytes(),
-		H2:         h2I.Bytes(),
+		Vs:            vsbzs[:],
+		PaillierN:     paillierPK.N.Bytes(),
+		NTilde:        nTildeI.Bytes(),
+		H1:            h1I.Bytes(),
+		H2:            h2I.Bytes(),
+		Ai:            AiBzs[:],
+		Rid:           rid.Bytes(),
+		CmtRandomness: cmtRandomness.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -92,7 +98,10 @@ func (m *KGRound2Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.GetPaillierN()) &&
 		common.NonEmptyBytes(m.GetNTilde()) &&
 		common.NonEmptyBytes(m.GetH1()) &&
-		common.NonEmptyBytes(m.GetH2())
+		common.NonEmptyBytes(m.GetH2()) && 
+		common.NonEmptyMultiBytes(m.GetAi(), 2) &&
+		common.NonEmptyBytes(m.GetRid()) &&
+		common.NonEmptyBytes(m.GetCmtRandomness())
 }
 
 func (m *KGRound2Message) UnmarshalVs(ec elliptic.Curve) ([]*crypto.ECPoint, error) {
@@ -122,6 +131,18 @@ func (m *KGRound2Message) UnmarshalH1() *big.Int {
 
 func (m *KGRound2Message) UnmarshalH2() *big.Int {
 	return new(big.Int).SetBytes(m.GetH2())
+}
+
+func (m *KGRound2Message) UnmarshalA(ec elliptic.Curve) (*crypto.ECPoint, error) {
+	return crypto.NewECPointFromBytes(ec, m.GetAi())
+}
+
+func (m *KGRound2Message) UnmarshalRid() *big.Int {
+	return new(big.Int).SetBytes(m.GetRid())
+}
+
+func (m *KGRound2Message) UnmarshalCmtRandomness() *big.Int {
+	return new(big.Int).SetBytes(m.GetCmtRandomness())
 }
 
 // ----- //

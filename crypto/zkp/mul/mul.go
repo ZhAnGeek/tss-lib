@@ -27,7 +27,7 @@ type (
 )
 
 // NewProof implements proofenc
-func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.Int) (*ProofMul, error) {
+func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.Int) (*ProofMul, error) {
     if pk == nil || X == nil || Y == nil || C == nil || rhox == nil {
         return nil, errors.New("ProveMul constructor received nil value(s)")
     }
@@ -48,7 +48,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.I
     // Fig 28.2 e
     var e *big.Int
     {
-        eHash := common.SHA512_256i(append(pk.AsInts(), X, Y, C, A, B)...)
+        eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), X, Y, C, A, B)...)
         e = common.RejectionSample(q, eHash)
     }
 
@@ -79,7 +79,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMul, error) {
     }, nil
 }
 
-func (pf *ProofMul) Verify(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *big.Int) bool {
+func (pf *ProofMul) Verify(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *big.Int) bool {
     if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || X == nil || Y == nil || C == nil {
         return false
     }
@@ -88,7 +88,7 @@ func (pf *ProofMul) Verify(ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *b
 
     var e *big.Int
     {
-        eHash := common.SHA512_256i(append(pk.AsInts(), X, Y, C, pf.A, pf.B)...)
+        eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), X, Y, C, pf.A, pf.B)...)
         e = common.RejectionSample(q, eHash)
     }
 

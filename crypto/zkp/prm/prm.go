@@ -25,7 +25,7 @@ type (
 	}
 )
 
-func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
+func NewProof(Session []byte, s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
 	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
 
 	// Fig 17.1
@@ -37,7 +37,7 @@ func NewProof(s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
 	}
 
 	// Fig 17.2
-	e := common.SHA512_256i(append([]*big.Int{s, t, N}, A[:]...)...)
+	e := common.SHA512_256i_TAGGED(Session, append([]*big.Int{s, t, N}, A[:]...)...)
 	
 	// Fig 17.3
 	Z := [Iterations]*big.Int{}
@@ -68,12 +68,12 @@ func NewProofFromBytes(bzs [][]byte) (*ProofPrm, error) {
     }, nil
 }
 
-func (pf *ProofPrm) Verify(s, t, N *big.Int) bool {
+func (pf *ProofPrm) Verify(Session []byte, s, t, N *big.Int) bool {
 	if pf == nil  || !pf.ValidateBasic() {
 		return false
 	}
 	modN := common.ModInt(N)
-	e := common.SHA512_256i(append([]*big.Int{s, t, N}, pf.A[:]...)...)
+	e := common.SHA512_256i_TAGGED(Session, append([]*big.Int{s, t, N}, pf.A[:]...)...)
 
 	// Fig 17. Verification
 	for i := 0; i < Iterations; i++ {

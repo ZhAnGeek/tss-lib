@@ -49,7 +49,7 @@ func (round *presign3) Start() *tss.Error {
 			DeltaD := round.temp.r2msgDeltaD[j]
 			DeltaF := round.temp.r2msgDeltaF[j]
 			proofAffgDelta := round.temp.r2msgDeltaProof[j]
-			ok := proofAffgDelta.Verify(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, BigGammaSharej)
+			ok := proofAffgDelta.Verify([]byte("TODO"), round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, BigGammaSharej)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg delta"))
 				return
@@ -68,7 +68,7 @@ func (round *presign3) Start() *tss.Error {
 			ChiD := round.temp.r2msgChiD[j]
 			ChiF := round.temp.r2msgChiF[j]
 			proofAffgChi := round.temp.r2msgChiProof[j]
-			ok := proofAffgChi.Verify(round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
+			ok := proofAffgChi.Verify([]byte("TODO"), round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg chi"))
 				return
@@ -86,7 +86,7 @@ func (round *presign3) Start() *tss.Error {
 			defer wg.Done()
 			proofLogstar := round.temp.r2msgProofLogstar[j]
 			Gj := round.temp.r1msgG[j]
-			ok := proofLogstar.Verify(round.EC(), round.key.PaillierPKs[j], Gj, BigGammaSharej, g, round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok := proofLogstar.Verify([]byte("TODO"), round.EC(), round.key.PaillierPKs[j], Gj, BigGammaSharej, g, round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify logstar"))
 				return
@@ -142,7 +142,7 @@ func (round *presign3) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			ProofLogstar, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
+			ProofLogstar, err := zkplogstar.NewProof([]byte("TODO"), round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proof generation failed"))
 			}

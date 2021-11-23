@@ -27,7 +27,7 @@ type (
 )
 
 // NewProof implements proofenc
-func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t, y, rho *big.Int) (*ProofDec, error) {
+func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t, y, rho *big.Int) (*ProofDec, error) {
     if ec == nil || pk == nil || C == nil || x == nil || NCap == nil || s == nil || t == nil || y == nil || rho == nil {
         return nil, errors.New("ProveDec constructor received nil value(s)")
     }
@@ -62,7 +62,7 @@ func NewProof(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t, y, rh
     // Fig 29.2 e
     var e *big.Int
     {
-        eHash := common.SHA512_256i(append(pk.AsInts(), C, x, NCap, s, t, A, gamma)...)
+        eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), C, x, NCap, s, t, S, T, A, gamma)...)
         e = common.RejectionSample(q, eHash)
     }
 
@@ -95,7 +95,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofDec, error) {
     }, nil
 }
 
-func (pf *ProofDec) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t *big.Int) bool {
+func (pf *ProofDec) Verify(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap, s, t *big.Int) bool {
     if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || C == nil || x == nil || NCap == nil || s == nil || t == nil {
         return false
     }
@@ -106,7 +106,7 @@ func (pf *ProofDec) Verify(ec elliptic.Curve, pk *paillier.PublicKey, C, x, NCap
 
     var e *big.Int
     {
-        eHash := common.SHA512_256i(append(pk.AsInts(), C, x, NCap, s, t, pf.A, pf.Gamma)...)
+        eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), C, x, NCap, s, t, pf.S, pf.T, pf.A, pf.Gamma)...)
         e = common.RejectionSample(q, eHash)
     }
 

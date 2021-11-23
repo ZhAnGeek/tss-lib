@@ -26,7 +26,7 @@ type (
 )
 
 // NewProof implements prooffac
-func NewProof(ec elliptic.Curve, N0, NCap, s, t, N0p, N0q *big.Int) (*ProofFac, error) {
+func NewProof(Session []byte, ec elliptic.Curve, N0, NCap, s, t, N0p, N0q *big.Int) (*ProofFac, error) {
 	if ec == nil || N0 == nil || NCap == nil || s == nil || t == nil || N0p == nil || N0q == nil {
 		return nil, errors.New("ProveFac constructor received nil value(s)")
 	}
@@ -71,7 +71,7 @@ func NewProof(ec elliptic.Curve, N0, NCap, s, t, N0p, N0q *big.Int) (*ProofFac, 
 	// Fig 28.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(P, Q, A, B, T, sigma)
+		eHash := common.SHA512_256i_TAGGED(Session, N0, NCap, s, t, P, Q, A, B, T, sigma)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -115,7 +115,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofFac, error) {
 	}, nil
 }
 
-func (pf *ProofFac) Verify(ec elliptic.Curve, N0, NCap, s, t *big.Int) bool {
+func (pf *ProofFac) Verify(Session []byte, ec elliptic.Curve, N0, NCap, s, t *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() || ec == nil || N0 == nil || NCap == nil || s == nil || t == nil {
 		return false
 	}
@@ -137,7 +137,7 @@ func (pf *ProofFac) Verify(ec elliptic.Curve, N0, NCap, s, t *big.Int) bool {
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i(pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma)
+		eHash := common.SHA512_256i_TAGGED(Session, N0, NCap, s, t, pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma)
 		e = common.RejectionSample(q, eHash)
 	}
 

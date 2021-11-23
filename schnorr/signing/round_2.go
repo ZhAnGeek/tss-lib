@@ -9,9 +9,17 @@ package signing
 import (
 	"errors"
 
+	"github.com/binance-chain/tss-lib/common"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
+	"github.com/binance-chain/tss-lib/schnorr/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
+
+// round 2 represents round 2 of the signing part of the Schnorr TSS spec
+func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
+	return &round2{&round1{
+		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}}
+}
 
 func (round *round2) Start() *tss.Error {
 	if round.started {
@@ -30,11 +38,11 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	proofD, err := zkpsch.NewProof(round.temp.pointDi, round.temp.di)
+	proofD, err := zkpsch.NewProof([]byte("TODO"), round.temp.pointDi, round.temp.di)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	proofE, err := zkpsch.NewProof(round.temp.pointEi, round.temp.ei)
+	proofE, err := zkpsch.NewProof([]byte("TODO"), round.temp.pointEi, round.temp.ei)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

@@ -25,6 +25,10 @@ const (
     testSafePrimeBits = 1024
 )
 
+var (
+	Session = []byte ("session")
+)
+
 func TestLogstar(test *testing.T) {
     ec := tss.EC()
     q := ec.Params().N
@@ -42,9 +46,9 @@ func TestLogstar(test *testing.T) {
     assert.NoError(test, err)
 
     g := crypto.ScalarBaseMult(ec, big.NewInt(1))
-    proof, err := NewProof(ec, pk, C, X, g, NCap, s, t, x, rho)
+    proof, err := NewProof(Session, ec, pk, C, X, g, NCap, s, t, x, rho)
     assert.NoError(test, err)
 
-    ok := proof.Verify(ec, pk, C, X, g, NCap, s, t)
+    ok := proof.Verify(Session, ec, pk, C, X, g, NCap, s, t)
     assert.True(test, ok, "proof must verify")
 }

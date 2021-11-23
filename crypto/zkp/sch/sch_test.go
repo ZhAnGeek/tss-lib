@@ -13,15 +13,19 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/tss"
 	. "github.com/binance-chain/tss-lib/crypto/zkp/sch"
+	"github.com/binance-chain/tss-lib/tss"
+)
+
+var (
+	Session = []byte ("session")
 )
 
 func TestSchnorrProof(t *testing.T) {
 	q := tss.EC().Params().N
 	u := common.GetRandomPositiveInt(q)
 	uG := crypto.ScalarBaseMult(tss.EC(), u)
-	proof, _ := NewProof(uG, u)
+	proof, _ := NewProof(Session, uG, u)
 
 	assert.True(t, proof.A.IsOnCurve())
 	assert.NotZero(t, proof.A.X())
@@ -34,8 +38,22 @@ func TestSchnorrProofVerify(t *testing.T) {
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 
-	proof, _ := NewProof(X, u)
-	res := proof.Verify(X)
+	proof, _ := NewProof(Session, X, u)
+	proofBz := proof.Bytes()
+	proof2, _ := NewProofFromBytes(tss.EC(), proofBz[:])
+	res := proof2.Verify(Session, X)
+
+	assert.True(t, res, "verify result must be true")
+}
+
+func TestSchnorrProofAlphaVerify(t *testing.T) {
+	q := tss.EC().Params().N
+	u := common.GetRandomPositiveInt(q)
+	X := crypto.ScalarBaseMult(tss.EC(), u)
+
+	alpha, A := NewAlpha(X.Curve())
+	proof, _ := NewProofWithAlpha(Session, X, A, alpha, u)
+	res := proof.Verify(Session, X)
 
 	assert.True(t, res, "verify result must be true")
 }
@@ -47,8 +65,8 @@ func TestSchnorrProofVerifyBadX(t *testing.T) {
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 	X2 := crypto.ScalarBaseMult(tss.EC(), u2)
 
-	proof, _ := NewProof(X2, u2)
-	res := proof.Verify(X)
+	proof, _ := NewProof(Session, X2, u2)
+	res := proof.Verify(Session, X)
 
 	assert.False(t, res, "verify result must be false")
 }

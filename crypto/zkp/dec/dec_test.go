@@ -25,6 +25,10 @@ const (
     testSafePrimeBits = 1024
 )
 
+var (
+	Session = []byte ("session")
+)
+
 func TestDec(test *testing.T) {
     ec := tss.EC()
     q := ec.Params().N
@@ -41,9 +45,9 @@ func TestDec(test *testing.T) {
     C, rho, err := sk.EncryptAndReturnRandomness(y)
     assert.NoError(test, err)
 	
-    proof, err := NewProof(ec, pk, C, x, NCap, s, t, y, rho)
+    proof, err := NewProof(Session, ec, pk, C, x, NCap, s, t, y, rho)
     assert.NoError(test, err)
 
-    ok := proof.Verify(ec, pk, C, x, NCap, s, t)
+    ok := proof.Verify(Session, ec, pk, C, x, NCap, s, t)
     assert.True(test, ok, "proof must verify")
 }

@@ -26,6 +26,10 @@ const (
     testPaillierKeyLength = 2048
 )
 
+var (
+	Session = []byte ("session")
+)
+
 func TestAffg(test *testing.T) {
     ec := tss.EC()
     q := ec.Params().N
@@ -64,24 +68,24 @@ func TestAffg(test *testing.T) {
     D, err = pk0.HomoAdd(D, cw)
     assert.NoError(test, err)
 
-    proof, err := NewProof(ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
+    proof, err := NewProof(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
     assert.NoError(test, err)
 
-    ok := proof.Verify(ec, pk0, pk1, NCap, s, t, C, D, Y, X)
+    ok := proof.Verify(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
     assert.True(test, ok, "proof must verify")
 
 	x = q3
-	proof, err = NewProof(ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
+	proof, err = NewProof(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
     assert.NoError(test, err)
 
-    ok = proof.Verify(ec, pk0, pk1, NCap, s, t, C, D, Y, X)
+    ok = proof.Verify(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
     assert.False(test, ok, "proof must verify")
 
 	x = common.GetRandomPositiveInt(q)
 	y = q3
-	proof, err = NewProof(ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
+	proof, err = NewProof(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
     assert.NoError(test, err)
 
-    ok = proof.Verify(ec, pk0, pk1, NCap, s, t, C, D, Y, X)
+    ok = proof.Verify(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
     assert.False(test, ok, "proof must verify")
 }

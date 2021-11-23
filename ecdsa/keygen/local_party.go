@@ -13,7 +13,6 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	// cmt "github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
@@ -44,9 +43,16 @@ type (
 		ui            *big.Int // used for tests
 		shares        vss.Shares
 		vs                 vss.Vs
+		alphai        *big.Int // pfsch randomness
+		Ai            *crypto.ECPoint
+		rid           *big.Int
+		cmtRandomness *big.Int
 
 		r1msgVHashs        []*big.Int
 		r2msgVss           [][]*crypto.ECPoint
+		r2msgAs            []*crypto.ECPoint
+		r2msgRids          []*big.Int
+		r2msgCmtRandomness []*big.Int
 		r3msgxij           []*big.Int
 		r3msgpfmod         []*zkpmod.ProofMod
 		r3msgpfprm         []*zkpprm.ProofPrm
@@ -84,6 +90,9 @@ func NewLocalParty(
 	// msgs data init
 	p.temp.r1msgVHashs = make([]*big.Int, partyCount)
 	p.temp.r2msgVss = make([][]*crypto.ECPoint, partyCount)
+	p.temp.r2msgAs = make([]*crypto.ECPoint, partyCount)
+	p.temp.r2msgRids = make([]*big.Int, partyCount)
+	p.temp.r2msgCmtRandomness = make([]*big.Int, partyCount)
 	p.temp.r3msgxij = make([]*big.Int, partyCount)
 	p.temp.r3msgpfmod = make([]*zkpmod.ProofMod, partyCount)
 	p.temp.r3msgpfprm = make([]*zkpprm.ProofPrm, partyCount)
@@ -134,11 +143,9 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
 	case *KGRound1Message:
-		//p.temp.kgRound1Messages[fromPIdx] = msg // TODO remove
 		r1msg := msg.Content().(*KGRound1Message)
 		p.temp.r1msgVHashs[fromPIdx] = r1msg.UnmarshalVHash()
 	case *KGRound2Message:
-		//p.temp.kgRound2Messages[fromPIdx] = msg
 		r2msg := msg.Content().(*KGRound2Message)
 		p.data.PaillierPKs[fromPIdx] = r2msg.UnmarshalPaillierPK() // used in round 4
 		p.data.NTildej[fromPIdx] = r2msg.UnmarshalNTilde()
@@ -148,8 +155,13 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		if err != nil {
 			return false, p.WrapError(err)
 		}
+		p.temp.r2msgAs[fromPIdx], err = r2msg.UnmarshalA(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err)
+		}
+		p.temp.r2msgRids[fromPIdx] = r2msg.UnmarshalRid()
+		p.temp.r2msgCmtRandomness[fromPIdx] = r2msg.UnmarshalCmtRandomness()
 	case *KGRound3Message:
-		//p.temp.kgRound3Messages[fromPIdx] = msg
 		r3msg := msg.Content().(*KGRound3Message)
 		xij, err := p.data.PaillierSK.Decrypt(r3msg.UnmarshalShare())
 		if err != nil {

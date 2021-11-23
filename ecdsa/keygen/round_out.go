@@ -34,7 +34,8 @@ func (round *roundout) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r4msgpf[j].Verify(round.save.BigXj[j]); !ok {
+			Session := []byte ("fake session") // TODO FAKE session #############################################################
+			if ok := round.temp.r4msgpf[j].Verify(Session, round.save.BigXj[j]); !ok {
 				errChs <- round.WrapError(errors.New("proof sch verify failed"), Pj)
 			}
 		}(j, Pj)

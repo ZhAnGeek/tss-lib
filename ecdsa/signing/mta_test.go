@@ -59,6 +59,6 @@ func TestAffg(test *testing.T) {
     rhs := modN.Mul(kj, gammai)
     test.Log(lhs, rhs)
     assert.Equal(test, 0, lhs.Cmp(rhs))
-    ok := MtaOut.Proofji.Verify(ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai)
+    ok := MtaOut.Proofji.Verify([]byte("TODO"), ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai)
     assert.True(test, ok)
 }

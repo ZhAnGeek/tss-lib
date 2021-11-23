@@ -46,7 +46,7 @@ func (round *presign2) Start() *tss.Error {
 			
 			Kj := round.temp.r1msgK[j]
 			proof := round.temp.r1msgProof[j]
-			ok := proof.Verify(round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj)
+			ok := proof.Verify([]byte("TODO"), round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round2: proofenc verify failed"), Pj)
 				return
@@ -107,7 +107,7 @@ func (round *presign2) Start() *tss.Error {
 			wgj.Add(1)
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
-				ProofLogstar, err := zkplogstar.NewProof(round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, BigGammaShare, g ,round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.GammaShare, round.temp.GNonce)
+				ProofLogstar, err := zkplogstar.NewProof([]byte("TODO"), round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, BigGammaShare, g ,round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.GammaShare, round.temp.GNonce)
 				if err != nil {
 					errChs <- round.WrapError(errors.New("prooflogstar failed"))
 					return

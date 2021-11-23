@@ -101,7 +101,6 @@ func GetRandomGeneratorOfTheQuadraticResidue(n *big.Int) *big.Int {
 	return fSq.Mod(fSq, n)
 }
 
-
 func GetRandomQuandraticNonResidue(n *big.Int) *big.Int {
 	for {
 		w := GetRandomPositiveInt(n)
@@ -109,4 +108,19 @@ func GetRandomQuandraticNonResidue(n *big.Int) *big.Int {
 			return w
 		}
 	}
+}
+
+func GetRandomBytes(length int) ([]byte, error) {
+	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
+	if length <= 0 {
+		return nil, errors.New("invalid length")
+	}
+
+	buf := make([]byte, length)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }

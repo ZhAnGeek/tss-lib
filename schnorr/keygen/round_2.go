@@ -34,7 +34,7 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// compute Schnorr prove
-	proof, err := zkpsch.NewProof(round.temp.vs[0], round.temp.ui)
+	proof, err := zkpsch.NewProof([]byte("TODO"), round.temp.vs[0], round.temp.ui)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

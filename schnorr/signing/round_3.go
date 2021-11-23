@@ -14,6 +14,7 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
+	"github.com/binance-chain/tss-lib/schnorr/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -21,6 +22,12 @@ var (
 	TagNonce     = "BIP0340/nonce"
 	TagChallenge = "BIP0340/challenge"
 )
+
+// round 3 represents round 3 of the signing part of the Schnorr TSS spec
+func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
+	return &round3{&round2{&round1{
+		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}}}
+}
 
 func (round *round3) Start() *tss.Error {
 	if round.started {
@@ -61,7 +68,7 @@ func (round *round3) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("failed to unmarshal Dj proof"), Pj)
 		}
-		ok = proofD.Verify(pointDj)
+		ok = proofD.Verify([]byte("TODO"), pointDj)
 		if !ok {
 			return round.WrapError(errors.New("failed to prove Dj"), Pj)
 		}
@@ -75,7 +82,7 @@ func (round *round3) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("failed to unmarshal Ej proof"), Pj)
 		}
-		ok = proofE.Verify(pointEj)
+		ok = proofE.Verify([]byte("TODO"), pointEj)
 		if !ok {
 			return round.WrapError(errors.New("failed to prove Ej"), Pj)
 		}

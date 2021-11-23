@@ -26,7 +26,7 @@ func (round *round2) Start() *tss.Error {
 
 	// Fig 5. Round 2. / Fig 6. Round 2.
 	{
-		msg := NewKGRound2Message(round.PartyID(), round.temp.vs, &round.save.PaillierSK.PublicKey, round.save.NTildei, round.save.H1i, round.save.H2i)
+		msg := NewKGRound2Message(round.PartyID(), round.temp.vs, &round.save.PaillierSK.PublicKey, round.save.NTildei, round.save.H1i, round.save.H2i, round.temp.Ai, round.temp.rid, round.temp.cmtRandomness)
 		round.out <- msg
 	}
 

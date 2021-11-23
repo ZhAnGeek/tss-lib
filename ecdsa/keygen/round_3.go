@@ -32,7 +32,6 @@ func (round *round3) Start() *tss.Error {
 	round.ok[i] = true
 
 	// Fig 5. Round 3.1 / Fig 6. Round 3.1
-	toCmp := new(big.Int).Lsh(big.NewInt(1), 1024)
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
 	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
@@ -43,14 +42,14 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			if round.save.NTildej[j].Cmp(toCmp) < 0 {
+			if round.save.NTildej[j].BitLen() != safeBitLen*2 {
 				errChs <- round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
 			}
 			listToHash, err := crypto.FlattenECPoints(round.temp.r2msgVss[j])
 			if err != nil {
 				errChs <- round.WrapError(err, Pj)
 			}
-			listToHash = append(listToHash, round.save.PaillierPKs[j].N, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j])
+			listToHash = append(listToHash, round.save.PaillierPKs[j].N, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.r2msgAs[j].X(), round.temp.r2msgAs[j].Y(), round.temp.r2msgRids[j], round.temp.r2msgCmtRandomness[j])
 			VjHash := common.SHA512_256i(listToHash...)
 			if VjHash.Cmp(round.temp.r1msgVHashs[j]) != 0 {
 				errChs <- round.WrapError(errors.New("verify hash failed"), Pj)
@@ -68,14 +67,14 @@ func (round *round3) Start() *tss.Error {
 	}
 
 	// Fig 5. Round 3.2 / Fig 6. Round 3.2
-	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), big.NewInt(1))
-	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), big.NewInt(1))
-	proofMod, err := zkpmod.NewProof(round.save.NTildei, SP, SQ)
+	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
+	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
+	proofMod, err := zkpmod.NewProof([]byte("TODO"), round.save.NTildei, SP, SQ)
 	if err != nil {
 		return round.WrapError(errors.New("create proofmod failed"))
 	}
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
-	proofPrm, err := zkpprm.NewProof(round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
+	proofPrm, err := zkpprm.NewProof([]byte("TODO"), round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"))
 	}
