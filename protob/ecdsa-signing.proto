@@ -8,53 +8,17 @@ syntax = "proto3";
 package binance.tsslib.ecdsa.signing;
 option go_package = "ecdsa/signing";
 
-/*
- * Represents a P2P message sent to each party during Round 1 of the ECDSA TSS signing protocol.
- */
-message PreSignRound1Message {
-    bytes K = 1;
-    bytes G = 2;
-    repeated bytes EncProof = 3;
-}
-
-/*
- * Represents a P2P message sent to each party during Round 2 of the ECDSA TSS signing protocol.
- */
-message PreSignRound2Message {
-    repeated bytes BigGammaShare = 1;
-    bytes DjiDelta = 2;
-    bytes FjiDelta = 3;
-    bytes DjiChi = 4;
-    bytes FjiChi = 5;
-    repeated bytes AffgProofDelta = 6;
-    repeated bytes AffgProofChi = 7;
-    repeated bytes LogstarProof = 8;
-}
-
-/*
- * Represents a P2P message sent to all parties during Round 3 of the ECDSA TSS signing protocol.
- */
-message PreSignRound3Message {
-    bytes DeltaShare = 1;
-    repeated bytes BigDeltaShare = 2;
-    repeated bytes ProofLogstar = 3;
-}
 
 /*
  * Represents a BROADCAST message sent to all parties during Round 4 of the ECDSA TSS signing protocol.
  */
-message SignRound4Message {
+message SignRoundMessage {
     bytes SigmaShare = 1;
 }
 
-message IdentificationRound6Message {
+message IdentificationRoundMessage {
     bytes H = 1;
     repeated bytes MulProof = 2;
     bytes DeltaShareEnc = 3;
     repeated bytes DecProof = 4;
-}
-
-message TempDataDumpMessage {
-    bytes DataDump = 1;
-    int32 RoundNum = 2;
 }

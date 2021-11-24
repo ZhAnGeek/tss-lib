@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package signing
+package presigning
 
 import (
 	"errors"
@@ -19,7 +19,6 @@ import (
 	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
 	zkpmul "github.com/binance-chain/tss-lib/crypto/zkp/mul"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -33,84 +32,81 @@ type (
 		*tss.BaseParty
 		params *tss.Parameters
 
-		keys    keygen.LocalPartySaveData
-		temp    localTempData
-		predata *presigning.PreSignatureData
-		data    common.SignatureData
+		keys keygen.LocalPartySaveData
+		temp localTempData
 
 		// outbound messaging
-		out         chan<- tss.Message
-		end         chan<- common.SignatureData
+		out chan<- tss.Message
+		end chan<- PreSignatureData
 		startRndNum int
 	}
 
 	localTempData struct {
 		// temp data (thrown away after sign) / round 1
-		ssid   []byte
-		w      *big.Int
-		BigWs  []*crypto.ECPoint
-		KShare *big.Int
-
-		BigGammaShare      *crypto.ECPoint
-		K                  *big.Int
-		G                  *big.Int
-		KNonce             *big.Int
-		GNonce             *big.Int
-		keyDerivationDelta *big.Int
+		ssid                []byte
+		w                   *big.Int
+		BigWs               []*crypto.ECPoint
+		KShare              *big.Int
+		
+		BigGammaShare       *crypto.ECPoint
+		K                   *big.Int
+		G                   *big.Int
+		KNonce              *big.Int
+		GNonce              *big.Int
+		keyDerivationDelta  *big.Int
 
 		// round 2
-		GammaShare      *big.Int
-		DeltaShareBetas []*big.Int
-		ChiShareBetas   []*big.Int
-		DeltaMtAF       *big.Int
-		ChiMtAF         *big.Int
+		GammaShare          *big.Int
+		DeltaShareBetas     []*big.Int
+		ChiShareBetas       []*big.Int
+		DeltaMtAF           *big.Int
+		ChiMtAF             *big.Int
 
 		// round 3
-		BigGamma         *crypto.ECPoint
-		DeltaShareAlphas []*big.Int
-		ChiShareAlphas   []*big.Int
-		DeltaShare       *big.Int
-		ChiShare         *big.Int
-		BigDeltaShare    *crypto.ECPoint
+		BigGamma            *crypto.ECPoint
+		DeltaShareAlphas    []*big.Int
+		ChiShareAlphas      []*big.Int
+		DeltaShare          *big.Int
+		ChiShare            *big.Int
+		BigDeltaShare       *crypto.ECPoint
 
 		// round 4
-		m          *big.Int
-		BigR       *crypto.ECPoint
-		Rx         *big.Int
-		SigmaShare *big.Int
+		m                   *big.Int
+		BigR                *crypto.ECPoint
+		Rx                  *big.Int
+		SigmaShare          *big.Int
 
 		// msg store
-		r1msgG             []*big.Int
-		r1msgK             []*big.Int
-		r1msgProof         []*zkpenc.ProofEnc
-		r2msgBigGammaShare []*crypto.ECPoint
-		r2msgDeltaD        []*big.Int
-		r2msgDeltaF        []*big.Int
-		r2msgDeltaProof    []*zkpaffg.ProofAffg
-		r2msgChiD          []*big.Int
-		r2msgChiF          []*big.Int
-		r2msgChiProof      []*zkpaffg.ProofAffg
-		r2msgProofLogstar  []*zkplogstar.ProofLogstar
-		r3msgDeltaShare    []*big.Int
-		r3msgBigDeltaShare []*crypto.ECPoint
-		r3msgProofLogstar  []*zkplogstar.ProofLogstar
-		r4msgSigmaShare    []*big.Int
+		r1msgG              []*big.Int
+		r1msgK              []*big.Int
+		r1msgProof          []*zkpenc.ProofEnc
+		r2msgBigGammaShare  []*crypto.ECPoint
+		r2msgDeltaD         []*big.Int
+		r2msgDeltaF         []*big.Int
+		r2msgDeltaProof     []*zkpaffg.ProofAffg
+		r2msgChiD           []*big.Int
+		r2msgChiF           []*big.Int
+		r2msgChiProof       []*zkpaffg.ProofAffg
+		r2msgProofLogstar   []*zkplogstar.ProofLogstar
+		r3msgDeltaShare     []*big.Int
+		r3msgBigDeltaShare  []*crypto.ECPoint
+		r3msgProofLogstar   []*zkplogstar.ProofLogstar
+		r4msgSigmaShare     []*big.Int
 		// for identification
-		r6msgH             []*big.Int
-		r6msgProofMul      []*zkpmul.ProofMul
-		r6msgDeltaShareEnc []*big.Int
-		r6msgProofDec      []*zkpdec.ProofDec
+		r6msgH              []*big.Int
+		r6msgProofMul       []*zkpmul.ProofMul
+		r6msgDeltaShareEnc  []*big.Int
+		r6msgProofDec       []*zkpdec.ProofDec
 	}
 )
 
 func NewLocalParty(
-	predata *presigning.PreSignatureData,
 	msg *big.Int,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
-	end chan<- common.SignatureData,
+	end chan<- PreSignatureData,
 	startRndNums ...int,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
@@ -119,7 +115,6 @@ func NewLocalParty(
 		params:    params,
 		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
 		temp:      localTempData{},
-		data:      common.SignatureData{},
 		out:       out,
 		end:       end,
 	}
@@ -158,15 +153,12 @@ func NewLocalParty(
 	p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)
 	p.temp.r6msgProofDec = make([]*zkpdec.ProofDec, partyCount)
 
-	// predata
-	p.predata = predata
-
 	return p
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
-	newRound := []interface{}{newRound1, newRound2}
-	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *presigning.PreSignatureData, *common.SignatureData, *localTempData, chan<- tss.Message, chan<- common.SignatureData) tss.Round)(p.params, &p.keys, p.predata, &p.data, &p.temp, p.out, p.end)
+	newRound := []interface{}{newRound1, newRound2, newRound3}
+	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- PreSignatureData) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end)
 }
 
 func (p *LocalParty) SetTempData(tempNew localTempData) {
@@ -176,7 +168,7 @@ func (p *LocalParty) SetTempData(tempNew localTempData) {
 func (p *LocalParty) Start() *tss.Error {
 	if p.startRndNum == 1 {
 		return tss.BaseStart(p, TaskName, func(round tss.Round) *tss.Error {
-			round1, ok := round.(*sign)
+			round1, ok := round.(*presign1)
 			if !ok {
 				return round.WrapError(errors.New("unable to Start(). party is in an unexpected round"))
 			}
@@ -223,11 +215,54 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// switch/case is necessary to store any messages beyond current round
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
-	case *SignRoundMessage:
-		r4msg := msg.Content().(*SignRoundMessage)
+	case *PreSignRound1Message:
+		r1msg := msg.Content().(*PreSignRound1Message)
+		p.temp.r1msgG[fromPIdx] = r1msg.UnmarshalG()
+		p.temp.r1msgK[fromPIdx] = r1msg.UnmarshalK()
+		Proof, err := r1msg.UnmarshalEncProof()
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.r1msgProof[fromPIdx] = Proof
+	case *PreSignRound2Message:
+		r2msg := msg.Content().(*PreSignRound2Message)
+		BigGammaShare, err := r2msg.UnmarshalBigGammaShare(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.r2msgBigGammaShare[fromPIdx] = BigGammaShare
+		p.temp.r2msgDeltaD[fromPIdx] = r2msg.UnmarshalDjiDelta()
+		p.temp.r2msgDeltaF[fromPIdx] = r2msg.UnmarshalFjiDelta()
+		proofDelta, err := r2msg.UnmarshalAffgProofDelta(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.r2msgDeltaProof[fromPIdx] = proofDelta
+		p.temp.r2msgChiD[fromPIdx] = r2msg.UnmarshalDjiChi()
+		p.temp.r2msgChiF[fromPIdx] = r2msg.UnmarshalFjiChi()
+		proofChi, err := r2msg.UnmarshalAffgProofChi(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.r2msgChiProof[fromPIdx] = proofChi
+	case *PreSignRound3Message:
+		r3msg := msg.Content().(*PreSignRound3Message)
+		p.temp.r3msgDeltaShare[fromPIdx] = r3msg.UnmarshalDeltaShare()
+		BigDeltaShare, err := r3msg.UnmarshalBigDeltaShare(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.r3msgBigDeltaShare[fromPIdx] = BigDeltaShare
+		proofLogStar, err := r3msg.UnmarshalProofLogstar(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.r3msgProofLogstar[fromPIdx] = proofLogStar
+	case *SignRound4Message:
+		r4msg := msg.Content().(*SignRound4Message)
 		p.temp.r4msgSigmaShare[fromPIdx] = r4msg.UnmarshalSigmaShare()
-	case *IdentificationRoundMessage:
-		r6msg := msg.Content().(*IdentificationRoundMessage)
+	case *IdentificationRound6Message:
+		r6msg := msg.Content().(*IdentificationRound6Message)
 		p.temp.r6msgH[fromPIdx] = r6msg.UnmarshalH()
 		p.temp.r6msgDeltaShareEnc[fromPIdx] = r6msg.UnmarshalDeltaShareEnc()
 		proofMul, err := r6msg.UnmarshalProofMul()

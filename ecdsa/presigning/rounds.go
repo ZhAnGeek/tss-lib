@@ -4,53 +4,47 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package signing
+package presigning
 
 import (
-	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
 const (
-	TaskName = "signing"
+	TaskName = "presigning"
 )
 
 type (
 	base struct {
 		*tss.Parameters
 		key     *keygen.LocalPartySaveData
-		predata *presigning.PreSignatureData
-		data    *common.SignatureData
 		temp    *localTempData
 		out     chan<- tss.Message
-		end     chan<- common.SignatureData
+		end     chan<- PreSignatureData
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int
 	}
-	sign struct {
+	presign1 struct {
 		*base
 	}
-	signout struct {
-		*sign
+	presign2 struct {
+		*presign1
 	}
-
-	// identification rounds
-	identification6 struct {
-		*sign
+	presign3 struct {
+		*presign2
 	}
-	identification7 struct {
-		*identification6
+	presignout struct {
+		*presign3
 	}
 )
 
 var (
-	_ tss.Round = (*sign)(nil)
-	_ tss.Round = (*signout)(nil)
-	_ tss.Round = (*identification6)(nil)
-	_ tss.Round = (*identification7)(nil)
+	_ tss.Round = (*presign1)(nil)
+	_ tss.Round = (*presign2)(nil)
+	_ tss.Round = (*presign3)(nil)
+	_ tss.Round = (*presignout)(nil)
 )
 
 // ----- //
@@ -100,4 +94,9 @@ func (round *base) resetOK() {
 	for j := range round.ok {
 		round.ok[j] = false
 	}
+}
+
+func (round *base) Dump(dumpCh chan tss.ParsedMessage) {
+	DumpMsg := NewTempDataDumpMessage(round.PartyID(), *round.temp, round.number)
+	dumpCh <- DumpMsg
 }

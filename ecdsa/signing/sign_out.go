@@ -16,6 +16,7 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -30,16 +31,16 @@ func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK 
 	return R2.Equals(R)
 }
 
-func newRound5(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
-	return &signout{&sign4{&presign3{&presign2{&presign1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 5}}}}}}
+func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
+	return &signout{&sign{
+		&base{params, key, predata, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 2}}}
 }
 
 func (round *signout) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
-	round.number = 5
+	round.number = 2
 	round.started = true
 	round.resetOK()
 

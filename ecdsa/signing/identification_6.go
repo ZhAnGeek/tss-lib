@@ -14,19 +14,20 @@ import (
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
 	zkpmul "github.com/binance-chain/tss-lib/crypto/zkp/mul"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-func newRound6(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
-	return &identification6{&sign4{&presign3{&presign2{&presign1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 3}}}}}}
+func newRound6(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
+	return &identification6{&sign{
+		&base{params, key, predata, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 3}}}
 }
 
 func (round *identification6) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
-	round.number = 6
+	round.number = 3
 	round.started = true
 	round.resetOK()
 
@@ -52,7 +53,7 @@ func (round *identification6) Start() *tss.Error {
 		}
 		proofDeltaShare, _ := zkpdec.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.DeltaShare, round.temp.GNonce)
 		
-		r6msg := NewIdentificationRound6Message(Pj, round.PartyID(), H, proofH, DeltaShareEnc, proofDeltaShare)
+		r6msg := NewIdentificationRoundMessage(Pj, round.PartyID(), H, proofH, DeltaShareEnc, proofDeltaShare)
 		round.out <- r6msg
 	}
 
@@ -73,7 +74,7 @@ func (round *identification6) Update() (bool, *tss.Error) {
 }
 
 func (round *identification6) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*IdentificationRound6Message); ok {
+	if _, ok := msg.Content().(*IdentificationRoundMessage); ok {
 		return !msg.IsBroadcast()
 	}
 	return false

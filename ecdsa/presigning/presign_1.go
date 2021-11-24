@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package signing
+package presigning
 
 import (
 	"errors"
@@ -23,9 +23,9 @@ var (
 	zero = big.NewInt(0)
 )
 
-func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
+func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- PreSignatureData) tss.Round {
 	return &presign1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, key, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
 func (round *presign1) Start() *tss.Error {

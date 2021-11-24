@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package signing
+package presigning
 
 import (
 	"errors"
@@ -18,9 +18,9 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
+func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- PreSignatureData) tss.Round {
 	return &presign3{&presign2{&presign1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 3}}}}
+		&base{params, key, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 3}}}}
 }
 
 func (round *presign3) Start() *tss.Error {
@@ -212,5 +212,5 @@ func (round *presign3) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *presign3) NextRound() tss.Round {
 	round.started = false
-	return &sign4{round}
+	return &presignout{round}
 }
