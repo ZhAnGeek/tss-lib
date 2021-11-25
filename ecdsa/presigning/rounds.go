@@ -21,7 +21,7 @@ type (
 		key     *keygen.LocalPartySaveData
 		temp    *localTempData
 		out     chan<- tss.Message
-		end     chan<- PreSignatureData
+		end     chan<- *PreSignatureData
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int
@@ -94,9 +94,4 @@ func (round *base) resetOK() {
 	for j := range round.ok {
 		round.ok[j] = false
 	}
-}
-
-func (round *base) Dump(dumpCh chan tss.ParsedMessage) {
-	DumpMsg := NewTempDataDumpMessage(round.PartyID(), *round.temp, round.number)
-	dumpCh <- DumpMsg
 }

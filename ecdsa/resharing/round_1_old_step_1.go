@@ -16,7 +16,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/ecdsa/signing"
+	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -63,7 +63,7 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks)), round.PartyID())
 	}
 	newKs := round.NewParties().IDs().Keys()
-	wi, _ := signing.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks, bigXj)
+	wi, _ := presigning.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks, bigXj)
 
 	// 2.
 	vi, shares, err := vss.Create(round.Params().EC(), round.NewThreshold(), wi, newKs)

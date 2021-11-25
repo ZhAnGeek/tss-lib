@@ -23,7 +23,7 @@ var (
 	zero = big.NewInt(0)
 )
 
-func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- PreSignatureData) tss.Round {
+func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData) tss.Round {
 	return &presign1{
 		&base{params, key, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }

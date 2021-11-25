@@ -37,7 +37,7 @@ type (
 
 		// outbound messaging
 		out chan<- tss.Message
-		end chan<- PreSignatureData
+		end chan<- *PreSignatureData
 		startRndNum int
 	}
 
@@ -71,7 +71,6 @@ type (
 		BigDeltaShare       *crypto.ECPoint
 
 		// round 4
-		m                   *big.Int
 		BigR                *crypto.ECPoint
 		Rx                  *big.Int
 		SigmaShare          *big.Int
@@ -101,12 +100,11 @@ type (
 )
 
 func NewLocalParty(
-	msg *big.Int,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
-	end chan<- PreSignatureData,
+	end chan<- *PreSignatureData,
 	startRndNums ...int,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
@@ -125,7 +123,6 @@ func NewLocalParty(
 	}
 	// temp data init
 	p.temp.keyDerivationDelta = keyDerivationDelta
-	p.temp.m = msg
 	p.temp.BigWs = make([]*crypto.ECPoint, partyCount)
 	p.temp.DeltaShareBetas = make([]*big.Int, partyCount)
 	p.temp.ChiShareBetas = make([]*big.Int, partyCount)
@@ -158,7 +155,7 @@ func NewLocalParty(
 
 func (p *LocalParty) FirstRound() tss.Round {
 	newRound := []interface{}{newRound1, newRound2, newRound3}
-	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- PreSignatureData) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end)
+	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end)
 }
 
 func (p *LocalParty) SetTempData(tempNew localTempData) {
@@ -258,9 +255,6 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.r3msgProofLogstar[fromPIdx] = proofLogStar
-	case *SignRound4Message:
-		r4msg := msg.Content().(*SignRound4Message)
-		p.temp.r4msgSigmaShare[fromPIdx] = r4msg.UnmarshalSigmaShare()
 	case *IdentificationRound6Message:
 		r6msg := msg.Content().(*IdentificationRound6Message)
 		p.temp.r6msgH[fromPIdx] = r6msg.UnmarshalH()

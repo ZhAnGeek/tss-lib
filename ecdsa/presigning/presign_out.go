@@ -112,9 +112,6 @@ func (round *presignout) Update() (bool, *tss.Error) {
 }
 
 func (round *presignout) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*SignRound4Message); ok {
-		return msg.IsBroadcast()
-	}
 	return false
 }
 

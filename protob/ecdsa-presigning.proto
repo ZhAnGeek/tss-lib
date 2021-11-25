@@ -40,13 +40,6 @@ message PreSignRound3Message {
     repeated bytes ProofLogstar = 3;
 }
 
-/*
- * Represents a BROADCAST message sent to all parties during Round 4 of the ECDSA TSS signing protocol.
- */
-message SignRound4Message {
-    bytes SigmaShare = 1;
-}
-
 message IdentificationRound6Message {
     bytes H = 1;
     repeated bytes MulProof = 2;
@@ -63,9 +56,4 @@ message IdentificationRound6Message {
     repeated bytes bigR = 3;
     bytes kShare = 4;
     bytes chiShare = 5;
-}
-
-message TempDataDumpMessage {
-    bytes DataDump = 1;
-    int32 RoundNum = 2;
 }

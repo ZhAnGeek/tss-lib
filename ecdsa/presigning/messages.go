@@ -7,9 +7,7 @@
 package presigning
 
 import (
-	"bytes"
 	"crypto/elliptic"
-	"encoding/gob"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -31,7 +29,7 @@ var (
 		(*PreSignRound1Message)(nil),
 		(*PreSignRound2Message)(nil),
 		(*PreSignRound3Message)(nil),
-		(*SignRound4Message)(nil),
+		(*IdentificationRound6Message)(nil),
 	}
 )
 
@@ -42,9 +40,9 @@ func NewPreSignData(
 	bigR *crypto.ECPoint,
 	kShare *big.Int,
 	chiShare *big.Int,
-) PreSignatureData {
+) *PreSignatureData {
 	bigRBzs := bigR.Bytes()
-	content := PreSignatureData{
+	content := &PreSignatureData{
 		Index:    int32(index),
 		Ssid:     ssid,
 		BigR:     bigRBzs[:],
@@ -239,32 +237,6 @@ func (m *PreSignRound3Message) UnmarshalProofLogstar(ec elliptic.Curve) (*zkplog
 
 // ----- //
 
-func NewSignRound4Message(
-	from *tss.PartyID,
-	SigmaShare *big.Int,
-) tss.ParsedMessage {
-	meta := tss.MessageRouting{
-		From:        from,
-		IsBroadcast: true,
-	}
-	content := &SignRound4Message{
-		SigmaShare: SigmaShare.Bytes(),
-	}
-	msg := tss.NewMessageWrapper(meta, content)
-	return tss.NewMessage(meta, content, msg)
-}
-
-func (m *SignRound4Message) ValidateBasic() bool {
-	return m != nil &&
-		common.NonEmptyBytes(m.SigmaShare)
-}
-
-func (m *SignRound4Message) UnmarshalSigmaShare() *big.Int {
-	return new(big.Int).SetBytes(m.GetSigmaShare())
-}
-
-// ----- //
-
 func NewIdentificationRound6Message(
 	to, from *tss.PartyID,
 	H *big.Int,
@@ -311,41 +283,4 @@ func (m *IdentificationRound6Message) UnmarshalProofMul() (*zkpmul.ProofMul, err
 
 func (m *IdentificationRound6Message) UnmarshalProofDec() (*zkpdec.ProofDec, error) {
 	return zkpdec.NewProofFromBytes(m.GetDecProof())
-}
-
-// ----- //
-
-func NewTempDataDumpMessage(
-	from *tss.PartyID,
-	tempDump localTempData,
-	roundNum int,
-) tss.ParsedMessage {
-	meta := tss.MessageRouting{
-		From:        from,
-		IsBroadcast: false,
-	}
-	var buffer bytes.Buffer
-	dataEnc := gob.NewEncoder(&buffer)
-	err := dataEnc.Encode(tempDump)
-	if err != nil {
-		return nil
-	}
-	content := &TempDataDumpMessage{
-		DataDump: buffer.Bytes(),
-		RoundNum: int32(roundNum),
-	}
-	msg := tss.NewMessageWrapper(meta, content)
-	return tss.NewMessage(meta, content, msg)
-}
-
-func (m *TempDataDumpMessage) ValidateBasic() bool {
-	return m != nil &&
-		common.NonEmptyBytes(m.DataDump)
-}
-
-func (m *TempDataDumpMessage) UnmarshalTempDump() localTempData {
-	dataDec := gob.NewDecoder(bytes.NewReader(m.GetDataDump()))
-	var tempData localTempData
-	dataDec.Decode(&tempData)
-	return tempData
 }
