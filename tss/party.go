@@ -98,7 +98,6 @@ func (p *BaseParty) round() Round {
 }
 
 func (p *BaseParty) advance() {
-	fmt.Println("round advance &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 	p.rnd = p.rnd.NextRound()
 }
 

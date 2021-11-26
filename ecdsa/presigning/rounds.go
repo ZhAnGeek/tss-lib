@@ -7,8 +7,6 @@
 package presigning
 
 import (
-	"fmt"
-
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -70,16 +68,13 @@ func (round *base) RoundNumber() int {
 // CanProceed is inherited by other rounds
 func (round *base) CanProceed() bool {
 	if !round.started {
-		fmt.Println("XXXXXXXXXXXXXXXXXX can't procceed beacuse round not started")
 		return false
 	}
 	for _, ok := range round.ok {
 		if !ok {
-			fmt.Println("XXXXXXXXXXXXXXXXXX can't procceed because round not ok")
 			return false
 		}
 	}
-	fmt.Println("YYYYYYYYYYYYYYYYY can procceed")
 	return true
 }
 

@@ -8,7 +8,6 @@ package presigning
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 	"sync"
 
@@ -24,7 +23,6 @@ func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 }
 
 func (round *presign2) Start() *tss.Error {
-	fmt.Println("******************************** presign2 started", round.PartyID())
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -148,13 +146,12 @@ func (round *presign2) Start() *tss.Error {
 	///round.temp.R1msgProof = nil
 
 	du := &LocalDump{
-		Temp: round.temp,
+		Temp:     round.temp,
 		RoundNum: round.number,
-		Index: i,
+		Index:    i,
 	}
 
 	round.dump <- du
-	fmt.Println("******************************** presign2 finished", round.PartyID())
 
 	return nil
 }
