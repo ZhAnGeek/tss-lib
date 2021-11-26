@@ -90,10 +90,10 @@ func (round *presignout) Start() *tss.Error {
 
 
 	// retire unused variables
-	round.temp.r1msgK = nil
-	round.temp.r3msgBigDeltaShare = nil
-	round.temp.r3msgDeltaShare = nil
-	round.temp.r3msgProofLogstar = nil
+	///round.temp.R1msgK = nil
+	///round.temp.R3msgBigDeltaShare = nil
+	///round.temp.R3msgDeltaShare = nil
+	///round.temp.R3msgProofLogstar = nil
 
 	return nil
 }

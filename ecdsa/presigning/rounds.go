@@ -7,6 +7,8 @@
 package presigning
 
 import (
+	"fmt"
+
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -22,6 +24,7 @@ type (
 		temp    *localTempData
 		out     chan<- tss.Message
 		end     chan<- *PreSignatureData
+		dump    chan<- *LocalDump
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int
@@ -48,6 +51,13 @@ var (
 )
 
 // ----- //
+func (round *base) SetStarted() {
+	round.started = true
+	round.resetOK()
+
+	i := round.PartyID().Index
+	round.ok[i] = true
+}
 
 func (round *base) Params() *tss.Parameters {
 	return round.Parameters
@@ -60,13 +70,16 @@ func (round *base) RoundNumber() int {
 // CanProceed is inherited by other rounds
 func (round *base) CanProceed() bool {
 	if !round.started {
+		fmt.Println("XXXXXXXXXXXXXXXXXX can't procceed beacuse round not started")
 		return false
 	}
 	for _, ok := range round.ok {
 		if !ok {
+			fmt.Println("XXXXXXXXXXXXXXXXXX can't procceed because round not ok")
 			return false
 		}
 	}
+	fmt.Println("YYYYYYYYYYYYYYYYY can procceed")
 	return true
 }
 

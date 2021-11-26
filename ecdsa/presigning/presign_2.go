@@ -8,6 +8,7 @@ package presigning
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -17,12 +18,13 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData) tss.Round {
+func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDump) tss.Round {
 	return &presign2{&presign1{
-		&base{params, key, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 2}}}
+		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 2}}}
 }
 
 func (round *presign2) Start() *tss.Error {
+	fmt.Println("******************************** presign2 started", round.PartyID())
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -141,9 +143,18 @@ func (round *presign2) Start() *tss.Error {
 
 	round.temp.BigGammaShare = BigGammaShare
 	// retire unused variables
-	round.temp.G = nil
-	round.temp.GNonce = nil
-	round.temp.r1msgProof = nil
+	///round.temp.G = nil
+	///round.temp.GNonce = nil
+	///round.temp.R1msgProof = nil
+
+	du := &LocalDump{
+		Temp: round.temp,
+		RoundNum: round.number,
+		Index: i,
+	}
+
+	round.dump <- du
+	fmt.Println("******************************** presign2 finished", round.PartyID())
 
 	return nil
 }

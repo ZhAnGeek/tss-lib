@@ -38,6 +38,7 @@ type (
 		// outbound messaging
 		out chan<- tss.Message
 		end chan<- *PreSignatureData
+		dump chan<- *LocalDump
 		startRndNum int
 	}
 
@@ -97,7 +98,14 @@ type (
 		r6msgDeltaShareEnc  []*big.Int
 		r6msgProofDec       []*zkpdec.ProofDec
 	}
+
+	LocalDump struct {
+		Temp *localTempData
+		RoundNum int
+		Index int
+	}
 )
+
 
 func NewLocalParty(
 	params *tss.Parameters,
@@ -105,7 +113,7 @@ func NewLocalParty(
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- *PreSignatureData,
-	startRndNums ...int,
+	dump chan<- *LocalDump,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
@@ -115,12 +123,9 @@ func NewLocalParty(
 		temp:      localTempData{},
 		out:       out,
 		end:       end,
+		dump:      dump,
 	}
-	if len(startRndNums) > 0 {
-		p.startRndNum = startRndNums[0]
-	} else {
-		p.startRndNum = 1
-	}
+	p.startRndNum = 1
 	// temp data init
 	p.temp.keyDerivationDelta = keyDerivationDelta
 	p.temp.BigWs = make([]*crypto.ECPoint, partyCount)
@@ -153,9 +158,43 @@ func NewLocalParty(
 	return p
 }
 
+func RestoreLocalParty(
+	params *tss.Parameters,
+	key keygen.LocalPartySaveData,
+	keyDerivationDelta *big.Int,
+	du *LocalDump,
+	out chan<- tss.Message,
+	end chan<- *PreSignatureData,
+	dump chan<- *LocalDump,
+	startRndNum int,
+) (tss.Party, *tss.Error) {
+	//partyCount := len(params.Parties().IDs())
+	p := &LocalParty{
+		BaseParty: new(tss.BaseParty),
+		params:    params,
+		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		temp:      localTempData{},
+		out:       out,
+		end:       end,
+		dump:      dump,
+	}
+	p.startRndNum = startRndNum
+	// temp data init
+	p.temp = *du.Temp
+	//p.temp.keyDerivationDelta = du.Temp.keyDerivationDelta
+
+	//newRound := []interface{}{newRound1, newRound2, newRound3}
+	//toRnd := newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData, chan<- *LocalDump) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end, p.dump)
+	err := tss.BaseRestore(p, TaskName)
+	if err != nil {
+		return nil, err
+	}
+	return p, nil
+}
+
 func (p *LocalParty) FirstRound() tss.Round {
 	newRound := []interface{}{newRound1, newRound2, newRound3}
-	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end)
+	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData, chan<- *LocalDump) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end, p.dump)
 }
 
 func (p *LocalParty) SetTempData(tempNew localTempData) {
@@ -179,7 +218,7 @@ func (p *LocalParty) Start() *tss.Error {
 }
 
 func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(p, msg, TaskName)
+	return tss.BaseUpdate(p, msg, TaskName) // TODO ##############################
 }
 
 func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {

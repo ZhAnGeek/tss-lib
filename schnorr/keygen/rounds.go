@@ -36,6 +36,22 @@ type (
 	}
 )
 
+var (
+	_ tss.Round = (*round1)(nil)
+	_ tss.Round = (*round2)(nil)
+	_ tss.Round = (*round3)(nil)
+)
+
+// ----- //
+
+func (round *base) SetStarted() {
+	round.started = true
+	round.resetOK()
+
+	i := round.PartyID().Index
+	round.ok[i] = true
+}
+
 func (round *base) Params() *tss.Parameters {
 	return round.Parameters
 }

@@ -98,6 +98,7 @@ func (p *BaseParty) round() Round {
 }
 
 func (p *BaseParty) advance() {
+	fmt.Println("round advance &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&")
 	p.rnd = p.rnd.NextRound()
 }
 
@@ -137,6 +138,24 @@ func BaseStart(p Party, task string, prepare ...func(Round) *Error) *Error {
 		common.Logger.Debugf("party %s: %s round %d finished", p.round().Params().PartyID(), task, 1)
 	}()
 	return p.round().Start()
+}
+
+func BaseRestore(p Party, task string) *Error {
+	p.lock()
+	defer p.unlock()
+	if p.PartyID() == nil || !p.PartyID().ValidateBasic() {
+		return p.WrapError(fmt.Errorf("could not restore. this party has an invalid PartyID: %+v", p.PartyID()))
+	}
+	if p.round() != nil {
+		return p.WrapError(errors.New("could not restore. this party is in an unexpected state. use the constructor and Start()"))
+	}
+	round := p.FirstRound()
+	err := p.setRound(round)
+	if err != nil {
+		return err
+	}
+	p.round().SetStarted()
+	return nil
 }
 
 // an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)

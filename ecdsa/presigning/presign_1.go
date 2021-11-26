@@ -23,9 +23,9 @@ var (
 	zero = big.NewInt(0)
 )
 
-func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData) tss.Round {
+func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDump) tss.Round {
 	return &presign1{
-		&base{params, key, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
 func (round *presign1) Start() *tss.Error {
@@ -103,7 +103,16 @@ func (round *presign1) Start() *tss.Error {
 	round.temp.KNonce = KNonce
 	round.temp.GNonce = GNonce
 	// retire unused variables
-	round.temp.keyDerivationDelta = nil
+	/// round.temp.KeyDerivationDelta = nil
+
+	du := &LocalDump{
+		Temp: round.temp,
+		RoundNum: round.number,
+		Index: i,
+	}
+
+	round.dump <- du
+
 	
 	return nil
 }

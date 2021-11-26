@@ -18,9 +18,9 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData) tss.Round {
+func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDump) tss.Round {
 	return &presign3{&presign2{&presign1{
-		&base{params, key, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 3}}}}
+		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 3}}}}
 }
 
 func (round *presign3) Start() *tss.Error {
@@ -168,24 +168,32 @@ func (round *presign3) Start() *tss.Error {
 	round.temp.BigDeltaShare = BigDeltaShare
 	round.temp.BigGamma = BigGamma
 	// retire unused variables
-	round.temp.w = nil
-	round.temp.BigWs = nil
-	round.temp.GammaShare = nil
-	round.temp.BigGammaShare = nil
-	round.temp.K = nil
-	round.temp.KNonce = nil
-	round.temp.DeltaShareBetas = nil
-	round.temp.ChiShareBetas = nil
-	round.temp.DeltaShareAlphas = nil
-	round.temp.ChiShareAlphas = nil
-	round.temp.r1msgG = nil
-	round.temp.r2msgDeltaD = nil
-	round.temp.r2msgDeltaF = nil
-	round.temp.r2msgChiD = nil
-	round.temp.r2msgChiF = nil
-	round.temp.r2msgDeltaProof = nil
-	round.temp.r2msgChiProof = nil
-	round.temp.r2msgProofLogstar = nil
+	///round.temp.w = nil
+	///round.temp.BigWs = nil
+	///round.temp.GammaShare = nil
+	///round.temp.BigGammaShare = nil
+	///round.temp.K = nil
+	///round.temp.KNonce = nil
+	///round.temp.DeltaShareBetas = nil
+	///round.temp.ChiShareBetas = nil
+	///round.temp.DeltaShareAlphas = nil
+	///round.temp.ChiShareAlphas = nil
+	///round.temp.R1msgG = nil
+	///round.temp.R2msgDeltaD = nil
+	///round.temp.R2msgDeltaF = nil
+	///round.temp.R2msgChiD = nil
+	///round.temp.R2msgChiF = nil
+	///round.temp.R2msgDeltaProof = nil
+	///round.temp.R2msgChiProof = nil
+	///round.temp.R2msgProofLogstar = nil
+
+	du := &LocalDump{
+		Temp: round.temp,
+		RoundNum: round.number,
+		Index: i,
+	}
+
+	round.dump <- du
 
 	return nil
 }

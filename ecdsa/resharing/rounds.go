@@ -53,6 +53,10 @@ var (
 )
 
 // ----- //
+func (round *base) SetStarted() {
+	round.started = true
+	// TODO: how to set round.(old/new)ok[]?
+}
 
 func (round *base) Params() *tss.Parameters {
 	return round.ReSharingParameters.Parameters

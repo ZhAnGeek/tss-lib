@@ -53,6 +53,7 @@ func TestE2EConcurrent(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan *PreSignatureData, len(signPIDs))
+	dumpCh := make(chan *LocalDump, len(signPIDs))
 
 	updater := test.SharedPartyUpdater
 
@@ -61,7 +62,7 @@ func TestE2EConcurrent(t *testing.T) {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
+		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh, dumpCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -77,6 +78,19 @@ presigning:
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
+		case du := <-dumpCh:
+			fmt.Println("#################### ", du.Index, du.RoundNum)
+			//i := du.Index
+			//params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+			//keyDerivationDelta := big.NewInt(0)
+			////newPi := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh, dumpCh).(*LocalParty)
+			//newPi, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, du, outCh, endCh, dumpCh)
+			//if err != nil {
+			//	common.Logger.Errorf("Error: %s", err)
+			//	assert.FailNow(t, err.Error())
+			//}
+			//parties[i] = newPi.(*LocalParty)
+			//go newPi.Start()
 		case err := <-errCh:
 			common.Logger.Errorf("Error: %s", err)
 			assert.FailNow(t, err.Error())
@@ -171,6 +185,205 @@ signing:
 	}
 }
 
+func TestR2RConcurrent(t *testing.T) {
+	setUp("info")
+	threshold := testThreshold
+
+	// PHASE: load keygen fixtures
+	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
+	assert.NoError(t, err, "should load keygen fixtures")
+	assert.Equal(t, testThreshold+1, len(keys))
+	assert.Equal(t, testThreshold+1, len(signPIDs))
+
+	// PHASE: presigning
+	// use a shuffled selection of the list of parties for this test
+	p2pCtx := tss.NewPeerContext(signPIDs)
+	parties_presign1 := make([]*LocalParty, 0, len(signPIDs))
+
+	errCh := make(chan *tss.Error, len(signPIDs)*10)
+	outCh := make(chan tss.Message, len(signPIDs)*10)
+	endCh := make(chan *PreSignatureData, len(signPIDs)*10)
+	dumpCh := make(chan *LocalDump, len(signPIDs)*10)
+
+	updater := test.SharedPartyUpdater
+
+	// init the parties
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+
+		keyDerivationDelta := big.NewInt(0)
+		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh, dumpCh).(*LocalParty)
+		parties_presign1 = append(parties_presign1, P)
+		go func(P *LocalParty) {
+			if err := P.Start(); err != nil {
+				errCh <- err
+			}
+		}(P)
+	}
+
+	r1msgs := make([]tss.Message, 0)
+	r1dumps := make([]*LocalDump, len(signPIDs))
+	var presign_1ended int32
+
+presign_1_loop:
+	for {
+		fmt.Printf("Presign1 select messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case du := <-dumpCh:
+			i := du.Index
+			r1dumps[i] = du
+			atomic.AddInt32(&presign_1ended, 1)
+			if atomic.LoadInt32(&presign_1ended) == int32(len(signPIDs)) {
+				t.Logf("Presign 1 all done. Received dump data from %d participants", presign_1ended)
+
+				goto presign_2
+			}
+		case err := <-errCh:
+			common.Logger.Errorf("Error: %s", err)
+			assert.FailNow(t, err.Error())
+			break presign_1_loop
+
+		case msg := <-outCh:
+			r1msgs = append(r1msgs, msg)
+		}
+	}
+presign_2:
+	//errCh = make(chan *tss.Error, len(signPIDs))
+	//outCh = make(chan tss.Message, len(signPIDs))
+	//endCh = make(chan *PreSignatureData, len(signPIDs))
+	//dumpCh = make(chan *LocalDump, len(signPIDs))
+
+	parties_presign1 = nil
+	parties_presign2 := make([]*LocalParty, 0, len(signPIDs))
+	// init the parties
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+
+		keyDerivationDelta := big.NewInt(0)
+		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r1dumps[i], outCh, endCh, dumpCh, 1)
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+		parties_presign2 = append(parties_presign2, P.(*LocalParty))
+	}
+
+	r2msgs := make([]tss.Message, 0) //, len(signPIDs)*(len(signPIDs)-1))
+	r2dumps := make([]*LocalDump, len(signPIDs))
+	var presign_2ended int32
+
+	// update by msg
+	for i, msg := range r1msgs {
+		fmt.Println("update by r1msgs", i, msg.GetFrom(), "=>", msg.GetTo())
+		dest := msg.GetTo()
+		if dest == nil {
+			for _, P := range parties_presign2 {
+				if P.PartyID().Index == msg.GetFrom().Index {
+					continue
+				}
+				go updater(P, msg, errCh)
+			}
+		} else {
+			if dest[0].Index == msg.GetFrom().Index {
+				t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+			}
+			go updater(parties_presign2[dest[0].Index], msg, errCh)
+		}
+
+	}
+presign_2_loop:
+	for {
+		fmt.Printf("Presign2 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case du := <-dumpCh:
+			i := du.Index
+			r2dumps[i] = du
+			atomic.AddInt32(&presign_2ended, 1)
+			if atomic.LoadInt32(&presign_2ended) == int32(len(signPIDs)) {
+				t.Logf("Presign 2 all done. Received dump data from %d participants", presign_2ended)
+
+				goto presign_3
+			}
+		case err := <-errCh:
+			common.Logger.Errorf("Error: %s", err)
+			assert.FailNow(t, err.Error())
+			break presign_2_loop
+
+		case msg := <-outCh:
+			//fmt.Println("presign2 received message", msg.GetFrom(), msg.GetTo())
+			r2msgs = append(r2msgs, msg)
+		}
+	}
+presign_3:
+	//errCh = make(chan *tss.Error, len(signPIDs))
+	//outCh = make(chan tss.Message, len(signPIDs))
+	//endCh = make(chan *PreSignatureData, len(signPIDs))
+	//dumpCh = make(chan *LocalDump, len(signPIDs))
+
+	parties_presign2 = nil
+	parties_presign3 := make([]*LocalParty, 0, len(signPIDs))
+	// init the parties
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+
+		keyDerivationDelta := big.NewInt(0)
+		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r2dumps[i], outCh, endCh, dumpCh, 2)
+		if err != nil {
+			assert.FailNow(t, err.Error())
+		}
+		parties_presign3 = append(parties_presign3, P.(*LocalParty))
+	}
+
+	r3msgs := make([]tss.Message, 0) //, len(signPIDs)*(len(signPIDs)-1))
+	r3dumps := make([]*LocalDump, len(signPIDs))
+	var presign_3ended int32
+
+	// update by msg
+	for i, msg := range r2msgs {
+		fmt.Println("update by r2msgs", i, msg.GetFrom(), "=>", msg.GetTo())
+		dest := msg.GetTo()
+		if dest == nil {
+			for _, P := range parties_presign3 {
+				if P.PartyID().Index == msg.GetFrom().Index {
+					continue
+				}
+				go updater(P, msg, errCh)
+			}
+		} else {
+			if dest[0].Index == msg.GetFrom().Index {
+				t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+			}
+			go updater(parties_presign3[dest[0].Index], msg, errCh)
+		}
+
+	}
+presign_3_loop:
+	for {
+		fmt.Printf("Presign3 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case du := <-dumpCh:
+			i := du.Index
+			r3dumps[i] = du
+			atomic.AddInt32(&presign_3ended, 1)
+			if atomic.LoadInt32(&presign_3ended) == int32(len(signPIDs)) {
+				t.Logf("Presign 3 all done. Received dump data from %d participants", presign_3ended)
+
+				goto presign_out
+			}
+		case err := <-errCh:
+			common.Logger.Errorf("Error: %s", err)
+			assert.FailNow(t, err.Error())
+			break presign_3_loop
+
+		case msg := <-outCh:
+			//fmt.Println("presign3 received message", msg.GetFrom(), msg.GetTo())
+			r3msgs = append(r3msgs, msg)
+		}
+	}
+presign_out:
+// setup parties_sign
+// update r3msgs
+}
+
 func TestE2EConcurrentWithHD(t *testing.T) {
 	setUp("info")
 	threshold := testThreshold
@@ -201,6 +414,7 @@ func TestE2EConcurrentWithHD(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan *PreSignatureData, len(signPIDs))
+	dumpCh := make(chan *LocalDump, len(signPIDs))
 
 	updater := test.SharedPartyUpdater
 
@@ -208,7 +422,7 @@ func TestE2EConcurrentWithHD(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
-		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
+		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh, dumpCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
