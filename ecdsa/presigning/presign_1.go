@@ -23,7 +23,7 @@ var (
 	zero = big.NewInt(0)
 )
 
-func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDump) tss.Round {
+func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
 	return &presign1{
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
@@ -43,17 +43,16 @@ func (round *presign1) Start() *tss.Error {
 
 	// Fig 7. Round 1. generate ssid
 	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().B, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
-	ssidList = append(ssidList, round.Parties().IDs().Keys()...) // parties
+	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                                                // parties
 	BigXjList, err := crypto.FlattenECPoints(round.key.BigXj)
 	if err != nil {
 		return round.WrapError(errors.New("read BigXj failed"), Pi)
 	}
-	ssidList = append(ssidList, BigXjList...) // BigXj
+	ssidList = append(ssidList, BigXjList...)         // BigXj
 	ssidList = append(ssidList, round.key.NTildej...) // NCap
-	ssidList = append(ssidList, round.key.H1j...) // s
-	ssidList = append(ssidList, round.key.H2j...) // t
+	ssidList = append(ssidList, round.key.H1j...)     // s
+	ssidList = append(ssidList, round.key.H2j...)     // t
 	ssid := common.SHA512_256i(ssidList...).Bytes()
-
 
 	// Fig 7. Round 1. sample k and gamma
 	KShare := common.GetRandomPositiveInt(round.EC().Params().N)
@@ -106,14 +105,14 @@ func (round *presign1) Start() *tss.Error {
 	/// round.temp.KeyDerivationDelta = nil
 
 	du := &LocalDump{
-		Temp: round.temp,
+		Temp:     round.temp,
 		RoundNum: round.number,
-		Index: i,
+		Index:    i,
 	}
+	duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
 
-	round.dump <- du
+	round.dump <- duPB
 
-	
 	return nil
 }
 

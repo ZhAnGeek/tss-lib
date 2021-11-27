@@ -57,3 +57,65 @@ message IdentificationRound6Message {
     bytes kShare = 4;
     bytes chiShare = 5;
 }
+
+
+/*
+ * Container for LocalDump
+ */
+ message LocalDumpPB {
+    int32 Index = 1;
+    int32 RoundNum = 2;
+
+    bytes LTssid = 3;
+    bytes LTw = 4;
+    repeated bytes LTBigWs = 5;
+    bytes LTKShare = 6;
+
+    repeated bytes LTBigGammaShare = 7;
+    bytes LTK = 8;
+    bytes LTG = 9;
+    bytes LTKNonce = 10;
+    bytes LTGNonce = 11;
+    bytes LTkeyDerivationDelta = 12;
+
+    bytes LTGammaShare = 13;
+    repeated bytes LTDeltaShareBetas = 14;
+    repeated bytes LTChiShareBetas = 15;
+    bytes LTDeltaMtAF = 16;
+    bytes LTChiMtAF = 17;
+
+    repeated bytes LTBigGamma = 18;
+    repeated bytes LTDeltaShareAlphas = 19;
+    repeated bytes LTChiShareAlphas = 20;
+    bytes LTDeltaShare = 21;
+    bytes LTChiShare = 22;
+    repeated bytes LTBigDeltaShare = 23;
+
+    repeated bytes LTBigR = 24;
+    bytes LTRx = 25;
+    bytes LTSigmaShare = 26;
+
+    repeated bytes LTr1msgG = 27;
+    repeated bytes LTr1msgK = 28;
+    repeated bytes LTr1msgProof = 29;
+
+    repeated bytes LTr2msgBigGammaShare = 30;
+    repeated bytes LTr2msgDeltaD = 31;
+    repeated bytes LTr2msgDeltaF = 32;
+    repeated bytes LTr2msgDeltaProof = 33;
+    repeated bytes LTr2msgChiD = 34;
+    repeated bytes LTr2msgChiF = 35;
+    repeated bytes LTr2msgChiProof = 36;
+    repeated bytes LTr2msgProofLogstar = 37;
+
+    repeated bytes LTr3msgDeltaShare = 38;
+    repeated bytes LTr3msgBigDeltaShare = 39;
+    repeated bytes LTr3msgProofLogstar = 40;
+
+    repeated bytes LTr4msgSigmaShare = 41;
+
+    repeated bytes LTr6msgH = 42;
+    repeated bytes LTr6msgProofMul = 43;
+    repeated bytes LTr6msgDeltaShareEnc = 44;
+    repeated bytes LTr6msgProofDec = 45;
+}

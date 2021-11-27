@@ -75,7 +75,10 @@ func NewKGRound2Message(
 		From:        from,
 		IsBroadcast: true,
 	}
-	vs_flat, _ := crypto.FlattenECPoints(vs)
+	vs_flat, err := crypto.FlattenECPoints(vs)
+	if err != nil {
+		return nil
+	}
 	vsbzs := make([][]byte, len(vs_flat))
 	for i, item := range(vs_flat) {
 		vsbzs[i] = item.Bytes()

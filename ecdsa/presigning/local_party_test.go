@@ -53,7 +53,7 @@ func TestE2EConcurrent(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan *PreSignatureData, len(signPIDs))
-	dumpCh := make(chan *LocalDump, len(signPIDs))
+	dumpCh := make(chan *LocalDumpPB, len(signPIDs))
 
 	updater := test.SharedPartyUpdater
 
@@ -192,7 +192,7 @@ func TestR2RConcurrent(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs)*10)
 	outCh := make(chan tss.Message, len(signPIDs)*10)
 	preSigCh := make(chan *PreSignatureData, len(signPIDs)*10)
-	dumpCh := make(chan *LocalDump, len(signPIDs)*10)
+	dumpCh := make(chan *LocalDumpPB, len(signPIDs)*10)
 
 	sigCh := make(chan common.SignatureData, len(signPIDs))
 
@@ -215,7 +215,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	r1msgs := make([]tss.Message, 0)
-	r1dumps := make([]*LocalDump, len(signPIDs))
+	r1dumps := make([]*LocalDumpPB, len(signPIDs))
 	var presign_1_ended int32
 
 presign_1_loop:
@@ -223,7 +223,8 @@ presign_1_loop:
 		//fmt.Printf("Presign1 select messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			i := du.Index
+			i := du.UnmarshalIndex()
+			//i := du.Index
 			r1dumps[i] = du
 			atomic.AddInt32(&presign_1_ended, 1)
 			fmt.Printf("Party%2d [presign 1]: done and status dumped \n", i)
@@ -251,7 +252,7 @@ presign_2:
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r1dumps[i], outCh, preSigCh, dumpCh, 1)
+		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r1dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -259,7 +260,7 @@ presign_2:
 	}
 
 	r2msgs := make([]tss.Message, 0)
-	r2dumps := make([]*LocalDump, len(signPIDs))
+	r2dumps := make([]*LocalDumpPB, len(signPIDs))
 	var presign_2_ended int32
 
 	// Consuming r1msgs
@@ -287,7 +288,8 @@ presign_2_loop:
 		//fmt.Printf("Presign2 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			i := du.Index
+			i := du.UnmarshalIndex()
+			//i := du.Index
 			r2dumps[i] = du
 			atomic.AddInt32(&presign_2_ended, 1)
 			fmt.Printf("Party%2d [presign 2]: done and status dumped \n", i)
@@ -316,7 +318,7 @@ presign_3:
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r2dumps[i], outCh, preSigCh, dumpCh, 2)
+		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r2dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -324,7 +326,7 @@ presign_3:
 	}
 
 	r3msgs := make([]tss.Message, 0) //, len(signPIDs)*(len(signPIDs)-1))
-	r3dumps := make([]*LocalDump, len(signPIDs))
+	r3dumps := make([]*LocalDumpPB, len(signPIDs))
 	var presign_3_ended int32
 
 	// Consuming r2msgs
@@ -352,7 +354,8 @@ presign_3_loop:
 		//fmt.Printf("Presign3 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			i := du.Index
+			i := du.UnmarshalIndex()
+			//i := du.Index
 			r3dumps[i] = du
 			atomic.AddInt32(&presign_3_ended, 1)
 			fmt.Printf("Party%2d [presign 3]: done and status dumped \n", i)
@@ -383,7 +386,7 @@ presign_out:
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
 		keyDerivationDelta := big.NewInt(0)
-		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r3dumps[i], outCh, preSigCh, dumpCh, 2)
+		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r3dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -393,7 +396,7 @@ presign_out:
 	preSigs := make([]*PreSignatureData, len(signPIDs))
 	var presign_out_ended int32
 
-	// Consuming r2msgs
+	// Consuming r3msgs
 	fmt.Printf("Parties consuming r3msgs and run... \n")
 	for i, msg := range r3msgs {
 		dest := msg.GetTo()
@@ -520,7 +523,7 @@ func TestE2EConcurrentWithHD(t *testing.T) {
 	errCh := make(chan *tss.Error, len(signPIDs))
 	outCh := make(chan tss.Message, len(signPIDs))
 	endCh := make(chan *PreSignatureData, len(signPIDs))
-	dumpCh := make(chan *LocalDump, len(signPIDs))
+	dumpCh := make(chan *LocalDumpPB, len(signPIDs))
 
 	updater := test.SharedPartyUpdater
 

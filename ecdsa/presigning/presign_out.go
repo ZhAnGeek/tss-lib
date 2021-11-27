@@ -88,7 +88,6 @@ func (round *presignout) Start() *tss.Error {
 	preSignData := NewPreSignData(i, round.temp.ssid, BigR, round.temp.KShare, round.temp.ChiShare)
 	round.end <- preSignData
 
-
 	// retire unused variables
 	///round.temp.R1msgK = nil
 	///round.temp.R3msgBigDeltaShare = nil

@@ -18,7 +18,7 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDump) tss.Round {
+func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
 	return &presign3{&presign2{&presign1{
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 3}}}}
 }
@@ -188,12 +188,13 @@ func (round *presign3) Start() *tss.Error {
 	///round.temp.R2msgProofLogstar = nil
 
 	du := &LocalDump{
-		Temp: round.temp,
+		Temp:     round.temp,
 		RoundNum: round.number,
-		Index: i,
+		Index:    i,
 	}
+	duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
 
-	round.dump <- du
+	round.dump <- duPB
 
 	return nil
 }

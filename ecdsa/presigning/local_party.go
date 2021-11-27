@@ -38,7 +38,7 @@ type (
 		// outbound messaging
 		out chan<- tss.Message
 		end chan<- *PreSignatureData
-		dump chan<- *LocalDump
+		dump chan<- *LocalDumpPB
 		startRndNum int
 	}
 
@@ -55,14 +55,12 @@ type (
 		KNonce              *big.Int
 		GNonce              *big.Int
 		keyDerivationDelta  *big.Int
-
 		// round 2
 		GammaShare          *big.Int
 		DeltaShareBetas     []*big.Int
 		ChiShareBetas       []*big.Int
 		DeltaMtAF           *big.Int
 		ChiMtAF             *big.Int
-
 		// round 3
 		BigGamma            *crypto.ECPoint
 		DeltaShareAlphas    []*big.Int
@@ -70,16 +68,15 @@ type (
 		DeltaShare          *big.Int
 		ChiShare            *big.Int
 		BigDeltaShare       *crypto.ECPoint
-
 		// round 4
 		BigR                *crypto.ECPoint
 		Rx                  *big.Int
 		SigmaShare          *big.Int
-
 		// msg store
 		r1msgG              []*big.Int
 		r1msgK              []*big.Int
 		r1msgProof          []*zkpenc.ProofEnc
+
 		r2msgBigGammaShare  []*crypto.ECPoint
 		r2msgDeltaD         []*big.Int
 		r2msgDeltaF         []*big.Int
@@ -88,9 +85,11 @@ type (
 		r2msgChiF           []*big.Int
 		r2msgChiProof       []*zkpaffg.ProofAffg
 		r2msgProofLogstar   []*zkplogstar.ProofLogstar
+
 		r3msgDeltaShare     []*big.Int
 		r3msgBigDeltaShare  []*crypto.ECPoint
 		r3msgProofLogstar   []*zkplogstar.ProofLogstar
+
 		r4msgSigmaShare     []*big.Int
 		// for identification
 		r6msgH              []*big.Int
@@ -113,7 +112,7 @@ func NewLocalParty(
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- *PreSignatureData,
-	dump chan<- *LocalDump,
+	dump chan<- *LocalDumpPB,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
@@ -162,11 +161,10 @@ func RestoreLocalParty(
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
 	keyDerivationDelta *big.Int,
-	du *LocalDump,
+	du *LocalDumpPB,
 	out chan<- tss.Message,
 	end chan<- *PreSignatureData,
-	dump chan<- *LocalDump,
-	startRndNum int,
+	dump chan<- *LocalDumpPB,
 ) (tss.Party, *tss.Error) {
 	//partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
@@ -178,23 +176,25 @@ func RestoreLocalParty(
 		end:       end,
 		dump:      dump,
 	}
-	p.startRndNum = startRndNum
-	// temp data init
-	p.temp = *du.Temp
-	//p.temp.keyDerivationDelta = du.Temp.keyDerivationDelta
-
-	//newRound := []interface{}{newRound1, newRound2, newRound3}
-	//toRnd := newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData, chan<- *LocalDump) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end, p.dump)
-	err := tss.BaseRestore(p, TaskName)
+	//p.startRndNum = int(du.RoundNum)
+	//p.temp = *du.Temp
+	p.startRndNum = du.UnmarshalRoundNum()
+	dtemp, err := du.UnmarshalLocalTemp(p.params.EC())
 	if err != nil {
-		return nil, err
+		return nil, tss.NewError(err, TaskName, p.startRndNum, p.PartyID())
+	}
+	p.temp = *dtemp
+
+	errb := tss.BaseRestore(p, TaskName)
+	if errb != nil {
+		return nil, errb
 	}
 	return p, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
 	newRound := []interface{}{newRound1, newRound2, newRound3}
-	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData, chan<- *LocalDump) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end, p.dump)
+	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData, chan<- *LocalDumpPB) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end, p.dump)
 }
 
 func (p *LocalParty) SetTempData(tempNew localTempData) {
