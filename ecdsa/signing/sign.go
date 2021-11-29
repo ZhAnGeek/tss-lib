@@ -7,18 +7,14 @@
 package signing
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	"github.com/binance-chain/tss-lib/tss"
-)
-
-var (
-	zero = big.NewInt(0)
 )
 
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
@@ -34,9 +30,19 @@ func (round *sign) Start() *tss.Error {
 	round.resetOK()
 
 	i := round.PartyID().Index
+	Pi := round.PartyID()
 	round.ok[i] = true
 
-	round.temp.ssid = round.predata.UnmarshalSsid()
+	ssid, err := round.getSSID()
+	if err != nil {
+		return round.WrapError(err, Pi)
+	}
+	predataSsid := round.predata.UnmarshalSsid()
+	if !bytes.Equal(ssid, predataSsid) {
+		return round.WrapError(errors.New("preSig ssid not match"), Pi)
+	}
+
+	round.temp.ssid = ssid
 	round.temp.KShare = round.predata.UnmarshalKShare()
 	round.temp.ChiShare = round.predata.UnmarshalChiShare()
 	bigR, err := round.predata.UnmarshalBigR(round.EC())

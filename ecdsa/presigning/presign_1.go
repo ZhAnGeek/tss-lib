@@ -13,7 +13,6 @@ import (
 	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
 	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
@@ -42,17 +41,10 @@ func (round *presign1) Start() *tss.Error {
 	round.ok[i] = true
 
 	// Fig 7. Round 1. generate ssid
-	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().B, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
-	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                                                // parties
-	BigXjList, err := crypto.FlattenECPoints(round.key.BigXj)
+	ssid, err := round.getSSID()
 	if err != nil {
-		return round.WrapError(errors.New("read BigXj failed"), Pi)
+		return round.WrapError(err, Pi)
 	}
-	ssidList = append(ssidList, BigXjList...)         // BigXj
-	ssidList = append(ssidList, round.key.NTildej...) // NCap
-	ssidList = append(ssidList, round.key.H1j...)     // s
-	ssidList = append(ssidList, round.key.H2j...)     // t
-	ssid := common.SHA512_256i(ssidList...).Bytes()
 
 	// Fig 7. Round 1. sample k and gamma
 	KShare := common.GetRandomPositiveInt(round.EC().Params().N)
