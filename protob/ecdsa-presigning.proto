@@ -40,11 +40,13 @@ message PreSignRound3Message {
     repeated bytes ProofLogstar = 3;
 }
 
-message IdentificationRound6Message {
+message IdentificationRound1Message {
     bytes H = 1;
     repeated bytes MulProof = 2;
     bytes DeltaShareEnc = 3;
     repeated bytes DecProof = 4;
+    repeated bytes Djis = 5;
+    repeated bytes DjiProofs = 6;
 }
 
 /*
@@ -81,41 +83,43 @@ message IdentificationRound6Message {
     bytes LTGammaShare = 13;
     repeated bytes LTDeltaShareBetas = 14;
     repeated bytes LTChiShareBetas = 15;
-    bytes LTDeltaMtAF = 16;
-    bytes LTChiMtAF = 17;
 
-    repeated bytes LTBigGamma = 18;
-    repeated bytes LTDeltaShareAlphas = 19;
-    repeated bytes LTChiShareAlphas = 20;
-    bytes LTDeltaShare = 21;
-    bytes LTChiShare = 22;
-    repeated bytes LTBigDeltaShare = 23;
+    repeated bytes LTBigGamma = 16;
+    repeated bytes LTDeltaShareAlphas = 17;
+    repeated bytes LTChiShareAlphas = 18;
+    bytes LTDeltaShare = 19;
+    bytes LTChiShare = 20;
+    repeated bytes LTBigDeltaShare = 21;
 
-    repeated bytes LTBigR = 24;
-    bytes LTRx = 25;
-    bytes LTSigmaShare = 26;
+    repeated bytes LTBigR = 22;
+    bytes LTRx = 23;
+    bytes LTSigmaShare = 24;
 
-    repeated bytes LTr1msgG = 27;
-    repeated bytes LTr1msgK = 28;
-    repeated bytes LTr1msgProof = 29;
+    repeated bytes LTr1msgG = 25;
+    repeated bytes LTr1msgK = 26;
+    repeated bytes LTr1msgProof = 27;
 
-    repeated bytes LTr2msgBigGammaShare = 30;
-    repeated bytes LTr2msgDeltaD = 31;
-    repeated bytes LTr2msgDeltaF = 32;
-    repeated bytes LTr2msgDeltaProof = 33;
-    repeated bytes LTr2msgChiD = 34;
-    repeated bytes LTr2msgChiF = 35;
-    repeated bytes LTr2msgChiProof = 36;
-    repeated bytes LTr2msgProofLogstar = 37;
+    repeated bytes LTr2msgBigGammaShare = 28;
+    repeated bytes LTr2msgDeltaD = 29;
+    repeated bytes LTr2msgDeltaF = 30;
+    repeated bytes LTr2msgDeltaProof = 31;
+    repeated bytes LTr2msgChiD = 32;
+    repeated bytes LTr2msgChiF = 33;
+    repeated bytes LTr2msgChiProof = 34;
+    repeated bytes LTr2msgProofLogstar = 35;
 
-    repeated bytes LTr3msgDeltaShare = 38;
-    repeated bytes LTr3msgBigDeltaShare = 39;
-    repeated bytes LTr3msgProofLogstar = 40;
+    repeated bytes LTr3msgDeltaShare = 36;
+    repeated bytes LTr3msgBigDeltaShare = 37;
+    repeated bytes LTr3msgProofLogstar = 38;
 
-    repeated bytes LTr4msgSigmaShare = 41;
+    repeated bytes LTr4msgSigmaShare = 39;
 
-    repeated bytes LTr6msgH = 42;
-    repeated bytes LTr6msgProofMul = 43;
-    repeated bytes LTr6msgDeltaShareEnc = 44;
-    repeated bytes LTr6msgProofDec = 45;
+    repeated bytes LTDeltaMtAFs = 40;
+    repeated bytes LTChiMtAFs = 41;
+    repeated bytes LTDeltaMtADs = 42;
+    repeated bytes LDDeltaMtADProofs = 43;
+    repeated bytes LTr6msgH = 44;
+    repeated bytes LTr6msgProofMul = 45;
+    repeated bytes LTr6msgDeltaShareEnc = 46;
+    repeated bytes LTr6msgProofDec = 47;
 }

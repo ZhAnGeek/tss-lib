@@ -1,0 +1,89 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+package presigning
+
+import (
+	"errors"
+	"math/big"
+	sync "sync"
+
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/binance-chain/tss-lib/tss"
+)
+
+func newRound6(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
+	return &identification1{&presignout{&presign3{&presign2{&presign1{
+		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 5}}}}}}
+}
+
+func (round *identification2) Start() *tss.Error {
+	if round.started {
+		return round.WrapError(errors.New("round already started"))
+	}
+	round.number = 6
+	round.started = true
+	round.resetOK()
+
+	i := round.PartyID().Index
+	round.ok[i] = true
+
+	// Fig 7. Output.2
+	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	wg := sync.WaitGroup{}
+	for j, Pj := range round.Parties().IDs() {
+		if j == i {
+			continue
+		}
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+			
+			proofMul := round.temp.r6msgProofMul[j]
+			ok := proofMul.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j], round.temp.r1msgG[j], round.temp.r6msgH[j])
+			if !ok {
+				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)
+				return
+			}
+
+			proofDec := round.temp.r6msgProofDec[j]
+			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r6msgDeltaShareEnc[j], round.temp.r3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
+			if !ok {
+				errChs <- round.WrapError(errors.New("round6: proofdec verify failed"), Pj)
+				return
+			}
+		}(j, Pj)
+	}
+	wg.Wait()
+	close(errChs)
+	culprits := make([]*tss.PartyID, 0)
+	for err := range errChs {
+		culprits = append(culprits, err.Culprits()...)
+	}
+	if len(culprits) > 0 {
+		return round.WrapError(errors.New("round6: identification verify failed"), culprits...)
+	}
+
+	// mark finished
+	round.dump <- nil
+
+	return nil
+}
+
+func (round *identification2) Update() (bool, *tss.Error) {
+	return true, nil
+}
+
+func (round *identification2) CanAccept(msg tss.ParsedMessage) bool {
+	return true
+}
+
+func (round *identification2) NextRound() tss.Round {
+	round.started = false
+	return nil
+}

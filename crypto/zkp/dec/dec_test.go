@@ -41,11 +41,17 @@ func TestDec(test *testing.T) {
     assert.NoError(test, err)
 
     x := common.GetRandomPositiveInt(q)
-	y := new(big.Int).Add(x, q)
+	// y := new(big.Int).Add(x, q)
+    // y := common.ModInt(q).Add(x, big.NewInt(0))
+    y := new(big.Int).Mod(x, q)
     C, rho, err := sk.EncryptAndReturnRandomness(y)
     assert.NoError(test, err)
+
+    rho2, err := sk.GetRandomness(C)
+    assert.NoError(test, err)
+    assert.Equal(test, 0, rho2.Cmp(rho))
 	
-    proof, err := NewProof(Session, ec, pk, C, x, NCap, s, t, y, rho)
+    proof, err := NewProof(Session, ec, pk, C, x, NCap, s, t, y, rho2)
     assert.NoError(test, err)
 
     ok := proof.Verify(Session, ec, pk, C, x, NCap, s, t)

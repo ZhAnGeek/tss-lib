@@ -9,7 +9,7 @@ package tss
 type Round interface {
 	Params() *Parameters
 	Start() *Error
-	SetStarted()
+	SetStarted(bool)
 	Update() (bool, *Error)
 	RoundNumber() int
 	CanAccept(msg ParsedMessage) bool

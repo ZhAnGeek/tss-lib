@@ -183,6 +183,25 @@ func (privateKey *PrivateKey) Decrypt(c *big.Int) (m *big.Int, err error) {
 	return
 }
 
+func (privateKey *PrivateKey) GetRandomness(c *big.Int) (r *big.Int, err error) {
+	N2 := privateKey.NSquare()
+	m, err := privateKey.Decrypt(c)
+	if err != nil {
+		return nil, err
+	}
+	modN2 := common.ModInt(N2)
+	c0 := modN2.Mul(m, privateKey.N)
+	c0 = modN2.Sub(one, c0)
+	c0 = modN2.Mul(c, c0)
+	
+	modPhiN := common.ModInt(privateKey.PhiN)
+	niv := modPhiN.ModInverse(privateKey.N)
+
+	modN := common.ModInt(privateKey.N)
+	r = modN.Exp(c0, niv)
+	return
+}
+
 // ----- //
 
 // Proof is an implementation of Gennaro, R., Micciancio, D., Rabin, T.:

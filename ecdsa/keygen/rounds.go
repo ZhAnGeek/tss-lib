@@ -51,8 +51,8 @@ var (
 )
 
 // ----- //
-func (round *base) SetStarted() {
-	round.started = true
+func (round *base) SetStarted(status bool) {
+	round.started = status
 	round.resetOK()
 
 	i := round.PartyID().Index

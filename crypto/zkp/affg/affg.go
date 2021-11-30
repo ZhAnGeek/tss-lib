@@ -7,14 +7,14 @@
 package zkpaffg
 
 import (
-    "crypto/elliptic"
-    "errors"
-    "fmt"
-    "math/big"
+	"crypto/elliptic"
+	"errors"
+	"fmt"
+	"math/big"
 
-    "github.com/binance-chain/tss-lib/common"
-    "github.com/binance-chain/tss-lib/crypto"
-    "github.com/binance-chain/tss-lib/crypto/paillier"
+	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/crypto"
+	"github.com/binance-chain/tss-lib/crypto/paillier"
 )
 
 const (

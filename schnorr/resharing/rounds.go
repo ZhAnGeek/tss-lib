@@ -54,8 +54,8 @@ var (
 
 // ----- //
 
-func (round *base) SetStarted() {
-	round.started = true
+func (round *base) SetStarted(status bool) {
+	round.started = status
 }
 
 func (round *base) Params() *tss.Parameters {

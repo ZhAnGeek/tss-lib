@@ -129,8 +129,10 @@ func (round *presign2) Start() *tss.Error {
 			round.temp.DeltaShareBetas[j] = DeltaMtA.Beta
 			round.temp.ChiShareBetas[j] = ChiMtA.Beta
 
-			round.temp.DeltaMtAF = DeltaMtA.Fji // for identification 6
-			round.temp.ChiMtAF = ChiMtA.Fji     // for identification 6
+			round.temp.DeltaMtAFs[j] = DeltaMtA.Fji // for identification 1 // TODO Add switch to turn on/off
+			round.temp.ChiMtAFs[j] = ChiMtA.Fji     // for identification 1
+			round.temp.DeltaMtADs[j] = DeltaMtA.Dji // for identification 1
+			round.temp.DeltaMtADProofs[j] = DeltaMtA.Proofji // for identification 1
 		}(j, Pj)
 	}
 	wg.Wait()

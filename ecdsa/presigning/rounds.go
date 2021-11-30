@@ -44,6 +44,12 @@ type (
 	presignout struct {
 		*presign3
 	}
+	identification1 struct {
+		*presignout
+	}
+	identification2 struct {
+		*identification1
+	}
 )
 
 var (
@@ -51,11 +57,13 @@ var (
 	_ tss.Round = (*presign2)(nil)
 	_ tss.Round = (*presign3)(nil)
 	_ tss.Round = (*presignout)(nil)
+	_ tss.Round = (*identification1)(nil)
+	_ tss.Round = (*identification2)(nil)
 )
 
 // ----- //
-func (round *base) SetStarted() {
-	round.started = true
+func (round *base) SetStarted(status bool) {
+	round.started = status
 	round.resetOK()
 
 	i := round.PartyID().Index

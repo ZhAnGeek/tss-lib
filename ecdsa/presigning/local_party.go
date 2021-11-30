@@ -59,8 +59,6 @@ type (
 		GammaShare          *big.Int
 		DeltaShareBetas     []*big.Int
 		ChiShareBetas       []*big.Int
-		DeltaMtAF           *big.Int
-		ChiMtAF             *big.Int
 		// round 3
 		BigGamma            *crypto.ECPoint
 		DeltaShareAlphas    []*big.Int
@@ -92,6 +90,10 @@ type (
 
 		r4msgSigmaShare     []*big.Int
 		// for identification
+		DeltaMtAFs          []*big.Int
+		ChiMtAFs            []*big.Int
+		DeltaMtADs          []*big.Int
+		DeltaMtADProofs        []*zkpaffg.ProofAffg
 		r6msgH              []*big.Int
 		r6msgProofMul       []*zkpmul.ProofMul
 		r6msgDeltaShareEnc  []*big.Int
@@ -149,6 +151,10 @@ func NewLocalParty(
 	p.temp.r3msgProofLogstar = make([]*zkplogstar.ProofLogstar, partyCount)
 	p.temp.r4msgSigmaShare = make([]*big.Int, partyCount)
 	// for identification
+	p.temp.DeltaMtAFs = make([]*big.Int, partyCount)
+	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
+	p.temp.DeltaMtADs = make([]*big.Int, partyCount)
+	p.temp.DeltaMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
 	p.temp.r6msgH = make([]*big.Int, partyCount)
 	p.temp.r6msgProofMul = make([]*zkpmul.ProofMul, partyCount)
 	p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)
@@ -193,7 +199,7 @@ func RestoreLocalParty(
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
-	newRound := []interface{}{newRound1, newRound2, newRound3}
+	newRound := []interface{}{newRound1, newRound2, newRound3, newRound4, newRound5, newRound6}
 	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData, chan<- *LocalDumpPB) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end, p.dump)
 }
 
@@ -294,8 +300,8 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.r3msgProofLogstar[fromPIdx] = proofLogStar
-	case *IdentificationRound6Message:
-		r6msg := msg.Content().(*IdentificationRound6Message)
+	case *IdentificationRound1Message:
+		r6msg := msg.Content().(*IdentificationRound1Message)
 		p.temp.r6msgH[fromPIdx] = r6msg.UnmarshalH()
 		p.temp.r6msgDeltaShareEnc[fromPIdx] = r6msg.UnmarshalDeltaShareEnc()
 		proofMul, err := r6msg.UnmarshalProofMul()

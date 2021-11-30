@@ -13,8 +13,14 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
+
+func newRound4(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
+	return &presignout{&presign3{&presign2{&presign1{
+		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 4}}}}}
+}
 
 func (round *presignout) Start() *tss.Error {
 	if round.started {
@@ -93,6 +99,15 @@ func (round *presignout) Start() *tss.Error {
 	///round.temp.R3msgBigDeltaShare = nil
 	///round.temp.R3msgDeltaShare = nil
 	///round.temp.R3msgProofLogstar = nil
+
+	du := &LocalDump{
+		Temp:     round.temp,
+		RoundNum: round.number + 1, // Notice, dierct restore into identification 1
+		Index:    i,
+	}
+	duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
+
+	round.dump <- duPB
 
 	return nil
 }

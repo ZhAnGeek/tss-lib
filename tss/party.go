@@ -118,7 +118,9 @@ func BaseStart(p Party, task string, prepare ...func(Round) *Error) *Error {
 		return p.WrapError(fmt.Errorf("could not start. this party has an invalid PartyID: %+v", p.PartyID()))
 	}
 	if p.round() != nil {
-		return p.WrapError(errors.New("could not start. this party is in an unexpected state. use the constructor and Start()"))
+		p.round().SetStarted(false)
+		return p.round().Start() // start from restored round
+		// return p.WrapError(errors.New("could not start. this party is in an unexpected state. use the constructor and Start()"))
 	}
 	round := p.FirstRound()
 	if err := p.setRound(round); err != nil {
@@ -153,7 +155,7 @@ func BaseRestore(p Party, task string) *Error {
 	if err != nil {
 		return err
 	}
-	p.round().SetStarted()
+	p.round().SetStarted(true)
 	return nil
 }
 

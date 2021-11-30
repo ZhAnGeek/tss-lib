@@ -66,6 +66,24 @@ func TestEncryptDecrypt(t *testing.T) {
 		"wrong decryption ", ret, " is not ", exp)
 }
 
+func TestEncryptDecryptRandomness(t *testing.T) {
+	setUp(t)
+	exp := big.NewInt(100)
+	c, r, err := privateKey.EncryptAndReturnRandomness(exp)
+	if err != nil {
+		t.Error(err)
+	}
+	ret, err := privateKey.Decrypt(c)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, exp.Cmp(ret),
+		"wrong decryption ", ret, " is not ", exp)
+
+	r2, err := privateKey.GetRandomness(c)
+	assert.NoError(t, err)
+	assert.Equal(t, 0, r.Cmp(r2),
+		"wrong randomness ", r2, " is not ", r)
+}
+
 func TestHomoMul(t *testing.T) {
 	setUp(t)
 	three, err := privateKey.Encrypt(big.NewInt(3))
