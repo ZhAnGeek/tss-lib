@@ -50,8 +50,8 @@ func NewMtA(Session []byte, ec elliptic.Curve, Kj *big.Int, gammai *big.Int, Big
         return nil, err
     }
 
-    // q := ec.Params().N
-    beta := common.ModInt(q).Sub(zero, betaNeg)
+    //beta := common.ModInt(q).Sub(zero, betaNeg)
+    beta := new(big.Int).Sub(q3, betaNeg)
 
     Psiji, err := zkpaffg.NewProof(Session, ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
     if err != nil {

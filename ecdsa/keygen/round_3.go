@@ -96,12 +96,6 @@ func (round *round3) Start() *tss.Error {
 		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}
 
-	//Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
-	//proofPrm, err := zkpprm.NewProof([]byte("TODO"), round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
-	//if err != nil {
-	//	return round.WrapError(errors.New("create proofPrm failed"))
-	//}
-
 	errChs = make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg = sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {

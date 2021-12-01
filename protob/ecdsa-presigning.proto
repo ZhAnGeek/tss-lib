@@ -43,10 +43,12 @@ message PreSignRound3Message {
 message IdentificationRound1Message {
     bytes H = 1;
     repeated bytes MulProof = 2;
-    bytes DeltaShareEnc = 3;
-    repeated bytes DecProof = 4;
-    repeated bytes Djis = 5;
-    repeated bytes DjiProofs = 6;
+    repeated bytes Djis = 3;
+    repeated bytes Fjis = 4;
+    repeated bytes DjiProofs = 5;
+    repeated bytes DecProof = 6;
+    bytes Q3Enc = 7;
+    bytes DeltaShareEnc = 8;
 }
 
 /*
@@ -120,6 +122,9 @@ message IdentificationRound1Message {
     repeated bytes LDDeltaMtADProofs = 43;
     repeated bytes LTr6msgH = 44;
     repeated bytes LTr6msgProofMul = 45;
-    repeated bytes LTr6msgDeltaShareEnc = 46;
+    // repeated bytes LTr6msgDeltaShareEnc = 46;
     repeated bytes LTr6msgProofDec = 47;
+    repeated bytes LTr6msgDjis = 48;
+    repeated bytes LTr6msgFjis = 49;
+    repeated bytes LTr6msgQ3Enc = 50;
 }

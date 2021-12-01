@@ -18,10 +18,6 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-var (
-	zero = big.NewInt(0)
-)
-
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
 	return &presign1{
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1}}

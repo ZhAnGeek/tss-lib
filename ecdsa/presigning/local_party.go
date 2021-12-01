@@ -96,8 +96,11 @@ type (
 		DeltaMtADProofs        []*zkpaffg.ProofAffg
 		r6msgH              []*big.Int
 		r6msgProofMul       []*zkpmul.ProofMul
-		r6msgDeltaShareEnc  []*big.Int
+		// r6msgDeltaShareEnc  []*big.Int //TODO remove
 		r6msgProofDec       []*zkpdec.ProofDec
+		r6msgDjis           [][]*big.Int
+		r6msgFjis           [][]*big.Int
+		r6msgQ3Enc          []*big.Int
 	}
 
 	LocalDump struct {
@@ -157,8 +160,11 @@ func NewLocalParty(
 	p.temp.DeltaMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
 	p.temp.r6msgH = make([]*big.Int, partyCount)
 	p.temp.r6msgProofMul = make([]*zkpmul.ProofMul, partyCount)
-	p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)
+	//p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)
 	p.temp.r6msgProofDec = make([]*zkpdec.ProofDec, partyCount)
+	p.temp.r6msgDjis = make([][]*big.Int, partyCount)
+	p.temp.r6msgFjis = make([][]*big.Int, partyCount)
+	p.temp.r6msgQ3Enc = make([]*big.Int, partyCount)
 
 	return p
 }
@@ -224,7 +230,7 @@ func (p *LocalParty) Start() *tss.Error {
 }
 
 func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(p, msg, TaskName) // TODO ##############################
+	return tss.BaseUpdate(p, msg, TaskName)
 }
 
 func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
@@ -303,17 +309,20 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	case *IdentificationRound1Message:
 		r6msg := msg.Content().(*IdentificationRound1Message)
 		p.temp.r6msgH[fromPIdx] = r6msg.UnmarshalH()
-		p.temp.r6msgDeltaShareEnc[fromPIdx] = r6msg.UnmarshalDeltaShareEnc()
 		proofMul, err := r6msg.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.r6msgProofMul[fromPIdx] = proofMul
+		p.temp.r6msgDjis[fromPIdx] = r6msg.UnmarshalDjis()
+		p.temp.r6msgFjis[fromPIdx] = r6msg.UnmarshalFjis()
 		proofDec, err := r6msg.UnmarshalProofDec()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.r6msgProofDec[fromPIdx] = proofDec
+		p.temp.r6msgQ3Enc[fromPIdx] = r6msg.UnmarshalQ3Enc()
+		//p.temp.r6msgDeltaShareEnc[fromPIdx] = r6msg.UnmarshalDeltaShareEnc()
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
 		return false, nil

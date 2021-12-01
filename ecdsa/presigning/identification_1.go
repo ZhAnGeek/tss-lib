@@ -10,6 +10,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/binance-chain/tss-lib/common"
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
 	zkpmul "github.com/binance-chain/tss-lib/crypto/zkp/mul"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -35,7 +36,6 @@ func (round *identification1) Start() *tss.Error {
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// Fig 7. Output.2
-
 	H, err := round.key.PaillierSK.HomoMult(round.temp.KShare, round.temp.G)
 	if err != nil {
 		return round.WrapError(err, Pi)
@@ -45,7 +45,7 @@ func (round *identification1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 
-	// enc(DeltaShare2) = DeltaShareEnc
+	// Calc DeltaShare2 s.t. Enc(DeltaShare2) = DeltaShareEnc
 	DeltaShare2 := new(big.Int).Mul(round.temp.KShare, round.temp.GammaShare)
 	for j := range round.Parties().IDs() {
 		if j == i {
@@ -55,16 +55,25 @@ func (round *identification1) Start() *tss.Error {
 		DeltaShare2 = new(big.Int).Add(DeltaShare2, round.temp.DeltaShareBetas[j])
 	}
 	DeltaShareEnc := H
-	for j := range round.Parties().IDs() {
-		if j == i {
+	modN2 := common.ModInt(round.key.PaillierSK.NSquare())
+	q := round.EC().Params().N
+	q3 := new(big.Int).Mul(q, q)
+	q3 = new(big.Int).Mul(q3, q)
+	Q3Enc, err := round.key.PaillierSK.Encrypt(q3)
+	if err != nil {
+		return round.WrapError(err, Pi)
+	}
+	for k := range round.Parties().IDs() {
+		if k == i {
 			continue
 		}
 		var err error
-		DeltaShareEnc, err = round.key.PaillierSK.HomoAdd(DeltaShareEnc, round.temp.r2msgDeltaD[j])
+		DeltaShareEnc, err = round.key.PaillierSK.HomoAdd(DeltaShareEnc, round.temp.r2msgDeltaD[k])
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
-		BetaEnc, err := round.key.PaillierSK.PublicKey.Encrypt(round.temp.DeltaShareBetas[j])
+		FinvEnc := modN2.ModInverse(round.temp.DeltaMtAFs[k])
+		BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
@@ -87,12 +96,8 @@ func (round *identification1) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
-		ok := proofDeltaShare.Verify(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
-		if !ok {
-			return round.WrapError(errors.New("proofDeltaShare failed locallly"), Pi) // TODO remove
-		}
 		
-		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, DeltaShareEnc, proofDeltaShare, round.temp.DeltaMtADs, round.temp.DeltaMtADProofs)
+		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.DeltaMtADs, round.temp.DeltaMtAFs, round.temp.DeltaMtADProofs, proofDeltaShare, DeltaShareEnc, Q3Enc)
 		round.out <- r6msg
 	}
 

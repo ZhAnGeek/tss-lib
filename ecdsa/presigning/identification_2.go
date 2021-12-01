@@ -11,6 +11,7 @@ import (
 	"math/big"
 	sync "sync"
 
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -51,8 +52,37 @@ func (round *identification2) Start() *tss.Error {
 				return
 			}
 
+			modN2 := common.ModInt(round.key.PaillierPKs[j].NSquare())
+			DeltaShareEnc := round.temp.r6msgH[j]
+			for k := range round.Parties().IDs() {
+				if k == j {
+					continue
+				}
+				var err error
+				Djk := round.temp.DeltaMtADs[j]
+				if k != i {
+					Djk = round.temp.r6msgDjis[k][j]
+				}
+				DeltaShareEnc, err = round.key.PaillierPKs[j].HomoAdd(DeltaShareEnc, Djk)
+				if err != nil {
+					errChs <- round.WrapError(err, Pj)
+					return
+				}
+				Fkj := round.temp.r6msgFjis[j][k]
+				FinvEnc := modN2.ModInverse(Fkj)
+				BetaEnc := modN2.Mul(round.temp.r6msgQ3Enc[j], FinvEnc)
+				if err != nil {
+					errChs <- round.WrapError(err, Pj)
+					return
+				}
+				DeltaShareEnc, err = round.key.PaillierPKs[j].HomoAdd(DeltaShareEnc, BetaEnc)
+				if err != nil {
+					errChs <- round.WrapError(err, Pj)
+					return
+				}
+			}
 			proofDec := round.temp.r6msgProofDec[j]
-			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r6msgDeltaShareEnc[j], round.temp.r3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], DeltaShareEnc, round.temp.r3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofdec verify failed"), Pj)
 				return
