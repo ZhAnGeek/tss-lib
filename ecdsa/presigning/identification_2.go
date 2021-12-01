@@ -45,15 +45,15 @@ func (round *identification2) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			
-			proofMul := round.temp.r6msgProofMul[j]
-			ok := proofMul.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j], round.temp.r1msgG[j], round.temp.r6msgH[j])
+			proofMul := round.temp.r5msgProofMul[j]
+			ok := proofMul.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j], round.temp.r1msgG[j], round.temp.r5msgH[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)
 				return
 			}
 
 			modN2 := common.ModInt(round.key.PaillierPKs[j].NSquare())
-			DeltaShareEnc := round.temp.r6msgH[j]
+			DeltaShareEnc := round.temp.r5msgH[j]
 			for k := range round.Parties().IDs() {
 				if k == j {
 					continue
@@ -61,16 +61,16 @@ func (round *identification2) Start() *tss.Error {
 				var err error
 				Djk := round.temp.DeltaMtADs[j]
 				if k != i {
-					Djk = round.temp.r6msgDjis[k][j]
+					Djk = round.temp.r5msgDjis[k][j]
 				}
 				DeltaShareEnc, err = round.key.PaillierPKs[j].HomoAdd(DeltaShareEnc, Djk)
 				if err != nil {
 					errChs <- round.WrapError(err, Pj)
 					return
 				}
-				Fkj := round.temp.r6msgFjis[j][k]
+				Fkj := round.temp.r5msgFjis[j][k]
 				FinvEnc := modN2.ModInverse(Fkj)
-				BetaEnc := modN2.Mul(round.temp.r6msgQ3Enc[j], FinvEnc)
+				BetaEnc := modN2.Mul(round.temp.r5msgQ3Enc[j], FinvEnc)
 				if err != nil {
 					errChs <- round.WrapError(err, Pj)
 					return
@@ -81,7 +81,7 @@ func (round *identification2) Start() *tss.Error {
 					return
 				}
 			}
-			proofDec := round.temp.r6msgProofDec[j]
+			proofDec := round.temp.r5msgProofDec[j]
 			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], DeltaShareEnc, round.temp.r3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofdec verify failed"), Pj)

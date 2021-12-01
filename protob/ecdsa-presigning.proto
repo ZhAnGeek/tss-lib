@@ -120,11 +120,11 @@ message IdentificationRound1Message {
     repeated bytes LTChiMtAFs = 41;
     repeated bytes LTDeltaMtADs = 42;
     repeated bytes LDDeltaMtADProofs = 43;
-    repeated bytes LTr6msgH = 44;
-    repeated bytes LTr6msgProofMul = 45;
-    // repeated bytes LTr6msgDeltaShareEnc = 46;
-    repeated bytes LTr6msgProofDec = 47;
-    repeated bytes LTr6msgDjis = 48;
-    repeated bytes LTr6msgFjis = 49;
-    repeated bytes LTr6msgQ3Enc = 50;
+    repeated bytes LTr5msgH = 44;
+    repeated bytes LTr5msgProofMul = 45;
+    // repeated bytes LTr5msgDeltaShareEnc = 46;
+    repeated bytes LTr5msgProofDec = 47;
+    repeated bytes LTr5msgDjis = 48;
+    repeated bytes LTr5msgFjis = 49;
+    repeated bytes LTr5msgQ3Enc = 50;
 }

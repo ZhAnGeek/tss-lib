@@ -105,7 +105,7 @@ func (round *identification1) Start() *tss.Error {
 }
 
 func (round *identification1) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r6msgH {
+	for j, msg := range round.temp.r5msgH {
 		if round.ok[j] {
 			continue
 		}

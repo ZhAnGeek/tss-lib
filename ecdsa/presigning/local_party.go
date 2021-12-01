@@ -94,13 +94,13 @@ type (
 		ChiMtAFs            []*big.Int
 		DeltaMtADs          []*big.Int
 		DeltaMtADProofs        []*zkpaffg.ProofAffg
-		r6msgH              []*big.Int
-		r6msgProofMul       []*zkpmul.ProofMul
+		r5msgH              []*big.Int
+		r5msgProofMul       []*zkpmul.ProofMul
 		// r6msgDeltaShareEnc  []*big.Int //TODO remove
-		r6msgProofDec       []*zkpdec.ProofDec
-		r6msgDjis           [][]*big.Int
-		r6msgFjis           [][]*big.Int
-		r6msgQ3Enc          []*big.Int
+		r5msgProofDec       []*zkpdec.ProofDec
+		r5msgDjis           [][]*big.Int
+		r5msgFjis           [][]*big.Int
+		r5msgQ3Enc          []*big.Int
 	}
 
 	LocalDump struct {
@@ -121,13 +121,13 @@ func NewLocalParty(
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
-		BaseParty: new(tss.BaseParty),
-		params:    params,
-		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
-		temp:      localTempData{},
-		out:       out,
-		end:       end,
-		dump:      dump,
+		BaseParty:          new(tss.BaseParty),
+		params:             params,
+		keys:               keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		temp:               localTempData{},
+		out:                out,
+		end:                end,
+		dump:               dump,
 	}
 	p.startRndNum = 1
 	// temp data init
@@ -158,13 +158,13 @@ func NewLocalParty(
 	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
 	p.temp.DeltaMtADs = make([]*big.Int, partyCount)
 	p.temp.DeltaMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
-	p.temp.r6msgH = make([]*big.Int, partyCount)
-	p.temp.r6msgProofMul = make([]*zkpmul.ProofMul, partyCount)
+	p.temp.r5msgH = make([]*big.Int, partyCount)
+	p.temp.r5msgProofMul = make([]*zkpmul.ProofMul, partyCount)
 	//p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)
-	p.temp.r6msgProofDec = make([]*zkpdec.ProofDec, partyCount)
-	p.temp.r6msgDjis = make([][]*big.Int, partyCount)
-	p.temp.r6msgFjis = make([][]*big.Int, partyCount)
-	p.temp.r6msgQ3Enc = make([]*big.Int, partyCount)
+	p.temp.r5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
+	p.temp.r5msgDjis = make([][]*big.Int, partyCount)
+	p.temp.r5msgFjis = make([][]*big.Int, partyCount)
+	p.temp.r5msgQ3Enc = make([]*big.Int, partyCount)
 
 	return p
 }
@@ -180,13 +180,13 @@ func RestoreLocalParty(
 ) (tss.Party, *tss.Error) {
 	//partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
-		BaseParty: new(tss.BaseParty),
-		params:    params,
-		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
-		temp:      localTempData{},
-		out:       out,
-		end:       end,
-		dump:      dump,
+		BaseParty:          new(tss.BaseParty),
+		params:             params,
+		keys:               keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		temp:               localTempData{},
+		out:                out,
+		end:                end,
+		dump:               dump,
 	}
 	//p.startRndNum = int(du.RoundNum)
 	//p.temp = *du.Temp
@@ -308,20 +308,20 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		p.temp.r3msgProofLogstar[fromPIdx] = proofLogStar
 	case *IdentificationRound1Message:
 		r6msg := msg.Content().(*IdentificationRound1Message)
-		p.temp.r6msgH[fromPIdx] = r6msg.UnmarshalH()
+		p.temp.r5msgH[fromPIdx] = r6msg.UnmarshalH()
 		proofMul, err := r6msg.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r6msgProofMul[fromPIdx] = proofMul
-		p.temp.r6msgDjis[fromPIdx] = r6msg.UnmarshalDjis()
-		p.temp.r6msgFjis[fromPIdx] = r6msg.UnmarshalFjis()
+		p.temp.r5msgProofMul[fromPIdx] = proofMul
+		p.temp.r5msgDjis[fromPIdx] = r6msg.UnmarshalDjis()
+		p.temp.r5msgFjis[fromPIdx] = r6msg.UnmarshalFjis()
 		proofDec, err := r6msg.UnmarshalProofDec()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r6msgProofDec[fromPIdx] = proofDec
-		p.temp.r6msgQ3Enc[fromPIdx] = r6msg.UnmarshalQ3Enc()
+		p.temp.r5msgProofDec[fromPIdx] = proofDec
+		p.temp.r5msgQ3Enc[fromPIdx] = r6msg.UnmarshalQ3Enc()
 		//p.temp.r6msgDeltaShareEnc[fromPIdx] = r6msg.UnmarshalDeltaShareEnc()
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)

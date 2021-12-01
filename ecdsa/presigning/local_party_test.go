@@ -59,7 +59,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh, dumpCh).(*LocalParty)
@@ -126,7 +126,7 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh).(*sign.LocalParty)
@@ -201,7 +201,7 @@ func TestR2RConcurrent(t *testing.T) {
 
 	// Presign 1
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, preSigCh, dumpCh).(*LocalParty)
@@ -249,7 +249,7 @@ presign_2:
 	// Presign 2
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign 2]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
 		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r1dumps[i], outCh, preSigCh, dumpCh)
@@ -315,7 +315,7 @@ presign_3:
 	// Presign 3
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign 3]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
 		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r2dumps[i], outCh, preSigCh, dumpCh)
@@ -383,7 +383,7 @@ presign_out:
 	// Presign out
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign out]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
 		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r3dumps[i], outCh, preSigCh, dumpCh)
@@ -444,7 +444,7 @@ signing:
 	// Signing
 	parties_signing := make([]*sign.LocalParty, 0, len(signPIDs))
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigs[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh).(*sign.LocalParty)
@@ -518,7 +518,7 @@ func TestR2RWithIdentification(t *testing.T) {
 
 	// Presign 1
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, preSigCh, dumpCh).(*LocalParty)
@@ -566,7 +566,7 @@ presign_2:
 	// Presign 2
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign 2]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
 
 		keyDerivationDelta := big.NewInt(0)
 		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r1dumps[i], outCh, preSigCh, dumpCh)
@@ -632,7 +632,7 @@ presign_3:
 	// Presign 3
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign 3]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
 
 		keyDerivationDelta := big.NewInt(0)
 		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r2dumps[i], outCh, preSigCh, dumpCh)
@@ -700,7 +700,7 @@ presign_out:
 	// Presign out
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign out]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
 
 		keyDerivationDelta := big.NewInt(0)
 		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r3dumps[i], outCh, preSigCh, dumpCh)
@@ -769,7 +769,7 @@ identification:
 	// Presign out
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign identification]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
 
 		keyDerivationDelta := big.NewInt(0)
 		P, err := RestoreLocalParty(params, keys[i], keyDerivationDelta, r4dumps[i], outCh, preSigCh, dumpCh)
@@ -856,7 +856,7 @@ func TestE2EConcurrentWithHD(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		P := NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh, dumpCh).(*LocalParty)
 		parties = append(parties, P)
@@ -920,7 +920,7 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh).(*sign.LocalParty)
