@@ -140,6 +140,22 @@ func (publicKey *PublicKey) HomoMult(m, c1 *big.Int) (*big.Int, error) {
 	return common.ModInt(N2).Exp(c1, m), nil
 }
 
+func (publicKey *PublicKey) HomoMultObfuscate(m, c1 *big.Int) (*big.Int, *big.Int, error) {
+	if m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
+		return nil, nil, ErrMessageTooLong
+	}
+	N2 := publicKey.NSquare()
+	if c1.Cmp(zero) == -1 || c1.Cmp(N2) != -1 { // c1 < 0 || c1 >= N2 ?
+		return nil, nil, ErrMessageTooLong
+	}
+	// cipher^m mod N2
+	c2 := common.ModInt(N2).Exp(c1, m)
+	x := common.GetRandomPositiveRelativelyPrimeInt(publicKey.N)
+	xN := new(big.Int).Exp(x, publicKey.N, N2)
+	c2 = common.ModInt(N2).Mul(c2, xN)
+	return c2, x, nil
+}
+
 func (publicKey *PublicKey) HomoAdd(c1, c2 *big.Int) (*big.Int, error) {
 	N2 := publicKey.NSquare()
 	if c1.Cmp(zero) == -1 || c1.Cmp(N2) != -1 { // c1 < 0 || c1 >= N2 ?

@@ -36,11 +36,11 @@ func (round *identification1) Start() *tss.Error {
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// Fig 7. Output.2
-	H, err := round.key.PaillierSK.HomoMult(round.temp.KShare, round.temp.G)
+	H, rho, err := round.key.PaillierSK.HomoMultObfuscate(round.temp.KShare, round.temp.G)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	proofH, err := zkpmul.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, round.temp.KNonce)
+	proofH, err := zkpmul.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, rho, round.temp.KNonce)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}

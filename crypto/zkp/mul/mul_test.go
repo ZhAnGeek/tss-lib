@@ -14,8 +14,8 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
 	. "github.com/binance-chain/tss-lib/crypto/zkp/mul"
+	"github.com/binance-chain/tss-lib/tss"
 )
 
 // Using a modulus length of 2048 is recommended in the GG18 spec
@@ -40,13 +40,12 @@ func TestMul(test *testing.T) {
 
 	y := common.GetRandomPositiveInt(q)
 	Y, _, err := sk.EncryptAndReturnRandomness(y)
-	// rho := big.NewInt(1)
 	assert.NoError(test, err)
 
-	C, err := pk.HomoMult(x, Y)
+	C, rho, err := pk.HomoMultObfuscate(x, Y)
 	assert.NoError(test, err)
 
-    proof, err := NewProof(Session, ec, pk, X, Y, C, x, rhox)
+    proof, err := NewProof(Session, ec, pk, X, Y, C, x, rho, rhox)
     assert.NoError(test, err)
 
     ok := proof.Verify(Session, ec, pk, X, Y, C)

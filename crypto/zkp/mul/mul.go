@@ -26,9 +26,9 @@ type (
     }
 )
 
-// NewProof implements proofenc
-func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rhox *big.Int) (*ProofMul, error) {
-    if pk == nil || X == nil || Y == nil || C == nil || rhox == nil {
+// NewProof implements proofmul
+func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rho, rhox *big.Int) (*ProofMul, error) {
+    if pk == nil || X == nil || Y == nil || C == nil || rho == nil || rhox == nil {
         return nil, errors.New("ProveMul constructor received nil value(s)")
     }
 	q := ec.Params().N
@@ -57,13 +57,13 @@ func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C
     z = new(big.Int).Add(z, alpha)
 
     modN := common.ModInt(pk.N)
-    // u := modN.Exp(rho, e)
-    // u = modN.Mul(u, r)
+    u := modN.Exp(rho, e)
+    u = modN.Mul(u, r)
 
     v := modN.Exp(rhox, e)
     v = modN.Mul(v, s)
 
-    return &ProofMul{A: A, B: B, Z: z, U: r, V: v}, nil
+    return &ProofMul{A: A, B: B, Z: z, U: u, V: v}, nil
 }
 
 func NewProofFromBytes(bzs [][]byte) (*ProofMul, error) {

@@ -36,8 +36,8 @@ func (round *identification6) Start() *tss.Error {
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// Fig 7. Output.2
-	H, _ := round.key.PaillierSK.HomoMult(round.temp.KShare, round.temp.G)
-	proofH, _ := zkpmul.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, round.temp.KNonce)
+	H, rho, _ := round.key.PaillierSK.HomoMultObfuscate(round.temp.KShare, round.temp.G)
+	proofH, _ := zkpmul.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, rho, round.temp.KNonce)
 	DeltaShareEnc := H
 	for j := range round.Parties().IDs() {
 		if j == i {
