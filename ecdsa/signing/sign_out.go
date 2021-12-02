@@ -32,7 +32,7 @@ func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK 
 }
 
 func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
-	return &signout{&sign{
+	return &signout{&sign1{
 		&base{params, key, predata, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 2}}}
 }
 
@@ -56,7 +56,7 @@ func (round *signout) Start() *tss.Error {
 	}
 	recid := 0
 	// byte v = if(R.X > curve.N) then 2 else 0) | (if R.Y.IsEven then 0 else 1);
-	if round.temp.Rx.Cmp(round.Params().EC().Params().N) > 0 {
+	if round.temp.BigR.X().Cmp(round.Params().EC().Params().N) > 0 {
 		recid = 2
 	}
 	if round.temp.BigR.Y().Bit(0) != 0 {
@@ -75,7 +75,7 @@ func (round *signout) Start() *tss.Error {
 
 	// save the signature for final output
 	bitSizeInBytes := round.Params().EC().Params().BitSize / 8
-	round.data.R = padToLengthBytesInPlace(round.temp.Rx.Bytes(), bitSizeInBytes)
+	round.data.R = padToLengthBytesInPlace(round.temp.BigR.X().Bytes(), bitSizeInBytes)
 	round.data.S = padToLengthBytesInPlace(Sigma.Bytes(), bitSizeInBytes)
 	round.data.Signature = append(round.data.R, round.data.S...)
 	round.data.SignatureRecovery = []byte{byte(recid)}
@@ -86,7 +86,7 @@ func (round *signout) Start() *tss.Error {
 		X:     round.key.ECDSAPub.X(),
 		Y:     round.key.ECDSAPub.Y(),
 	}
-	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.Rx, Sigma)
+	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.BigR.X(), Sigma)
 	if !ok {
 		return round.WrapError(fmt.Errorf("signature verification failed"))
 	}

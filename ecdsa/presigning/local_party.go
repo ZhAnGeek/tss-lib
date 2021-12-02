@@ -91,9 +91,11 @@ type (
 		r4msgSigmaShare     []*big.Int
 		// for identification
 		DeltaMtAFs          []*big.Int
-		ChiMtAFs            []*big.Int
 		DeltaMtADs          []*big.Int
-		DeltaMtADProofs        []*zkpaffg.ProofAffg
+		DeltaMtADProofs     []*zkpaffg.ProofAffg
+		ChiMtAFs            []*big.Int
+		ChiMtADs            []*big.Int
+		ChiMtADProofs       []*zkpaffg.ProofAffg
 		r5msgH              []*big.Int
 		r5msgProofMul       []*zkpmul.ProofMul
 		// r6msgDeltaShareEnc  []*big.Int //TODO remove
@@ -107,6 +109,18 @@ type (
 		Temp *localTempData
 		RoundNum int
 		Index int
+	}
+
+	Transcript struct { // for signing identification
+		K              *big.Int
+		r1msgK         []*big.Int
+		ChiShareAlphas []*big.Int
+		ChiShareBetas  []*big.Int
+		r2msgChiD      []*big.Int
+
+		ChiMtAFs       []*big.Int
+		ChiMtADs       []*big.Int
+		ChiMtADProofs  []*zkpaffg.ProofAffg
 	}
 )
 
@@ -155,9 +169,11 @@ func NewLocalParty(
 	p.temp.r4msgSigmaShare = make([]*big.Int, partyCount)
 	// for identification
 	p.temp.DeltaMtAFs = make([]*big.Int, partyCount)
-	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
 	p.temp.DeltaMtADs = make([]*big.Int, partyCount)
 	p.temp.DeltaMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
+	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
+	p.temp.ChiMtADs = make([]*big.Int, partyCount)
+	p.temp.ChiMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
 	p.temp.r5msgH = make([]*big.Int, partyCount)
 	p.temp.r5msgProofMul = make([]*zkpmul.ProofMul, partyCount)
 	//p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)

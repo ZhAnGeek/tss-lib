@@ -60,6 +60,17 @@ message IdentificationRound1Message {
     repeated bytes bigR = 3;
     bytes kShare = 4;
     bytes chiShare = 5;
+
+    // Transcript for signing identification
+    bytes LRK = 6;
+    repeated bytes LRr1msgK = 7;
+    repeated bytes LRChiShareAlphas = 8;
+    repeated bytes LRChiShareBetas = 9;
+    repeated bytes LRr2msgChiD = 10;
+
+    repeated bytes LRChiMtAFs = 11;
+    repeated bytes LRChiMtADs = 12;
+    repeated bytes LRChiMtADProofs = 13;
 }
 
 
@@ -117,14 +128,16 @@ message IdentificationRound1Message {
     repeated bytes LTr4msgSigmaShare = 39;
 
     repeated bytes LTDeltaMtAFs = 40;
-    repeated bytes LTChiMtAFs = 41;
-    repeated bytes LTDeltaMtADs = 42;
-    repeated bytes LDDeltaMtADProofs = 43;
-    repeated bytes LTr5msgH = 44;
-    repeated bytes LTr5msgProofMul = 45;
+    repeated bytes LTDeltaMtADs = 41;
+    repeated bytes LDDeltaMtADProofs = 42;
+    repeated bytes LTChiMtAFs = 43;
+    repeated bytes LTChiMtADs = 44;
+    repeated bytes LTChiMtADProofs = 45;
+    repeated bytes LTr5msgH = 46;
+    repeated bytes LTr5msgProofMul = 47;
     // repeated bytes LTr5msgDeltaShareEnc = 46;
-    repeated bytes LTr5msgProofDec = 47;
-    repeated bytes LTr5msgDjis = 48;
-    repeated bytes LTr5msgFjis = 49;
-    repeated bytes LTr5msgQ3Enc = 50;
+    repeated bytes LTr5msgProofDec = 48;
+    repeated bytes LTr5msgDjis = 49;
+    repeated bytes LTr5msgFjis = 50;
+    repeated bytes LTr5msgQ3Enc = 51;
 }

@@ -12,13 +12,17 @@ option go_package = "ecdsa/signing";
 /*
  * Represents a BROADCAST message sent to all parties during Round 4 of the ECDSA TSS signing protocol.
  */
-message SignRoundMessage {
+message SignRound1Message {
     bytes SigmaShare = 1;
 }
 
-message IdentificationRoundMessage {
+message IdentificationRound1Message {
     bytes H = 1;
     repeated bytes MulProof = 2;
-    bytes DeltaShareEnc = 3;
-    repeated bytes DecProof = 4;
+    repeated bytes Djis = 3;
+    repeated bytes Fjis = 4;
+    repeated bytes DjiProofs = 5;
+    repeated bytes DecProof = 6;
+    bytes Q3Enc = 7;
+    bytes DeltaShareEnc = 8;
 }

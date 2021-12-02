@@ -131,9 +131,12 @@ func (round *presign2) Start() *tss.Error {
 
 			if round.NeedsIdentifaction() {
 				round.temp.DeltaMtAFs[j] = DeltaMtA.Fji // for identification 1
-				round.temp.ChiMtAFs[j] = ChiMtA.Fji     // for identification 1
 				round.temp.DeltaMtADs[j] = DeltaMtA.Dji // for identification 1
 				round.temp.DeltaMtADProofs[j] = DeltaMtA.Proofji // for identification 1
+
+				round.temp.ChiMtAFs[j] = ChiMtA.Fji     // for sign identification 1
+				round.temp.ChiMtADs[j] = ChiMtA.Dji     // for sign identification 1
+				round.temp.ChiMtADProofs[j] = ChiMtA.Proofji // for sign identification 1
 			}
 		}(j, Pj)
 	}

@@ -15,9 +15,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	zkpaffg "github.com/binance-chain/tss-lib/crypto/zkp/affg"
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
-	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
-	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
-	zkpmul "github.com/binance-chain/tss-lib/crypto/zkp/mul"
+	zkpmulstar "github.com/binance-chain/tss-lib/crypto/zkp/mulstar"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	"github.com/binance-chain/tss-lib/tss"
@@ -33,75 +31,66 @@ type (
 		*tss.BaseParty
 		params *tss.Parameters
 
-		keys    keygen.LocalPartySaveData
-		temp    localTempData
+		keys keygen.LocalPartySaveData
+		temp localTempData
+
 		predata *presigning.PreSignatureData
 		data    common.SignatureData
 
 		// outbound messaging
-		out         chan<- tss.Message
-		end         chan<- common.SignatureData
+		out chan<- tss.Message
+		end chan<- common.SignatureData
 		startRndNum int
 	}
 
 	localTempData struct {
-		// temp data (thrown away after sign) / round 1
-		ssid   []byte
-		w      *big.Int
-		BigWs  []*crypto.ECPoint
-		KShare *big.Int
+		// temp data (thrown away after sign) 
+		// prepare
+		w                   *big.Int
+		BigWs               []*crypto.ECPoint
+		m                   *big.Int
+		keyDerivationDelta  *big.Int
 
-		BigGammaShare      *crypto.ECPoint
-		K                  *big.Int
-		G                  *big.Int
-		KNonce             *big.Int
-		GNonce             *big.Int
-		keyDerivationDelta *big.Int
+		// preSig
+		ssid                []byte
+		KShare              *big.Int
+		ChiShare            *big.Int
+		BigR                *crypto.ECPoint
 
-		// round 2
-		GammaShare      *big.Int
-		DeltaShareBetas []*big.Int
-		ChiShareBetas   []*big.Int
-		DeltaMtAF       *big.Int
-		ChiMtAF         *big.Int
+		// sign1
+		SigmaShare          *big.Int
 
-		// round 3
-		BigGamma         *crypto.ECPoint
-		DeltaShareAlphas []*big.Int
-		ChiShareAlphas   []*big.Int
-		DeltaShare       *big.Int
-		ChiShare         *big.Int
-		BigDeltaShare    *crypto.ECPoint
+		// identification1
+		K                   *big.Int
+		r1msgK              []*big.Int
+		ChiShareAlphas      []*big.Int
+		ChiShareBetas       []*big.Int
+		r2msgChiD           []*big.Int
 
-		// round 4
-		m          *big.Int
-		BigR       *crypto.ECPoint
-		Rx         *big.Int
-		SigmaShare *big.Int
-
-		// msg store
-		r1msgG             []*big.Int
-		r1msgK             []*big.Int
-		r1msgProof         []*zkpenc.ProofEnc
-		r2msgBigGammaShare []*crypto.ECPoint
-		r2msgDeltaD        []*big.Int
-		r2msgDeltaF        []*big.Int
-		r2msgDeltaProof    []*zkpaffg.ProofAffg
-		r2msgChiD          []*big.Int
-		r2msgChiF          []*big.Int
-		r2msgChiProof      []*zkpaffg.ProofAffg
-		r2msgProofLogstar  []*zkplogstar.ProofLogstar
-		r3msgDeltaShare    []*big.Int
-		r3msgBigDeltaShare []*crypto.ECPoint
-		r3msgProofLogstar  []*zkplogstar.ProofLogstar
-		r4msgSigmaShare    []*big.Int
 		// for identification
-		r6msgH             []*big.Int
-		r6msgProofMul      []*zkpmul.ProofMul
-		r6msgDeltaShareEnc []*big.Int
-		r6msgProofDec      []*zkpdec.ProofDec
+		ChiMtAFs            []*big.Int
+		ChiMtADs            []*big.Int
+		ChiMtADProofs       []*zkpaffg.ProofAffg
+
+		// message store
+		r4msgSigmaShare     []*big.Int
+
+		r5msgH              []*big.Int
+		r5msgProofMulstar   []*zkpmulstar.ProofMulstar
+		r5msgSigmaShareEnc  []*big.Int //TODO remove
+		r5msgProofDec       []*zkpdec.ProofDec
+		r5msgDjis           [][]*big.Int
+		r5msgFjis           [][]*big.Int
+		r5msgQ3Enc          []*big.Int
+	}
+
+	LocalDump struct {
+		Temp *localTempData
+		RoundNum int
+		Index int
 	}
 )
+
 
 func NewLocalParty(
 	predata *presigning.PreSignatureData,
@@ -111,61 +100,46 @@ func NewLocalParty(
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
-	startRndNums ...int,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
-		BaseParty: new(tss.BaseParty),
-		params:    params,
-		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
-		temp:      localTempData{},
-		data:      common.SignatureData{},
-		out:       out,
-		end:       end,
+		BaseParty:          new(tss.BaseParty),
+		params:             params,
+		keys:               keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		predata:            predata,
+		temp:               localTempData{},
+		out:                out,
+		end:                end,
 	}
-	if len(startRndNums) > 0 {
-		p.startRndNum = startRndNums[0]
-	} else {
-		p.startRndNum = 1
-	}
+	p.temp.m = msg
+	p.startRndNum = 1
 	// temp data init
 	p.temp.keyDerivationDelta = keyDerivationDelta
-	p.temp.m = msg
 	p.temp.BigWs = make([]*crypto.ECPoint, partyCount)
-	p.temp.DeltaShareBetas = make([]*big.Int, partyCount)
-	p.temp.ChiShareBetas = make([]*big.Int, partyCount)
-	p.temp.DeltaShareAlphas = make([]*big.Int, partyCount)
-	p.temp.ChiShareAlphas = make([]*big.Int, partyCount)
-	// temp message data init
-	p.temp.r1msgG = make([]*big.Int, partyCount)
-	p.temp.r1msgK = make([]*big.Int, partyCount)
-	p.temp.r1msgProof = make([]*zkpenc.ProofEnc, partyCount)
-	p.temp.r2msgBigGammaShare = make([]*crypto.ECPoint, partyCount)
-	p.temp.r2msgDeltaD = make([]*big.Int, partyCount)
-	p.temp.r2msgDeltaF = make([]*big.Int, partyCount)
-	p.temp.r2msgDeltaProof = make([]*zkpaffg.ProofAffg, partyCount)
-	p.temp.r2msgChiD = make([]*big.Int, partyCount)
-	p.temp.r2msgChiF = make([]*big.Int, partyCount)
-	p.temp.r2msgChiProof = make([]*zkpaffg.ProofAffg, partyCount)
-	p.temp.r2msgProofLogstar = make([]*zkplogstar.ProofLogstar, partyCount)
-	p.temp.r3msgDeltaShare = make([]*big.Int, partyCount)
-	p.temp.r3msgBigDeltaShare = make([]*crypto.ECPoint, partyCount)
-	p.temp.r3msgProofLogstar = make([]*zkplogstar.ProofLogstar, partyCount)
-	p.temp.r4msgSigmaShare = make([]*big.Int, partyCount)
-	// for identification
-	p.temp.r6msgH = make([]*big.Int, partyCount)
-	p.temp.r6msgProofMul = make([]*zkpmul.ProofMul, partyCount)
-	p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)
-	p.temp.r6msgProofDec = make([]*zkpdec.ProofDec, partyCount)
 
-	// predata
-	p.predata = predata
+	p.temp.ChiShareAlphas = make([]*big.Int, partyCount)
+	p.temp.ChiShareBetas = make([]*big.Int, partyCount)
+	p.temp.r2msgChiD = make([]*big.Int, partyCount)
+	// for identification
+	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
+	p.temp.ChiMtADs = make([]*big.Int, partyCount)
+	p.temp.ChiMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
+
+	p.temp.r4msgSigmaShare = make([]*big.Int, partyCount)
+
+	p.temp.r5msgH = make([]*big.Int, partyCount)
+	p.temp.r5msgProofMulstar = make([]*zkpmulstar.ProofMulstar, partyCount)
+	p.temp.r5msgSigmaShareEnc = make([]*big.Int, partyCount)
+	p.temp.r5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
+	p.temp.r5msgDjis = make([][]*big.Int, partyCount)
+	p.temp.r5msgFjis = make([][]*big.Int, partyCount)
+	p.temp.r5msgQ3Enc = make([]*big.Int, partyCount)
 
 	return p
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
-	newRound := []interface{}{newRound1, newRound2}
+	newRound := []interface{}{newRound1, newRound2, newRound3, newRound4}
 	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *presigning.PreSignatureData, *common.SignatureData, *localTempData, chan<- tss.Message, chan<- common.SignatureData) tss.Round)(p.params, &p.keys, p.predata, &p.data, &p.temp, p.out, p.end)
 }
 
@@ -176,7 +150,7 @@ func (p *LocalParty) SetTempData(tempNew localTempData) {
 func (p *LocalParty) Start() *tss.Error {
 	if p.startRndNum == 1 {
 		return tss.BaseStart(p, TaskName, func(round tss.Round) *tss.Error {
-			round1, ok := round.(*sign)
+			round1, ok := round.(*sign1)
 			if !ok {
 				return round.WrapError(errors.New("unable to Start(). party is in an unexpected round"))
 			}
@@ -223,23 +197,23 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// switch/case is necessary to store any messages beyond current round
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
-	case *SignRoundMessage:
-		r4msg := msg.Content().(*SignRoundMessage)
+	case *SignRound1Message:
+		r4msg := msg.Content().(*SignRound1Message)
 		p.temp.r4msgSigmaShare[fromPIdx] = r4msg.UnmarshalSigmaShare()
-	case *IdentificationRoundMessage:
-		r6msg := msg.Content().(*IdentificationRoundMessage)
-		p.temp.r6msgH[fromPIdx] = r6msg.UnmarshalH()
-		p.temp.r6msgDeltaShareEnc[fromPIdx] = r6msg.UnmarshalDeltaShareEnc()
-		proofMul, err := r6msg.UnmarshalProofMul()
+	case *IdentificationRound1Message:
+		r5msg := msg.Content().(*IdentificationRound1Message)
+		p.temp.r5msgH[fromPIdx] = r5msg.UnmarshalH()
+		p.temp.r5msgSigmaShareEnc[fromPIdx] = r5msg.UnmarshalDeltaShareEnc()
+		proofMulstar, err := r5msg.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r6msgProofMul[fromPIdx] = proofMul
-		proofDec, err := r6msg.UnmarshalProofDec()
+		p.temp.r5msgProofMulstar[fromPIdx] = proofMulstar
+		proofDec, err := r5msg.UnmarshalProofDec()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r6msgProofDec[fromPIdx] = proofDec
+		p.temp.r5msgProofDec[fromPIdx] = proofDec
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
 		return false, nil

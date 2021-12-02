@@ -34,27 +34,27 @@ type (
 		started bool
 		number  int
 	}
-	sign struct {
+	sign1 struct {
 		*base
 	}
 	signout struct {
-		*sign
+		*sign1
 	}
 
 	// identification rounds
-	identification6 struct {
-		*sign
+	identification1 struct {
+		*signout
 	}
-	identification7 struct {
-		*identification6
+	identification2 struct {
+		*identification1
 	}
 )
 
 var (
-	_ tss.Round = (*sign)(nil)
+	_ tss.Round = (*sign1)(nil)
 	_ tss.Round = (*signout)(nil)
-	_ tss.Round = (*identification6)(nil)
-	_ tss.Round = (*identification7)(nil)
+	_ tss.Round = (*identification1)(nil)
+	_ tss.Round = (*identification2)(nil)
 )
 
 // ----- //

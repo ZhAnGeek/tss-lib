@@ -46,7 +46,7 @@ func (round *identification1) Start() *tss.Error {
 	}
 
 	// Calc DeltaShare2 s.t. Enc(DeltaShare2) = DeltaShareEnc
-	DeltaShare2 := new(big.Int).Mul(round.temp.KShare, round.temp.GammaShare)
+	DeltaShare2 := new(big.Int).Mul(round.temp.KShare, round.temp.GammaShare) // TODO modN?
 	for j := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -59,7 +59,7 @@ func (round *identification1) Start() *tss.Error {
 	q := round.EC().Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q3, q)
-	Q3Enc, err := round.key.PaillierSK.Encrypt(q3)
+	Q3Enc, err := round.key.PaillierSK.Encrypt(q3) // TODO needs a zk proof?
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -92,12 +92,12 @@ func (round *identification1) Start() *tss.Error {
 			continue
 		}
 
-		proofDeltaShare, err := zkpdec.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], DeltaShare2, nonce)
+		proofDec, err := zkpdec.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], DeltaShare2, nonce)
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
 		
-		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.DeltaMtADs, round.temp.DeltaMtAFs, round.temp.DeltaMtADProofs, proofDeltaShare, DeltaShareEnc, Q3Enc)
+		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.DeltaMtADs, round.temp.DeltaMtAFs, round.temp.DeltaMtADProofs, proofDec, DeltaShareEnc, Q3Enc) //TODO DeltaShareEnc is not necessary
 		round.out <- r6msg
 	}
 

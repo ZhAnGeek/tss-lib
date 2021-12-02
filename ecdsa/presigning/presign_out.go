@@ -91,7 +91,22 @@ func (round *presignout) Start() *tss.Error {
 	deltaInverse := modN.ModInverse(Delta)
 	BigR := round.temp.BigGamma.ScalarMult(deltaInverse)
 
-	preSignData := NewPreSignData(i, round.temp.ssid, BigR, round.temp.KShare, round.temp.ChiShare)
+	transcript := &Transcript{}
+	if round.NeedsIdentifaction() {
+		transcript = &Transcript{
+			K: round.temp.K,
+			r1msgK: round.temp.r1msgK,
+			ChiShareAlphas: round.temp.ChiShareAlphas,
+			ChiShareBetas: round.temp.ChiShareBetas,
+			r2msgChiD: round.temp.r2msgChiD,
+
+			ChiMtAFs: round.temp.ChiMtAFs,
+			ChiMtADs: round.temp.ChiMtADs,
+			ChiMtADProofs: round.temp.ChiMtADProofs,
+		}
+	}
+
+	preSignData := NewPreSignData(i, round.temp.ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript)
 	round.end <- preSignData
 
 	// retire unused variables

@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
@@ -18,10 +19,10 @@ import (
 )
 
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
-	return &sign{&base{params, key, predata, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+	return &sign1{&base{params, key, predata, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *sign) Start() *tss.Error {
+func (round *sign1) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -38,6 +39,8 @@ func (round *sign) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 	predataSsid := round.predata.UnmarshalSsid()
+	fmt.Println(new(big.Int).SetBytes(ssid).Int64())
+	fmt.Println(new(big.Int).SetBytes(predataSsid).Int64())
 	if !bytes.Equal(ssid, predataSsid) {
 		return round.WrapError(errors.New("preSig ssid not match"), Pi)
 	}
@@ -56,21 +59,20 @@ func (round *sign) Start() *tss.Error {
 	Rx := round.temp.BigR.X()
 	SigmaShare := modN.Add(modN.Mul(round.temp.KShare, round.temp.m), modN.Mul(Rx, round.temp.ChiShare))
 
-	r4msg := NewSignRoundMessage(round.PartyID(), SigmaShare)
-	round.out <- r4msg
+	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare)
+	round.out <- r1msg
 
-	round.temp.Rx = Rx
 	round.temp.SigmaShare = SigmaShare
 	// retire unused variables
-	round.temp.r1msgK = nil
-	round.temp.r3msgBigDeltaShare = nil
-	round.temp.r3msgDeltaShare = nil
-	round.temp.r3msgProofLogstar = nil
+	//round.temp.r1msgK = nil
+	//round.temp.r3msgBigDeltaShare = nil
+	//round.temp.r3msgDeltaShare = nil
+	//round.temp.r3msgProofLogstar = nil
 
 	return nil
 }
 
-func (round *sign) Update() (bool, *tss.Error) {
+func (round *sign1) Update() (bool, *tss.Error) {
 	for j, msg := range round.temp.r4msgSigmaShare {
 		if round.ok[j] {
 			continue
@@ -83,19 +85,19 @@ func (round *sign) Update() (bool, *tss.Error) {
 	return true, nil
 }
 
-func (round *sign) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*SignRoundMessage); ok {
+func (round *sign1) CanAccept(msg tss.ParsedMessage) bool {
+	if _, ok := msg.Content().(*SignRound1Message); ok {
 		return msg.IsBroadcast()
 	}
 	return false
 }
 
-func (round *sign) NextRound() tss.Round {
+func (round *sign1) NextRound() tss.Round {
 	round.started = false
 	return &signout{round}
 }
 
-func (round *sign) prepare() error {
+func (round *sign1) prepare() error {
 	i := round.PartyID().Index
 
 	xi := round.key.Xi
