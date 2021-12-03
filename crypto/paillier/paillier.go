@@ -53,6 +53,7 @@ type (
 
 var (
 	ErrMessageTooLong = fmt.Errorf("the message is too large or < 0")
+	ErrWrongRandomness = fmt.Errorf("the randomness is invalid")
 
 	zero = big.NewInt(0)
 	one  = big.NewInt(1)
@@ -125,6 +126,27 @@ func (publicKey *PublicKey) EncryptAndReturnRandomness(m *big.Int) (c *big.Int, 
 
 func (publicKey *PublicKey) Encrypt(m *big.Int) (c *big.Int, err error) {
 	c, _, err = publicKey.EncryptAndReturnRandomness(m)
+	return
+}
+
+func (publicKey *PublicKey) EncryptWithRandomness(m, x *big.Int) (c *big.Int, err error) {
+	if m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
+		return nil, ErrMessageTooLong
+	}
+	if x == nil || x.Cmp(publicKey.N) == 1 || x.Cmp(zero) == -1 {
+		return nil, ErrWrongRandomness
+	}
+	if !common.IsNumberInMultiplicativeGroup(publicKey.N, x) {
+		return nil, ErrWrongRandomness
+	}
+
+	N2 := publicKey.NSquare()
+	// 1. gamma^m mod N2
+	Gm := new(big.Int).Exp(publicKey.Gamma(), m, N2)
+	// 2. x^N mod N2
+	xN := new(big.Int).Exp(x, publicKey.N, N2)
+	// 3. (1) * (2) mod N2
+	c = common.ModInt(N2).Mul(Gm, xN)
 	return
 }
 
