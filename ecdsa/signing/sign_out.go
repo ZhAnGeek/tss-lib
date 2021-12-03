@@ -31,7 +31,7 @@ func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK 
 	return R2.Equals(R)
 }
 
-func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData, dump chan<- *LocalDump) tss.Round {
+func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {
 	return &signout{&sign1{
 		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 2}}}
 }
@@ -99,9 +99,9 @@ func (round *signout) Start() *tss.Error {
 			RoundNum: round.number + 1, // Notice, dierct restore into identification 1
 			Index:    round.PartyID().Index,
 		}
-		//duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
+		duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
 
-		round.dump <- du
+		round.dump <- duPB
 	}
 
 	return nil

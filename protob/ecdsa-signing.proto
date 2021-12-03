@@ -24,5 +24,46 @@ message IdentificationRound1Message {
     repeated bytes DjiProofs = 5;
     repeated bytes DecProof = 6;
     bytes Q3Enc = 7;
-    bytes DeltaShareEnc = 8;
+    //bytes SigmaShareEnc = 8;
+}
+
+/*
+ * Container for LocalDump
+ */
+message LocalDumpPB {
+    int32 Index = 1;
+    int32 RoundNum = 2;
+
+    bytes LTw = 4;
+    repeated bytes LTBigWs = 5;
+    bytes LTm = 6;
+    bytes LTKeyDerivationDelta = 7;
+
+    bytes LTssid = 8;
+    bytes LTKShare = 9;
+    bytes LTChiShare = 10;
+    repeated bytes LTBigR = 11;
+
+    bytes LTSigmaShare = 12;
+
+    // identification
+    bytes LTK = 13;
+    repeated bytes LTr1msgK = 14;
+    repeated bytes LTChiShareAlphas = 15;
+    repeated bytes LTChiShareBetas = 16;
+    repeated bytes LTr2msgChiD = 17;
+
+    repeated bytes LTChiMtAFs = 18;
+    repeated bytes LTChiMtADs = 19;
+    repeated bytes LTChiMtADProofs = 20;
+
+    repeated bytes LTr4msgSigmaShare = 21;
+
+    repeated bytes LTr5msgH = 22;
+    repeated bytes LTr5msgProofMulstar = 23;
+    repeated bytes LTr5msgSigmaShareEnc = 24;
+    repeated bytes LTr5msgProofDec = 25;
+    repeated bytes LTr5msgDjis = 26;
+    repeated bytes LTr5msgFjis = 27;
+    repeated bytes LTr5msgQ3Enc = 28;
 }

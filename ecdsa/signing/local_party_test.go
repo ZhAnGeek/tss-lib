@@ -121,7 +121,7 @@ signing:
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
 	sigCh := make(chan common.SignatureData, len(signPIDs))
-	sdumpCh := make(chan *LocalDump, len(signPIDs))
+	sdumpCh := make(chan *LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
 
@@ -261,7 +261,7 @@ signing:
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
 	sigCh := make(chan common.SignatureData, len(signPIDs))
-	sdumpCh := make(chan *LocalDump, len(signPIDs))
+	sdumpCh := make(chan *LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
 
@@ -279,14 +279,15 @@ signing:
 		}(P)
 	}
 
-	signDumps := make([]*LocalDump, len(signPIDs))
+	signDumps := make([]*LocalDumpPB, len(signPIDs))
 
 	var signended int32
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-sdumpCh:
-			i := du.Index
+			//i := du.Index
+			i := du.UnmarshalIndex()
 			signDumps[i] = du
 			atomic.AddInt32(&signended, 1)
 			if atomic.LoadInt32(&signended) == int32(len(signPIDs)) {

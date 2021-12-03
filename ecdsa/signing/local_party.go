@@ -40,7 +40,7 @@ type (
 		// outbound messaging
 		out chan<- tss.Message
 		end chan<- common.SignatureData
-		dump chan<- *LocalDump
+		dump chan<- *LocalDumpPB
 		startRndNum int
 	}
 
@@ -101,7 +101,7 @@ func NewLocalParty(
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
-	dump chan<- *LocalDump,
+	dump chan<- *LocalDumpPB,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
@@ -162,10 +162,10 @@ func RestoreLocalParty(
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
 	keyDerivationDelta *big.Int,
-	du *LocalDump,
+	du *LocalDumpPB,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
-	dump chan<- *LocalDump,
+	dump chan<- *LocalDumpPB,
 ) (tss.Party, *tss.Error) {
 	//partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
@@ -177,14 +177,14 @@ func RestoreLocalParty(
 		end:                end,
 		dump:               dump,
 	}
-	p.startRndNum = int(du.RoundNum)
-	p.temp = *du.Temp
-	//p.startRndNum = du.UnmarshalRoundNum()
-	//dtemp, err := du.UnmarshalLocalTemp(p.params.EC())
-	//if err != nil {
-	//	return nil, tss.NewError(err, TaskName, p.startRndNum, p.PartyID())
-	//}
-	//p.temp = *dtemp
+	//p.startRndNum = int(du.RoundNum)
+	//p.temp = *du.Temp
+	p.startRndNum = du.UnmarshalRoundNum()
+	dtemp, err := du.UnmarshalLocalTemp(p.params.EC())
+	if err != nil {
+		return nil, tss.NewError(err, TaskName, p.startRndNum, p.PartyID())
+	}
+	p.temp = *dtemp
 
 	if params.NeedsIdentifaction() {
 		trans, err := predata.UnmarshalTrans(p.params.EC())
@@ -210,7 +210,7 @@ func RestoreLocalParty(
 
 func (p *LocalParty) FirstRound() tss.Round {
 	newRound := []interface{}{newRound1, newRound2, newRound3, newRound4}
-	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *presigning.PreSignatureData, *common.SignatureData, *localTempData, chan<- tss.Message, chan<- common.SignatureData, chan<- *LocalDump) tss.Round)(p.params, &p.keys, p.predata, &p.data, &p.temp, p.out, p.end, p.dump)
+	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *presigning.PreSignatureData, *common.SignatureData, *localTempData, chan<- tss.Message, chan<- common.SignatureData, chan<- *LocalDumpPB) tss.Round)(p.params, &p.keys, p.predata, &p.data, &p.temp, p.out, p.end, p.dump)
 }
 
 func (p *LocalParty) Start() *tss.Error {
@@ -269,7 +269,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	case *IdentificationRound1Message:
 		r5msg := msg.Content().(*IdentificationRound1Message)
 		p.temp.r5msgH[fromPIdx] = r5msg.UnmarshalH()
-		p.temp.r5msgSigmaShareEnc[fromPIdx] = r5msg.UnmarshalDeltaShareEnc()
+		//p.temp.r5msgSigmaShareEnc[fromPIdx] = r5msg.UnmarshalSigmaShareEnc()
 		proofMulstar, err := r5msg.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())

@@ -121,7 +121,7 @@ signing:
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
 	sigCh := make(chan common.SignatureData, len(signPIDs))
-	sdumpCh := make(chan *sign.LocalDump, len(signPIDs))
+	sdumpCh := make(chan *sign.LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
 
@@ -194,7 +194,7 @@ func TestR2RConcurrent(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs)*10)
 	preSigCh := make(chan *PreSignatureData, len(signPIDs)*10)
 	dumpCh := make(chan *LocalDumpPB, len(signPIDs)*10)
-	sdumpCh := make(chan *sign.LocalDump, len(signPIDs)*10)
+	sdumpCh := make(chan *sign.LocalDumpPB, len(signPIDs)*10)
 
 	sigCh := make(chan common.SignatureData, len(signPIDs))
 
@@ -919,7 +919,7 @@ signing:
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
 	sigCh := make(chan common.SignatureData, len(signPIDs))
-	sdumpCh := make(chan *sign.LocalDump, len(signPIDs))
+	sdumpCh := make(chan *sign.LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
 
