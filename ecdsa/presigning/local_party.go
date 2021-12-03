@@ -113,10 +113,10 @@ type (
 
 	Transcript struct { // for signing identification
 		K              *big.Int
-		r1msgK         []*big.Int
+		R1msgK         []*big.Int
 		ChiShareAlphas []*big.Int
 		ChiShareBetas  []*big.Int
-		r2msgChiD      []*big.Int
+		R2msgChiD      []*big.Int
 
 		ChiMtAFs       []*big.Int
 		ChiMtADs       []*big.Int
@@ -223,10 +223,6 @@ func RestoreLocalParty(
 func (p *LocalParty) FirstRound() tss.Round {
 	newRound := []interface{}{newRound1, newRound2, newRound3, newRound4, newRound5, newRound6}
 	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData, chan<- *LocalDumpPB) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end, p.dump)
-}
-
-func (p *LocalParty) SetTempData(tempNew localTempData) {
-	p.temp = tempNew
 }
 
 func (p *LocalParty) Start() *tss.Error {

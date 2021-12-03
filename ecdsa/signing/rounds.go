@@ -30,6 +30,7 @@ type (
 		temp    *localTempData
 		out     chan<- tss.Message
 		end     chan<- common.SignatureData
+		dump    chan<- *LocalDump
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int

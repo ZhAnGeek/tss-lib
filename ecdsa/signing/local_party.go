@@ -40,6 +40,7 @@ type (
 		// outbound messaging
 		out chan<- tss.Message
 		end chan<- common.SignatureData
+		dump chan<- *LocalDump
 		startRndNum int
 	}
 
@@ -49,7 +50,7 @@ type (
 		w                   *big.Int
 		BigWs               []*crypto.ECPoint
 		m                   *big.Int
-		keyDerivationDelta  *big.Int
+		KeyDerivationDelta  *big.Int
 
 		// preSig
 		ssid                []byte
@@ -100,6 +101,7 @@ func NewLocalParty(
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
+	dump chan<- *LocalDump,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
@@ -110,11 +112,12 @@ func NewLocalParty(
 		temp:               localTempData{},
 		out:                out,
 		end:                end,
+		dump:               dump,
 	}
 	p.temp.m = msg
 	p.startRndNum = 1
 	// temp data init
-	p.temp.keyDerivationDelta = keyDerivationDelta
+	p.temp.KeyDerivationDelta = keyDerivationDelta
 	p.temp.BigWs = make([]*crypto.ECPoint, partyCount)
 
 	p.temp.ChiShareAlphas = make([]*big.Int, partyCount)
@@ -135,16 +138,79 @@ func NewLocalParty(
 	p.temp.r5msgFjis = make([][]*big.Int, partyCount)
 	p.temp.r5msgQ3Enc = make([]*big.Int, partyCount)
 
+	if p.params.NeedsIdentifaction() {
+		trans, err := predata.UnmarshalTrans(p.params.EC())
+		if err == nil {
+			p.temp.K = trans.K
+			p.temp.r1msgK = trans.R1msgK
+			p.temp.ChiShareAlphas = trans.ChiShareAlphas
+			p.temp.ChiShareBetas = trans.ChiShareBetas
+			p.temp.r2msgChiD = trans.R2msgChiD
+
+			p.temp.ChiMtAFs = trans.ChiMtAFs
+			p.temp.ChiMtADs = trans.ChiMtADs
+			p.temp.ChiMtADProofs = trans.ChiMtADProofs
+		}
+	}
+
 	return p
+}
+
+func RestoreLocalParty(
+	predata *presigning.PreSignatureData,
+	msg *big.Int,
+	params *tss.Parameters,
+	key keygen.LocalPartySaveData,
+	keyDerivationDelta *big.Int,
+	du *LocalDump,
+	out chan<- tss.Message,
+	end chan<- common.SignatureData,
+	dump chan<- *LocalDump,
+) (tss.Party, *tss.Error) {
+	//partyCount := len(params.Parties().IDs())
+	p := &LocalParty{
+		BaseParty:          new(tss.BaseParty),
+		params:             params,
+		keys:               keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		temp:               localTempData{},
+		out:                out,
+		end:                end,
+		dump:               dump,
+	}
+	p.startRndNum = int(du.RoundNum)
+	p.temp = *du.Temp
+	//p.startRndNum = du.UnmarshalRoundNum()
+	//dtemp, err := du.UnmarshalLocalTemp(p.params.EC())
+	//if err != nil {
+	//	return nil, tss.NewError(err, TaskName, p.startRndNum, p.PartyID())
+	//}
+	//p.temp = *dtemp
+
+	if params.NeedsIdentifaction() {
+		trans, err := predata.UnmarshalTrans(p.params.EC())
+		if err == nil {
+			p.temp.K = trans.K
+			p.temp.r1msgK = trans.R1msgK
+			p.temp.ChiShareAlphas = trans.ChiShareAlphas
+			p.temp.ChiShareBetas = trans.ChiShareBetas
+			p.temp.r2msgChiD = trans.R2msgChiD
+
+			p.temp.ChiMtAFs = trans.ChiMtAFs
+			p.temp.ChiMtADs = trans.ChiMtADs
+			p.temp.ChiMtADProofs = trans.ChiMtADProofs
+		}
+	}
+
+	errb := tss.BaseRestore(p, TaskName)
+	if errb != nil {
+		return nil, errb
+	}
+	return p, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
 	newRound := []interface{}{newRound1, newRound2, newRound3, newRound4}
-	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *presigning.PreSignatureData, *common.SignatureData, *localTempData, chan<- tss.Message, chan<- common.SignatureData) tss.Round)(p.params, &p.keys, p.predata, &p.data, &p.temp, p.out, p.end)
-}
-
-func (p *LocalParty) SetTempData(tempNew localTempData) {
-	p.temp = tempNew
+	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *presigning.PreSignatureData, *common.SignatureData, *localTempData, chan<- tss.Message, chan<- common.SignatureData, chan<- *LocalDump) tss.Round)(p.params, &p.keys, p.predata, &p.data, &p.temp, p.out, p.end, p.dump)
 }
 
 func (p *LocalParty) Start() *tss.Error {
@@ -214,6 +280,9 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.r5msgProofDec[fromPIdx] = proofDec
+		p.temp.r5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
+		p.temp.r5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
+		p.temp.r5msgQ3Enc[fromPIdx] = r5msg.UnmarshalQ3Enc()
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
 		return false, nil

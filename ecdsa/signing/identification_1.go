@@ -19,9 +19,9 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
+func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData, dump chan<- *LocalDump) tss.Round {
 	return &identification1{&signout{&sign1{
-		&base{params, key, predata, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 3}}}}
+		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 3}}}}
 }
 
 func (round *identification1) Start() *tss.Error {
@@ -38,7 +38,7 @@ func (round *identification1) Start() *tss.Error {
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// Fig 8. Output.
-	H, rho, err := round.key.PaillierSK.HomoMultObfuscate(round.temp.KShare, round.temp.w)
+	H, rho, err := round.key.PaillierSK.HomoMultObfuscate(round.temp.w, round.temp.K)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -47,7 +47,10 @@ func (round *identification1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	// TODO locally verify
+	// TODO remove locally verify
+	if ok := proofH.Verify(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, g, round.temp.BigWs[i], round.temp.K, H, round.key.NTildei, round.key.H1i, round.key.H2i); !ok {
+		return round.WrapError(errors.New("local proofH failed"), Pi)
+	}
 
 	// Calc ChiShare2 s.t. Enc(ChiShare2)
 	ChiShare2 := new(big.Int).Mul(round.temp.KShare, round.temp.w)

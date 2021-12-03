@@ -48,8 +48,8 @@ func NewPreSignData(
 	if trans.K != nil {
 		KBzs = trans.K.Bytes()
 	}
-	r1msgKBzs := make([][]byte, len(trans.r1msgK))
-	for i, item := range trans.r1msgK {
+	r1msgKBzs := make([][]byte, len(trans.R1msgK))
+	for i, item := range trans.R1msgK {
 		if item != nil {
 			r1msgKBzs[i] = item.Bytes()
 		}
@@ -66,8 +66,8 @@ func NewPreSignData(
 			ChiShareBetasBzs[i] = item.Bytes()
 		}
 	}
-	r2msgChiDBzs := make([][]byte, len(trans.r2msgChiD))
-	for i, item := range trans.r2msgChiD {
+	r2msgChiDBzs := make([][]byte, len(trans.R2msgChiD))
+	for i, item := range trans.R2msgChiD {
 		if item != nil {
 			r2msgChiDBzs[i] = item.Bytes()
 		}
@@ -203,10 +203,10 @@ func (m *PreSignatureData) UnmarshalTrans(ec elliptic.Curve) (*Transcript, error
 
 	trans := &Transcript{
 		K:              K,
-		r1msgK:         r1msgK,
+		R1msgK:         r1msgK,
 		ChiShareAlphas: ChiShareAlphas,
 		ChiShareBetas:  ChiShareBetas,
-		r2msgChiD:      r2msgChiD,
+		R2msgChiD:      r2msgChiD,
 
 		ChiMtAFs:       ChiMtAFs,
 		ChiMtADs:       ChiMtADs,

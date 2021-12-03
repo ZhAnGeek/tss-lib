@@ -121,6 +121,7 @@ signing:
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
 	sigCh := make(chan common.SignatureData, len(signPIDs))
+	sdumpCh := make(chan *sign.LocalDump, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
 
@@ -129,7 +130,7 @@ signing:
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
-		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh).(*sign.LocalParty)
+		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *sign.LocalParty) {
 			if err := P.Start(); err != nil {
@@ -193,6 +194,7 @@ func TestR2RConcurrent(t *testing.T) {
 	outCh := make(chan tss.Message, len(signPIDs)*10)
 	preSigCh := make(chan *PreSignatureData, len(signPIDs)*10)
 	dumpCh := make(chan *LocalDumpPB, len(signPIDs)*10)
+	sdumpCh := make(chan *sign.LocalDump, len(signPIDs)*10)
 
 	sigCh := make(chan common.SignatureData, len(signPIDs))
 
@@ -447,7 +449,7 @@ signing:
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		keyDerivationDelta := big.NewInt(0)
-		P := sign.NewLocalParty(preSigs[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh).(*sign.LocalParty)
+		P := sign.NewLocalParty(preSigs[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
 		parties_signing = append(parties_signing, P)
 		go func(P *sign.LocalParty) {
 			if err := P.Start(); err != nil {
@@ -820,7 +822,7 @@ identification:
 		}
 	}
 }
-func TestE2EConcurrentWithHD(t *testing.T) {
+func TestE2EConcurrentHD(t *testing.T) {
 	setUp("info")
 	threshold := testThreshold
 
@@ -874,6 +876,8 @@ presigning:
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
+		case du := <-dumpCh:
+			fmt.Println(du.Index, du.RoundNum)
 		case err := <-errCh:
 			common.Logger.Errorf("Error: %s", err)
 			assert.FailNow(t, err.Error())
@@ -915,6 +919,7 @@ signing:
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
 	sigCh := make(chan common.SignatureData, len(signPIDs))
+	sdumpCh := make(chan *sign.LocalDump, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
 
@@ -922,8 +927,7 @@ signing:
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
-		keyDerivationDelta := big.NewInt(0)
-		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh).(*sign.LocalParty)
+		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *sign.LocalParty) {
 			if err := P.Start(); err != nil {

@@ -95,10 +95,10 @@ func (round *presignout) Start() *tss.Error {
 	if round.NeedsIdentifaction() {
 		transcript = &Transcript{
 			K: round.temp.K,
-			r1msgK: round.temp.r1msgK,
+			R1msgK: round.temp.r1msgK,
 			ChiShareAlphas: round.temp.ChiShareAlphas,
 			ChiShareBetas: round.temp.ChiShareBetas,
-			r2msgChiD: round.temp.r2msgChiD,
+			R2msgChiD: round.temp.r2msgChiD,
 
 			ChiMtAFs: round.temp.ChiMtAFs,
 			ChiMtADs: round.temp.ChiMtADs,
@@ -115,14 +115,16 @@ func (round *presignout) Start() *tss.Error {
 	///round.temp.R3msgDeltaShare = nil
 	///round.temp.R3msgProofLogstar = nil
 
-	du := &LocalDump{
-		Temp:     round.temp,
-		RoundNum: round.number + 1, // Notice, dierct restore into identification 1
-		Index:    i,
-	}
-	duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
+	if round.NeedsIdentifaction() {
+		du := &LocalDump{
+			Temp:     round.temp,
+			RoundNum: round.number + 1, // Notice, dierct restore into identification 1
+			Index:    i,
+		}
+		duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
 
-	round.dump <- duPB
+		round.dump <- duPB
+	}
 
 	return nil
 }

@@ -18,8 +18,8 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
-	return &sign1{&base{params, key, predata, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData, dump chan<- *LocalDump) tss.Round {
+	return &sign1{&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
 func (round *sign1) Start() *tss.Error {
@@ -108,7 +108,7 @@ func (round *sign1) prepare() error {
 	// Suppose x has shamir shares x_0,     x_1,     ..., x_n
 	// So x + D has shamir shares  x_0 + D, x_1 + D, ..., x_n + D
 	mod := common.ModInt(round.Params().EC().Params().N)
-	xi = mod.Add(round.temp.keyDerivationDelta, xi)
+	xi = mod.Add(round.temp.KeyDerivationDelta, xi)
 	round.key.Xi = xi
 
 	if round.Threshold()+1 > len(ks) {
