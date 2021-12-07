@@ -8,7 +8,6 @@ package signing
 
 import (
 	"errors"
-	"fmt"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -65,7 +64,7 @@ func (round *identification1) Start() *tss.Error {
 	q := round.EC().Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q3, q)
-	Q3Enc, err := round.key.PaillierSK.Encrypt(q3)
+	Q3Enc, err := round.key.PaillierSK.EncryptWithRandomness(q3, new(big.Int).SetBytes(round.temp.ssid))
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -113,10 +112,9 @@ func (round *identification1) Start() *tss.Error {
 
 		proofDec, err := zkpdec.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, SigmaShareEnc, round.temp.SigmaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], SigmaShare2, nonce)
 		if err != nil {
-			fmt.Println("+++++++++++++++++++++++++++++++++++++++++++++++++++", round.temp.SigmaShare)
 			return round.WrapError(err, Pi)
 		}
-		
+
 		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.ChiMtADs, round.temp.ChiMtAFs, round.temp.ChiMtADProofs, proofDec, Q3Enc)
 		round.out <- r6msg
 	}

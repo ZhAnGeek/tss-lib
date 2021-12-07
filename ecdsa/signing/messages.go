@@ -328,12 +328,12 @@ func NewLocalDumpPB(
 			}
 		}
 	}
-	r5msgQ3EncBzs := make([][]byte, len(LocalTemp.r5msgQ3Enc))
-	for i, item := range LocalTemp.r5msgQ3Enc {
-		if item != nil {
-			r5msgQ3EncBzs[i] = item.Bytes()
-		}
-	}
+	//r5msgQ3EncBzs := make([][]byte, len(LocalTemp.r5msgQ3Enc))
+	//for i, item := range LocalTemp.r5msgQ3Enc {
+	//	if item != nil {
+	//		r5msgQ3EncBzs[i] = item.Bytes()
+	//	}
+	//}
 
 	content := &LocalDumpPB{
 		Index:    int32(Index),
@@ -369,7 +369,7 @@ func NewLocalDumpPB(
 		LTr5MsgProofDec: r5msgProofDecBzs,
 		LTr5MsgDjis: r5msgDjisBzs,
 		LTr5MsgFjis: r5msgFjisBzs,
-		LTr5MsgQ3Enc: r5msgQ3EncBzs,
+		//LTr5MsgQ3Enc: r5msgQ3EncBzs,
 
 	}
 	return content
@@ -511,14 +511,14 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 			}
 		}
 	}
-	r5msgQ3EncBzs := m.GetLTr5MsgQ3Enc()
-	r5msgQ3Enc := make([]*big.Int, len(r5msgQ3EncBzs))
-	for i := range r5msgQ3Enc {
-		Bzs := r5msgQ3EncBzs[i]
-		if Bzs != nil {
-			r5msgQ3Enc[i] = new(big.Int).SetBytes(Bzs)
-		}
-	}
+	//r5msgQ3EncBzs := m.GetLTr5MsgQ3Enc()
+	//r5msgQ3Enc := make([]*big.Int, len(r5msgQ3EncBzs))
+	//for i := range r5msgQ3Enc {
+	//	Bzs := r5msgQ3EncBzs[i]
+	//	if Bzs != nil {
+	//		r5msgQ3Enc[i] = new(big.Int).SetBytes(Bzs)
+	//	}
+	//}
 
 	LocalTemp := &localTempData{
 		w: w,
@@ -539,7 +539,7 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 		r5msgProofDec: r5msgProofDec,
 		r5msgDjis: r5msgDjis,
 		r5msgFjis: r5msgFjis,
-		r5msgQ3Enc: r5msgQ3Enc,
+		//r5msgQ3Enc: r5msgQ3Enc,
 	}
 
 	return LocalTemp, nil

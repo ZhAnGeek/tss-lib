@@ -31,6 +31,9 @@ func (round *identification2) Start() *tss.Error {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
+	q := round.EC().Params().N
+	q3 := new(big.Int).Mul(q, q)
+	q3 = new(big.Int).Mul(q3, q)
 
 	// Fig 7. Output.2
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
@@ -54,6 +57,11 @@ func (round *identification2) Start() *tss.Error {
 
 			modN2 := common.ModInt(round.key.PaillierPKs[j].NSquare())
 			DeltaShareEnc := round.temp.r5msgH[j]
+			Q3Enc, err := round.key.PaillierPKs[j].EncryptWithRandomness(q3, new(big.Int).SetBytes(round.temp.ssid))
+			if err != nil {
+				errChs <- round.WrapError(err, round.PartyID())
+				return
+			}
 			for k := range round.Parties().IDs() {
 				if k == j {
 					continue
@@ -70,7 +78,8 @@ func (round *identification2) Start() *tss.Error {
 				}
 				Fkj := round.temp.r5msgFjis[j][k]
 				FinvEnc := modN2.ModInverse(Fkj)
-				BetaEnc := modN2.Mul(round.temp.r5msgQ3Enc[j], FinvEnc)
+				//BetaEnc := modN2.Mul(round.temp.r5msgQ3Enc[j], FinvEnc)
+				BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
 				if err != nil {
 					errChs <- round.WrapError(err, Pj)
 					return

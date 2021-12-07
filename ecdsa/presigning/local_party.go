@@ -102,7 +102,7 @@ type (
 		r5msgProofDec       []*zkpdec.ProofDec
 		r5msgDjis           [][]*big.Int
 		r5msgFjis           [][]*big.Int
-		r5msgQ3Enc          []*big.Int
+		//r5msgQ3Enc          []*big.Int
 	}
 
 	LocalDump struct {
@@ -180,7 +180,7 @@ func NewLocalParty(
 	p.temp.r5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
 	p.temp.r5msgDjis = make([][]*big.Int, partyCount)
 	p.temp.r5msgFjis = make([][]*big.Int, partyCount)
-	p.temp.r5msgQ3Enc = make([]*big.Int, partyCount)
+	//p.temp.r5msgQ3Enc = make([]*big.Int, partyCount)
 
 	return p
 }
@@ -333,7 +333,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.r5msgProofDec[fromPIdx] = proofDec
-		p.temp.r5msgQ3Enc[fromPIdx] = r6msg.UnmarshalQ3Enc()
+		//p.temp.r5msgQ3Enc[fromPIdx] = r6msg.UnmarshalQ3Enc()
 		//p.temp.r6msgDeltaShareEnc[fromPIdx] = r6msg.UnmarshalDeltaShareEnc()
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
