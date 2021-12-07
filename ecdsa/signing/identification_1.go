@@ -57,7 +57,7 @@ func (round *identification1) Start() *tss.Error {
 		ChiShare2 = new(big.Int).Add(ChiShare2, round.temp.ChiShareAlphas[j])
 		ChiShare2 = new(big.Int).Add(ChiShare2, round.temp.ChiShareBetas[j])
 	}
-	SigmaShare2 := new(big.Int).Add(new(big.Int).Mul(round.temp.KShare, round.temp.m), new(big.Int).Mul(round.temp.BigR.X(), ChiShare2)) //TODO modN?
+	SigmaShare2 := new(big.Int).Add(new(big.Int).Mul(round.temp.KShare, round.temp.m), new(big.Int).Mul(round.temp.BigR.X(), ChiShare2))
 
 	ChiShareEnc := H
 	modN2 := common.ModInt(round.key.PaillierSK.NSquare())

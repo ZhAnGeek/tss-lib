@@ -388,8 +388,6 @@ func NewIdentificationRound1Message(
 	Fjis []*big.Int,
 	DjiProofs []*zkpaffg.ProofAffg,
 	DecProof *zkpdec.ProofDec,
-	DeltaShareEnc *big.Int,
-	Q3Enc *big.Int,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -426,8 +424,6 @@ func NewIdentificationRound1Message(
 		Fjis:          FjisBzs,
 		DjiProofs:     DjiProofsBzs,
 		DecProof:      DecProofBzs[:],
-		Q3Enc:         Q3Enc.Bytes(),
-		DeltaShareEnc: DeltaShareEnc.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -493,14 +489,6 @@ func (m *IdentificationRound1Message) UnmarshalProofDec() (*zkpdec.ProofDec, err
 	return zkpdec.NewProofFromBytes(m.GetDecProof())
 }
 
-func (m *IdentificationRound1Message) UnmarshalDeltaShareEnc() *big.Int {
-	return new(big.Int).SetBytes(m.GetDeltaShareEnc())
-}
-
-func (m *IdentificationRound1Message) UnmarshalQ3Enc() *big.Int {
-	return new(big.Int).SetBytes(m.GetQ3Enc())
-}
-
 func NewLocalDumpPB(
 	Index int,
 	RoundNum int,
@@ -544,10 +532,6 @@ func NewLocalDumpPB(
 	var GNonceBzs []byte
 	if LocalTemp.GNonce != nil {
 		GNonceBzs = LocalTemp.GNonce.Bytes()
-	}
-	var keyDerivationDeltaBzs []byte
-	if LocalTemp.keyDerivationDelta != nil {
-		keyDerivationDeltaBzs = LocalTemp.keyDerivationDelta.Bytes()
 	}
 
 	var GammaShareBzs []byte
@@ -838,7 +822,6 @@ func NewLocalDumpPB(
 		LTG:                  GBzs,
 		LTKNonce:             KNonceBzs,
 		LTGNonce:             GNonceBzs,
-		LTkeyDerivationDelta: keyDerivationDeltaBzs,
 
 		LTGammaShare:      GammaShareBzs,
 		LTDeltaShareBetas: DeltaShareBetasBzs,
@@ -951,11 +934,6 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 	var GNonce *big.Int
 	if GNonceBzs != nil {
 		GNonce = new(big.Int).SetBytes(GNonceBzs)
-	}
-	keyDerivationDeltaBzs := m.GetLTkeyDerivationDelta()
-	var keyDerivationDelta *big.Int
-	if keyDerivationDeltaBzs != nil {
-		keyDerivationDelta = new(big.Int).SetBytes(keyDerivationDeltaBzs)
 	}
 
 	GammaShareBzs := m.GetLTGammaShare()
@@ -1330,7 +1308,6 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 		G:                  G,
 		KNonce:             KNonce,
 		GNonce:             GNonce,
-		keyDerivationDelta: keyDerivationDelta,
 
 		GammaShare:      GammaShare,
 		DeltaShareBetas: DeltaShareBetas,

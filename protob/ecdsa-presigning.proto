@@ -47,8 +47,6 @@ message IdentificationRound1Message {
     repeated bytes Fjis = 4;
     repeated bytes DjiProofs = 5;
     repeated bytes DecProof = 6;
-    bytes Q3Enc = 7;
-    bytes DeltaShareEnc = 8;
 }
 
 /*
@@ -91,7 +89,7 @@ message IdentificationRound1Message {
     bytes LTG = 9;
     bytes LTKNonce = 10;
     bytes LTGNonce = 11;
-    bytes LTkeyDerivationDelta = 12;
+    //bytes LTkeyDerivationDelta = 12;
 
     bytes LTGammaShare = 13;
     repeated bytes LTDeltaShareBetas = 14;

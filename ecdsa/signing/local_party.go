@@ -78,11 +78,9 @@ type (
 
 		r5msgH              []*big.Int
 		r5msgProofMulstar   []*zkpmulstar.ProofMulstar
-		r5msgSigmaShareEnc  []*big.Int //TODO remove
 		r5msgProofDec       []*zkpdec.ProofDec
 		r5msgDjis           [][]*big.Int
 		r5msgFjis           [][]*big.Int
-		//r5msgQ3Enc          []*big.Int
 	}
 
 	LocalDump struct {
@@ -132,11 +130,9 @@ func NewLocalParty(
 
 	p.temp.r5msgH = make([]*big.Int, partyCount)
 	p.temp.r5msgProofMulstar = make([]*zkpmulstar.ProofMulstar, partyCount)
-	p.temp.r5msgSigmaShareEnc = make([]*big.Int, partyCount)
 	p.temp.r5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
 	p.temp.r5msgDjis = make([][]*big.Int, partyCount)
 	p.temp.r5msgFjis = make([][]*big.Int, partyCount)
-	//p.temp.r5msgQ3Enc = make([]*big.Int, partyCount)
 
 	if p.params.NeedsIdentifaction() {
 		trans, err := predata.UnmarshalTrans(p.params.EC())
@@ -167,7 +163,6 @@ func RestoreLocalParty(
 	end chan<- common.SignatureData,
 	dump chan<- *LocalDumpPB,
 ) (tss.Party, *tss.Error) {
-	//partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
 		BaseParty:          new(tss.BaseParty),
 		params:             params,
@@ -177,8 +172,6 @@ func RestoreLocalParty(
 		end:                end,
 		dump:               dump,
 	}
-	//p.startRndNum = int(du.RoundNum)
-	//p.temp = *du.Temp
 	p.startRndNum = du.UnmarshalRoundNum()
 	dtemp, err := du.UnmarshalLocalTemp(p.params.EC())
 	if err != nil {
@@ -282,7 +275,6 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		p.temp.r5msgProofDec[fromPIdx] = proofDec
 		p.temp.r5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
 		p.temp.r5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
-		//p.temp.r5msgQ3Enc[fromPIdx] = r5msg.UnmarshalQ3Enc()
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
 		return false, nil

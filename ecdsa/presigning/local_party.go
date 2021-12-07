@@ -54,7 +54,6 @@ type (
 		G                   *big.Int
 		KNonce              *big.Int
 		GNonce              *big.Int
-		keyDerivationDelta  *big.Int
 		// round 2
 		GammaShare          *big.Int
 		DeltaShareBetas     []*big.Int
@@ -98,11 +97,9 @@ type (
 		ChiMtADProofs       []*zkpaffg.ProofAffg
 		r5msgH              []*big.Int
 		r5msgProofMul       []*zkpmul.ProofMul
-		// r6msgDeltaShareEnc  []*big.Int //TODO remove
 		r5msgProofDec       []*zkpdec.ProofDec
 		r5msgDjis           [][]*big.Int
 		r5msgFjis           [][]*big.Int
-		//r5msgQ3Enc          []*big.Int
 	}
 
 	LocalDump struct {
@@ -128,7 +125,6 @@ type (
 func NewLocalParty(
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
-	//keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- *PreSignatureData,
 	dump chan<- *LocalDumpPB,
@@ -145,7 +141,6 @@ func NewLocalParty(
 	}
 	p.startRndNum = 1
 	// temp data init
-	//p.temp.keyDerivationDelta = keyDerivationDelta
 	p.temp.BigWs = make([]*crypto.ECPoint, partyCount)
 	p.temp.DeltaShareBetas = make([]*big.Int, partyCount)
 	p.temp.ChiShareBetas = make([]*big.Int, partyCount)
@@ -176,11 +171,9 @@ func NewLocalParty(
 	p.temp.ChiMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
 	p.temp.r5msgH = make([]*big.Int, partyCount)
 	p.temp.r5msgProofMul = make([]*zkpmul.ProofMul, partyCount)
-	//p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)
 	p.temp.r5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
 	p.temp.r5msgDjis = make([][]*big.Int, partyCount)
 	p.temp.r5msgFjis = make([][]*big.Int, partyCount)
-	//p.temp.r5msgQ3Enc = make([]*big.Int, partyCount)
 
 	return p
 }
@@ -188,13 +181,11 @@ func NewLocalParty(
 func RestoreLocalParty(
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
-	//keyDerivationDelta *big.Int,
 	du *LocalDumpPB,
 	out chan<- tss.Message,
 	end chan<- *PreSignatureData,
 	dump chan<- *LocalDumpPB,
 ) (tss.Party, *tss.Error) {
-	//partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
 		BaseParty:          new(tss.BaseParty),
 		params:             params,
@@ -204,8 +195,6 @@ func RestoreLocalParty(
 		end:                end,
 		dump:               dump,
 	}
-	//p.startRndNum = int(du.RoundNum)
-	//p.temp = *du.Temp
 	p.startRndNum = du.UnmarshalRoundNum()
 	dtemp, err := du.UnmarshalLocalTemp(p.params.EC())
 	if err != nil {
@@ -333,8 +322,6 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.r5msgProofDec[fromPIdx] = proofDec
-		//p.temp.r5msgQ3Enc[fromPIdx] = r6msg.UnmarshalQ3Enc()
-		//p.temp.r6msgDeltaShareEnc[fromPIdx] = r6msg.UnmarshalDeltaShareEnc()
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
 		return false, nil
