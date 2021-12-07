@@ -18,6 +18,10 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
+var (
+	zero = big.NewInt(0)
+)
+
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {
 	return &sign1{&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
@@ -39,8 +43,6 @@ func (round *sign1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 	predataSsid := round.predata.UnmarshalSsid()
-	fmt.Println(new(big.Int).SetBytes(ssid).Int64())
-	fmt.Println(new(big.Int).SetBytes(predataSsid).Int64())
 	if !bytes.Equal(ssid, predataSsid) {
 		return round.WrapError(errors.New("preSig ssid not match"), Pi)
 	}
@@ -58,6 +60,8 @@ func (round *sign1) Start() *tss.Error {
 	modN := common.ModInt(round.EC().Params().N)
 	Rx := round.temp.BigR.X()
 	SigmaShare := modN.Add(modN.Mul(round.temp.KShare, round.temp.m), modN.Mul(Rx, round.temp.ChiShare))
+	SigmaShareDelta := modN.Mul(Rx, modN.Mul(round.temp.KShare, round.temp.KeyDerivationDelta))
+	SigmaShare = modN.Add(SigmaShare, SigmaShareDelta)
 
 	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare)
 	round.out <- r1msg
@@ -107,9 +111,9 @@ func (round *sign1) prepare() error {
 	// adding the key derivation delta to the xi's
 	// Suppose x has shamir shares x_0,     x_1,     ..., x_n
 	// So x + D has shamir shares  x_0 + D, x_1 + D, ..., x_n + D
-	mod := common.ModInt(round.Params().EC().Params().N)
-	xi = mod.Add(round.temp.KeyDerivationDelta, xi)
-	round.key.Xi = xi
+	//mod := common.ModInt(round.Params().EC().Params().N)
+	//xi = mod.Add(round.temp.KeyDerivationDelta, xi)
+	//round.key.Xi = xi
 
 	if round.Threshold()+1 > len(ks) {
 		return fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks))

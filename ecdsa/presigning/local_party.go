@@ -128,7 +128,7 @@ type (
 func NewLocalParty(
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
-	keyDerivationDelta *big.Int,
+	//keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- *PreSignatureData,
 	dump chan<- *LocalDumpPB,
@@ -145,7 +145,7 @@ func NewLocalParty(
 	}
 	p.startRndNum = 1
 	// temp data init
-	p.temp.keyDerivationDelta = keyDerivationDelta
+	//p.temp.keyDerivationDelta = keyDerivationDelta
 	p.temp.BigWs = make([]*crypto.ECPoint, partyCount)
 	p.temp.DeltaShareBetas = make([]*big.Int, partyCount)
 	p.temp.ChiShareBetas = make([]*big.Int, partyCount)
@@ -188,7 +188,7 @@ func NewLocalParty(
 func RestoreLocalParty(
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
-	keyDerivationDelta *big.Int,
+	//keyDerivationDelta *big.Int,
 	du *LocalDumpPB,
 	out chan<- tss.Message,
 	end chan<- *PreSignatureData,

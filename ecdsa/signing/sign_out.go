@@ -81,10 +81,20 @@ func (round *signout) Start() *tss.Error {
 	round.data.SignatureRecovery = []byte{byte(recid)}
 	round.data.M = round.temp.m.Bytes()
 
+	PKDelta := round.key.ECDSAPub
+	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
+		gDelta := crypto.ScalarBaseMult(round.EC(), round.temp.KeyDerivationDelta)
+		var err error
+		PKDelta, err = PKDelta.Add(gDelta)
+		if err != nil {
+			return round.WrapError(errors.New("PubKey derivation failed"), round.PartyID())
+		}
+	}
+
 	pk := ecdsa.PublicKey{
 		Curve: round.Params().EC(),
-		X:     round.key.ECDSAPub.X(),
-		Y:     round.key.ECDSAPub.Y(),
+		X:     PKDelta.X(), //round.key.ECDSAPub.X(),
+		Y:     PKDelta.Y(), //round.key.ECDSAPub.Y(),
 	}
 	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.BigR.X(), Sigma)
 	if !ok {

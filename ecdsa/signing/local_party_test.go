@@ -61,8 +61,7 @@ func TestE2EConcurrent(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
-		keyDerivationDelta := big.NewInt(0)
-		P := presigning.NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh, dumpCh).(*presigning.LocalParty)
+		P := presigning.NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*presigning.LocalParty)
 		parties = append(parties, P)
 		go func(P *presigning.LocalParty) {
 			if err := P.Start(); err != nil {
@@ -201,8 +200,7 @@ func TestE2EConcurrentWithIdentification(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
 
-		keyDerivationDelta := big.NewInt(0)
-		P := presigning.NewLocalParty(params, keys[i], keyDerivationDelta, outCh, endCh, dumpCh).(*presigning.LocalParty)
+		P := presigning.NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*presigning.LocalParty)
 		parties = append(parties, P)
 		go func(P *presigning.LocalParty) {
 			if err := P.Start(); err != nil {
