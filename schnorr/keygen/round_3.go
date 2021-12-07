@@ -48,6 +48,7 @@ func (round *round3) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
 		KGCj := round.temp.KGCs[j]
 		KGDj := round.temp.r2msg2Decommit[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
@@ -67,7 +68,7 @@ func (round *round3) Start() *tss.Error {
 		}
 
 		proof := round.temp.r2msg2Proof[j]
-		ok = proof.Verify([]byte("TODO"), PjVs[0])
+		ok = proof.Verify(ContextJ, PjVs[0])
 		if !ok {
 			return round.WrapError(errors.New("failed to verify schnorr proof"), Pj)
 		}

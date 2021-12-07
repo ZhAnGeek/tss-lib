@@ -40,6 +40,12 @@ func (round *round1) Start() *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
+	ssid, err := round.getSSID()
+	if err != nil {
+		return round.WrapError(err, round.PartyID())
+	}
+	round.temp.ssid = ssid
+
 	// 1. select di, ei
 	di := common.GetRandomPositiveInt(round.EC().Params().N)
 	ei := common.GetRandomPositiveInt(round.EC().Params().N)

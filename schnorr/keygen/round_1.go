@@ -34,6 +34,12 @@ func (round *round1) Start() *tss.Error {
 	i := Pi.Index
 	round.ok[i] = true
 
+	ssid, err := round.getSSID()
+	if err != nil {
+		return round.WrapError(err, Pi)
+	}
+	round.temp.ssid = ssid
+
 	// calculate "partial" key share ui
 	ui := common.GetRandomPositiveInt(round.Params().EC().Params().N)
 	round.temp.ui = ui

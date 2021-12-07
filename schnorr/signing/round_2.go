@@ -8,6 +8,7 @@ package signing
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
@@ -30,6 +31,7 @@ func (round *round2) Start() *tss.Error {
 	round.resetOK()
 
 	i := round.PartyID().Index
+	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// 1. store r1 message pieces
 	for j, msg := range round.temp.signRound1Messages {
@@ -38,11 +40,11 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	proofD, err := zkpsch.NewProof([]byte("TODO"), round.temp.pointDi, round.temp.di)
+	proofD, err := zkpsch.NewProof(ContextI, round.temp.pointDi, round.temp.di)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	proofE, err := zkpsch.NewProof([]byte("TODO"), round.temp.pointEi, round.temp.ei)
+	proofE, err := zkpsch.NewProof(ContextI, round.temp.pointEi, round.temp.ei)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

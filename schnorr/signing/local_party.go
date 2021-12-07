@@ -47,6 +47,7 @@ type (
 		localMessageStore
 
 		// temp data (thrown away after sign) / round 1
+		ssid     []byte
 		wi       *big.Int
 		bigWs    []*crypto.ECPoint
 		di       *big.Int

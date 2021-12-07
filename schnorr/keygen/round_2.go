@@ -8,6 +8,7 @@ package keygen
 
 import (
 	"errors"
+	"math/big"
 
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
 	"github.com/binance-chain/tss-lib/tss"
@@ -23,6 +24,7 @@ func (round *round2) Start() *tss.Error {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
+	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// p2p send share ij to Pj
 	for j, Pj := range round.Parties().IDs() {
@@ -34,7 +36,7 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// compute Schnorr prove
-	proof, err := zkpsch.NewProof([]byte("TODO"), round.temp.vs[0], round.temp.ui)
+	proof, err := zkpsch.NewProof(ContextI, round.temp.vs[0], round.temp.ui)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

@@ -48,6 +48,7 @@ func (round *round3) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
 
 		msg := round.temp.signRound2Messages[j]
 		r2msg := msg.Content().(*SignRound2Message)
@@ -68,7 +69,7 @@ func (round *round3) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("failed to unmarshal Dj proof"), Pj)
 		}
-		ok = proofD.Verify([]byte("TODO"), pointDj)
+		ok = proofD.Verify(ContextJ, pointDj)
 		if !ok {
 			return round.WrapError(errors.New("failed to prove Dj"), Pj)
 		}
@@ -82,7 +83,7 @@ func (round *round3) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("failed to unmarshal Ej proof"), Pj)
 		}
-		ok = proofE.Verify([]byte("TODO"), pointEj)
+		ok = proofE.Verify(ContextJ, pointEj)
 		if !ok {
 			return round.WrapError(errors.New("failed to prove Ej"), Pj)
 		}
