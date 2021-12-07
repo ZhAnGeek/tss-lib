@@ -46,6 +46,7 @@ type (
 		localMessageStore
 
 		// temp data (thrown away after keygen)
+		ssid          []byte
 		ui            *big.Int // used for tests
 		KGCs          []cmt.HashCommitment
 		vs            vss.Vs

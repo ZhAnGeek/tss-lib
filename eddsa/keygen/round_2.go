@@ -8,6 +8,7 @@ package keygen
 
 import (
 	"errors"
+	"math/big"
 
 	errors2 "github.com/pkg/errors"
 
@@ -24,6 +25,7 @@ func (round *round2) Start() *tss.Error {
 	round.resetOK()
 
 	i := round.PartyID().Index
+	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// 4. store r1 message pieces
 	for j, msg := range round.temp.kgRound1Messages {
@@ -45,7 +47,7 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 5. compute Schnorr prove
-	pii, err := zkpsch.NewProof([]byte("TODO"), round.temp.vs[0], round.temp.ui)
+	pii, err := zkpsch.NewProof(ContextI, round.temp.vs[0], round.temp.ui)
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewZKProof(ui, vi0)"))
 	}

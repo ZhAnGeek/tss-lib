@@ -8,6 +8,7 @@ package signing
 
 import (
 	"crypto/sha512"
+	"math/big"
 
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/pkg/errors"
@@ -37,6 +38,7 @@ func (round *round3) Start() *tss.Error {
 		if j == i {
 			continue
 		}
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
 
 		msg := round.temp.signRound2Messages[j]
 		r2msg := msg.Content().(*SignRound2Message)
@@ -57,7 +59,7 @@ func (round *round3) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("failed to unmarshal Rj proof"), Pj)
 		}
-		ok = proof.Verify([]byte("TODO"), Rj)
+		ok = proof.Verify(ContextJ, Rj)
 		if !ok {
 			return round.WrapError(errors.New("failed to prove Rj"), Pj)
 		}

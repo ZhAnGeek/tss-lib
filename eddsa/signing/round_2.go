@@ -8,6 +8,7 @@ package signing
 
 import (
 	"errors"
+	"math/big"
 
 	errors2 "github.com/pkg/errors"
 
@@ -24,6 +25,7 @@ func (round *round2) Start() *tss.Error {
 	round.resetOK()
 
 	i := round.PartyID().Index
+	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// 1. store r1 message pieces
 	for j, msg := range round.temp.signRound1Messages {
@@ -32,7 +34,7 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	pir, err := zkpsch.NewProof([]byte("TODO"), round.temp.pointRi, round.temp.ri)
+	pir, err := zkpsch.NewProof(ContextI, round.temp.pointRi, round.temp.ri)
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewZKProof(ri, pointRi)"))
 	}
