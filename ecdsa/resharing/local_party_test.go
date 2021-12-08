@@ -20,6 +20,7 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	. "github.com/binance-chain/tss-lib/ecdsa/resharing"
 	"github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/binance-chain/tss-lib/test"
@@ -155,12 +156,74 @@ func TestE2EConcurrent(t *testing.T) {
 				}
 
 				// more verification of signing is implemented within local_party_test.go of keygen package
-				goto signing
+				goto presigning
 			}
 		}
 	}
 
+presigning:
+	presignKeys, presignPIDs := newKeys, newPIDs
+	presignP2pCtx := tss.NewPeerContext(presignPIDs)
+	presignParties := make([]*presigning.LocalParty, 0, len(presignPIDs))
+
+	presignErrCh := make(chan *tss.Error, len(presignPIDs))
+	presignOutCh := make(chan tss.Message, len(presignPIDs))
+	presignEndCh := make(chan *presigning.PreSignatureData, len(presignPIDs))
+	presignDumpCh := make(chan *presigning.LocalDumpPB, len(presignPIDs))
+
+	// PHASE: presigning
+	for j, signPID := range presignPIDs {
+		params := tss.NewParameters(tss.S256(), presignP2pCtx, signPID, len(presignPIDs), newThreshold, false)
+		P := presigning.NewLocalParty(params, presignKeys[j], presignOutCh, presignEndCh, presignDumpCh).(*presigning.LocalParty)
+		presignParties = append(presignParties, P)
+		go func(P *presigning.LocalParty) {
+			if err := P.Start(); err != nil {
+				presignErrCh <- err
+			}
+		}(P)
+	}
+	preSigDatas := make([]*presigning.PreSignatureData, len(presignPIDs))
+
+	var presignended int32
+	for {
+		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case err := <-presignErrCh:
+			common.Logger.Errorf("Error: %s", err)
+			assert.FailNow(t, err.Error())
+			return
+
+		case msg := <-presignOutCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range presignParties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(P, msg, errCh)
+				}
+			} else {
+				if dest[0].Index == msg.GetFrom().Index {
+					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+				}
+				go updater(presignParties[dest[0].Index], msg, errCh)
+			}
+
+		case predata := <-presignEndCh:
+			atomic.AddInt32(&presignended, 1)
+			preSigDatas[predata.UnmarshalIndex()] = predata
+			t.Logf("%d ssid: %d", predata.UnmarshalIndex(), new(big.Int).SetBytes(predata.UnmarshalSsid()).Int64())
+			if atomic.LoadInt32(&presignended) == int32(len(presignPIDs)) {
+				t.Logf("Done. Received presignature data from %d participants", presignended)
+
+				goto signing
+			}
+		case <-presignDumpCh:
+		}
+	}
+
 signing:
+
 	// PHASE: signing
 	signKeys, signPIDs := newKeys, newPIDs
 	signP2pCtx := tss.NewPeerContext(signPIDs)
@@ -169,10 +232,11 @@ signing:
 	signErrCh := make(chan *tss.Error, len(signPIDs))
 	signOutCh := make(chan tss.Message, len(signPIDs))
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
+	signDumpCh := make(chan *signing.LocalDumpPB, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold)
-		P := signing.NewLocalParty(big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
+		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false)
+		P := signing.NewLocalParty(preSigDatas[j], big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh, signDumpCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(); err != nil {
@@ -228,6 +292,7 @@ signing:
 
 				return
 			}
+		case <-signDumpCh:
 		}
 	}
 }

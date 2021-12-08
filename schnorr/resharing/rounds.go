@@ -56,6 +56,24 @@ var (
 
 func (round *base) SetStarted(status bool) {
 	round.started = status
+	round.resetOK()
+
+	if round.IsOldCommittee() {
+		Idx := round.PartyID().Index
+		for j, Pj := range round.OldParties().IDs() {
+			if Pj.Index == Idx {
+				round.oldOK[j] = true
+			}
+		}
+	}
+	if round.IsNewCommittee() {
+		Idx := round.PartyID().Index
+		for j, Pj := range round.NewParties().IDs() {
+			if Pj.Index == Idx {
+				round.newOK[j] = true
+			}
+		}
+	}
 }
 
 func (round *base) Params() *tss.Parameters {
