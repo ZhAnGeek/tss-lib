@@ -17,6 +17,7 @@ import (
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/tss"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
 // ECPoint convenience helper
@@ -24,6 +25,11 @@ type ECPoint struct {
 	curve  elliptic.Curve
 	coords [2]*big.Int
 }
+
+var (
+	eight    = big.NewInt(8)
+	eightInv = new(big.Int).ModInverse(eight, edwards.Edwards().Params().N)
+)
 
 // Creates a new ECPoint and checks that the given coordinates are on the elliptic curve.
 func NewECPoint(curve elliptic.Curve, X, Y *big.Int) (*ECPoint, error) {
@@ -84,6 +90,10 @@ func (p *ECPoint) Equals(p2 *ECPoint) bool {
 func (p *ECPoint) SetCurve(curve elliptic.Curve) *ECPoint {
 	p.curve = curve
 	return p
+}
+
+func (p *ECPoint) EightInvEight() *ECPoint {
+	return p.ScalarMult(eight).ScalarMult(eightInv)
 }
 
 func (p *ECPoint) ValidateBasic() bool {

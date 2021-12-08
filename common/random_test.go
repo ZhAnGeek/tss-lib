@@ -49,6 +49,12 @@ func TestGetRandomPrimeInt(t *testing.T) {
 func TestGetRandomQuandraticNonResidue(t *testing.T) {
 	rnd := common.MustGetRandomInt(randomIntBitLen)
 	N := common.GetRandomPositiveRelativelyPrimeInt(rnd)
+	for {
+		if N.Bit(0) == 1 {
+			break
+		}
+		N = common.GetRandomPositiveRelativelyPrimeInt(rnd)
+	}
 	w := common.GetRandomQuandraticNonResidue(N)
 	assert.Equal(t, big.Jacobi(w, N), -1, "must get quandratic non residue")
 }

@@ -53,6 +53,7 @@ type (
 
 var (
 	ErrMessageTooLong = fmt.Errorf("the message is too large or < 0")
+	ErrMessageMalFormed = fmt.Errorf("the message is mal-formed")
 	ErrWrongRandomness = fmt.Errorf("the randomness is invalid")
 
 	zero = big.NewInt(0)
@@ -210,6 +211,10 @@ func (privateKey *PrivateKey) Decrypt(c *big.Int) (m *big.Int, err error) {
 	N2 := privateKey.NSquare()
 	if c.Cmp(zero) == -1 || c.Cmp(N2) != -1 { // c < 0 || c >= N2 ?
 		return nil, ErrMessageTooLong
+	}
+	cg := new(big.Int).GCD(nil, nil, c, N2)
+	if cg.Cmp(one) == 1 {
+		return nil, ErrMessageMalFormed
 	}
 	// 1. L(u) = (c^LambdaN-1 mod N2) / N
 	Lc := L(new(big.Int).Exp(c, privateKey.LambdaN, N2), privateKey.N)

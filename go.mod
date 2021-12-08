@@ -1,6 +1,6 @@
 module github.com/binance-chain/tss-lib
 
-go 1.12
+go 1.16
 
 require (
 	github.com/agl/ed25519 v0.0.0-20170116200512-5312a6153412
@@ -8,7 +8,6 @@ require (
 	github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.0
-	github.com/golang/protobuf v1.5.2
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/ipfs/go-log v0.0.1
 	github.com/mattn/go-colorable v0.1.2 // indirect

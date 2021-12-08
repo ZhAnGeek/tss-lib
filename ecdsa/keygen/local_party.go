@@ -64,6 +64,10 @@ type (
 	}
 )
 
+const (
+	paillierBitsLen = 2048
+)
+
 // Exported, used in `tss` client
 func NewLocalParty(
 	params *tss.Parameters,
@@ -153,6 +157,9 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	case *KGRound2Message:
 		r2msg := msg.Content().(*KGRound2Message)
 		p.data.PaillierPKs[fromPIdx] = r2msg.UnmarshalPaillierPK() // used in round 4
+		if p.data.PaillierPKs[fromPIdx].N.BitLen() != paillierBitsLen {
+			return false, p.WrapError(errors.New("got Paillier modulus with not enough bits"), msg.GetFrom())
+		}
 		p.data.NTildej[fromPIdx] = r2msg.UnmarshalNTilde()
 		p.data.H1j[fromPIdx], p.data.H2j[fromPIdx] = r2msg.UnmarshalH1(), r2msg.UnmarshalH2()
 		var err error

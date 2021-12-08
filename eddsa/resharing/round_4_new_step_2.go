@@ -40,7 +40,7 @@ func (round *round4) Start() *tss.Error {
 	newXi := big.NewInt(0)
 
 	// 2-8.
-	modQ := common.ModInt(round.Params().EC().Params().N)
+	modQ := common.ModInt(round.EC().Params().N)
 	vjc := make([][]*crypto.ECPoint, len(round.OldParties().IDs()))
 	for j := 0; j <= len(vjc)-1; j++ { // P1..P_t+1. Ps are indexed from 0 here
 		r1msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)
@@ -58,6 +58,9 @@ func (round *round4) Start() *tss.Error {
 		vj, err := crypto.UnFlattenECPoints(round.Params().EC(), flatVs)
 		if err != nil {
 			return round.WrapError(err, round.Parties().IDs()[j])
+		}
+		for i, v := range vj {
+			vj[i] = v.EightInvEight()
 		}
 		vjc[j] = vj
 

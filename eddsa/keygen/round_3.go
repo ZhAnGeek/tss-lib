@@ -83,6 +83,9 @@ func (round *round3) Start() *tss.Error {
 				ch <- vssOut{err, nil}
 				return
 			}
+			for i, PjV := range PjVs {
+				PjVs[i] = PjV.EightInvEight()
+			}
 			proof, err := r2msg2.UnmarshalZKProof(round.Params().EC())
 			if err != nil {
 				ch <- vssOut{errors.New("failed to unmarshal schnorr proof"), nil}
@@ -143,6 +146,7 @@ func (round *round3) Start() *tss.Error {
 			// 11-12.
 			PjVs := vssResults[j].pjVs
 			for c := 0; c <= round.Threshold(); c++ {
+				//Vc[c], err = Vc[c].Add(PjVs[c])
 				Vc[c], err = Vc[c].Add(PjVs[c])
 				if err != nil {
 					culprits = append(culprits, Pj)
@@ -157,7 +161,7 @@ func (round *round3) Start() *tss.Error {
 	// 13-17. compute Xj for each Pj
 	{
 		var err error
-		modQ := common.ModInt(round.Params().EC().Params().N)
+		modQ := common.ModInt(round.EC().Params().N)
 		culprits := make([]*tss.PartyID, 0, len(Ps)) // who caused the error(s)
 		bigXj := round.save.BigXj
 		for j := 0; j < round.PartyCount(); j++ {
