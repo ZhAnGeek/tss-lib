@@ -49,7 +49,7 @@ func (round *identification2) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			
+
 			proofMulstar := round.temp.r5msgProofMulstar[j]
 			g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
 			ok := proofMulstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], g, round.temp.BigWs[j], round.temp.r1msgK[j], round.temp.r5msgH[j], round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])

@@ -99,7 +99,7 @@ func (round *identification1) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
-		
+
 		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.DeltaMtADs, round.temp.DeltaMtAFs, round.temp.DeltaMtADProofs, proofDec)
 		round.out <- r6msg
 	}

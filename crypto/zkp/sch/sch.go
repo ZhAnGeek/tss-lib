@@ -17,7 +17,7 @@ import (
 )
 
 const (
-    ProofSchBytesParts = 3
+	ProofSchBytesParts = 3
 )
 
 type (
@@ -89,19 +89,19 @@ func NewProofWithAlpha(Session []byte, X, A *crypto.ECPoint, alpha, x *big.Int) 
 }
 
 func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofSch, error) {
-    if !common.NonEmptyMultiBytes(bzs, ProofSchBytesParts) {
-        return nil, fmt.Errorf("expected %d byte parts to construct ProofSch", ProofSchBytesParts)
-    }
+	if !common.NonEmptyMultiBytes(bzs, ProofSchBytesParts) {
+		return nil, fmt.Errorf("expected %d byte parts to construct ProofSch", ProofSchBytesParts)
+	}
 	point, err := crypto.NewECPoint(ec,
-        new(big.Int).SetBytes(bzs[0]),
-        new(big.Int).SetBytes(bzs[1]))
-    if err != nil {
-        return nil, err
-    }
-    return &ProofSch{
-        A: point,
-        Z: new(big.Int).SetBytes(bzs[2]),
-    }, nil
+		new(big.Int).SetBytes(bzs[0]),
+		new(big.Int).SetBytes(bzs[1]))
+	if err != nil {
+		return nil, err
+	}
+	return &ProofSch{
+		A: point,
+		Z: new(big.Int).SetBytes(bzs[2]),
+	}, nil
 }
 
 func (pf *ProofSch) Verify(Session []byte, X *crypto.ECPoint) bool {
@@ -136,9 +136,9 @@ func (pf *ProofSch) ValidateBasic() bool {
 }
 
 func (pf *ProofSch) Bytes() [ProofSchBytesParts][]byte {
-    return [...][]byte{
-        pf.A.X().Bytes(),
-        pf.A.Y().Bytes(),
-        pf.Z.Bytes(),
-    }
+	return [...][]byte{
+		pf.A.X().Bytes(),
+		pf.A.Y().Bytes(),
+		pf.Z.Bytes(),
+	}
 }

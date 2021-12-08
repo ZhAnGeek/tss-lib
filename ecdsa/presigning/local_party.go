@@ -36,76 +36,76 @@ type (
 		temp localTempData
 
 		// outbound messaging
-		out chan<- tss.Message
-		end chan<- *PreSignatureData
-		dump chan<- *LocalDumpPB
+		out         chan<- tss.Message
+		end         chan<- *PreSignatureData
+		dump        chan<- *LocalDumpPB
 		startRndNum int
 	}
 
 	localTempData struct {
 		// temp data (thrown away after sign) / round 1
-		ssid                []byte
-		w                   *big.Int
-		BigWs               []*crypto.ECPoint
-		KShare              *big.Int
-		
-		BigGammaShare       *crypto.ECPoint
-		K                   *big.Int
-		G                   *big.Int
-		KNonce              *big.Int
-		GNonce              *big.Int
+		ssid   []byte
+		w      *big.Int
+		BigWs  []*crypto.ECPoint
+		KShare *big.Int
+
+		BigGammaShare *crypto.ECPoint
+		K             *big.Int
+		G             *big.Int
+		KNonce        *big.Int
+		GNonce        *big.Int
 		// round 2
-		GammaShare          *big.Int
-		DeltaShareBetas     []*big.Int
-		ChiShareBetas       []*big.Int
+		GammaShare      *big.Int
+		DeltaShareBetas []*big.Int
+		ChiShareBetas   []*big.Int
 		// round 3
-		BigGamma            *crypto.ECPoint
-		DeltaShareAlphas    []*big.Int
-		ChiShareAlphas      []*big.Int
-		DeltaShare          *big.Int
-		ChiShare            *big.Int
-		BigDeltaShare       *crypto.ECPoint
+		BigGamma         *crypto.ECPoint
+		DeltaShareAlphas []*big.Int
+		ChiShareAlphas   []*big.Int
+		DeltaShare       *big.Int
+		ChiShare         *big.Int
+		BigDeltaShare    *crypto.ECPoint
 		// round 4
-		BigR                *crypto.ECPoint
-		Rx                  *big.Int
-		SigmaShare          *big.Int
+		BigR       *crypto.ECPoint
+		Rx         *big.Int
+		SigmaShare *big.Int
 		// msg store
-		r1msgG              []*big.Int
-		r1msgK              []*big.Int
-		r1msgProof          []*zkpenc.ProofEnc
+		r1msgG     []*big.Int
+		r1msgK     []*big.Int
+		r1msgProof []*zkpenc.ProofEnc
 
-		r2msgBigGammaShare  []*crypto.ECPoint
-		r2msgDeltaD         []*big.Int
-		r2msgDeltaF         []*big.Int
-		r2msgDeltaProof     []*zkpaffg.ProofAffg
-		r2msgChiD           []*big.Int
-		r2msgChiF           []*big.Int
-		r2msgChiProof       []*zkpaffg.ProofAffg
-		r2msgProofLogstar   []*zkplogstar.ProofLogstar
+		r2msgBigGammaShare []*crypto.ECPoint
+		r2msgDeltaD        []*big.Int
+		r2msgDeltaF        []*big.Int
+		r2msgDeltaProof    []*zkpaffg.ProofAffg
+		r2msgChiD          []*big.Int
+		r2msgChiF          []*big.Int
+		r2msgChiProof      []*zkpaffg.ProofAffg
+		r2msgProofLogstar  []*zkplogstar.ProofLogstar
 
-		r3msgDeltaShare     []*big.Int
-		r3msgBigDeltaShare  []*crypto.ECPoint
-		r3msgProofLogstar   []*zkplogstar.ProofLogstar
+		r3msgDeltaShare    []*big.Int
+		r3msgBigDeltaShare []*crypto.ECPoint
+		r3msgProofLogstar  []*zkplogstar.ProofLogstar
 
-		r4msgSigmaShare     []*big.Int
+		r4msgSigmaShare []*big.Int
 		// for identification
-		DeltaMtAFs          []*big.Int
-		DeltaMtADs          []*big.Int
-		DeltaMtADProofs     []*zkpaffg.ProofAffg
-		ChiMtAFs            []*big.Int
-		ChiMtADs            []*big.Int
-		ChiMtADProofs       []*zkpaffg.ProofAffg
-		r5msgH              []*big.Int
-		r5msgProofMul       []*zkpmul.ProofMul
-		r5msgProofDec       []*zkpdec.ProofDec
-		r5msgDjis           [][]*big.Int
-		r5msgFjis           [][]*big.Int
+		DeltaMtAFs      []*big.Int
+		DeltaMtADs      []*big.Int
+		DeltaMtADProofs []*zkpaffg.ProofAffg
+		ChiMtAFs        []*big.Int
+		ChiMtADs        []*big.Int
+		ChiMtADProofs   []*zkpaffg.ProofAffg
+		r5msgH          []*big.Int
+		r5msgProofMul   []*zkpmul.ProofMul
+		r5msgProofDec   []*zkpdec.ProofDec
+		r5msgDjis       [][]*big.Int
+		r5msgFjis       [][]*big.Int
 	}
 
 	LocalDump struct {
-		Temp *localTempData
+		Temp     *localTempData
 		RoundNum int
-		Index int
+		Index    int
 	}
 
 	Transcript struct { // for signing identification
@@ -115,12 +115,11 @@ type (
 		ChiShareBetas  []*big.Int
 		R2msgChiD      []*big.Int
 
-		ChiMtAFs       []*big.Int
-		ChiMtADs       []*big.Int
-		ChiMtADProofs  []*zkpaffg.ProofAffg
+		ChiMtAFs      []*big.Int
+		ChiMtADs      []*big.Int
+		ChiMtADProofs []*zkpaffg.ProofAffg
 	}
 )
-
 
 func NewLocalParty(
 	params *tss.Parameters,
@@ -131,13 +130,13 @@ func NewLocalParty(
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
-		BaseParty:          new(tss.BaseParty),
-		params:             params,
-		keys:               keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
-		temp:               localTempData{},
-		out:                out,
-		end:                end,
-		dump:               dump,
+		BaseParty: new(tss.BaseParty),
+		params:    params,
+		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		temp:      localTempData{},
+		out:       out,
+		end:       end,
+		dump:      dump,
 	}
 	p.startRndNum = 1
 	// temp data init
@@ -187,13 +186,13 @@ func RestoreLocalParty(
 	dump chan<- *LocalDumpPB,
 ) (tss.Party, *tss.Error) {
 	p := &LocalParty{
-		BaseParty:          new(tss.BaseParty),
-		params:             params,
-		keys:               keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
-		temp:               localTempData{},
-		out:                out,
-		end:                end,
-		dump:               dump,
+		BaseParty: new(tss.BaseParty),
+		params:    params,
+		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		temp:      localTempData{},
+		out:       out,
+		end:       end,
+		dump:      dump,
 	}
 	p.startRndNum = du.UnmarshalRoundNum()
 	dtemp, err := du.UnmarshalLocalTemp(p.params.EC())

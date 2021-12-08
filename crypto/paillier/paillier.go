@@ -52,9 +52,9 @@ type (
 )
 
 var (
-	ErrMessageTooLong = fmt.Errorf("the message is too large or < 0")
+	ErrMessageTooLong   = fmt.Errorf("the message is too large or < 0")
 	ErrMessageMalFormed = fmt.Errorf("the message is mal-formed")
-	ErrWrongRandomness = fmt.Errorf("the randomness is invalid")
+	ErrWrongRandomness  = fmt.Errorf("the randomness is invalid")
 
 	zero = big.NewInt(0)
 	one  = big.NewInt(1)
@@ -236,7 +236,7 @@ func (privateKey *PrivateKey) GetRandomness(c *big.Int) (r *big.Int, err error) 
 	c0 := modN2.Mul(m, privateKey.N)
 	c0 = modN2.Sub(one, c0)
 	c0 = modN2.Mul(c, c0)
-	
+
 	modPhiN := common.ModInt(privateKey.PhiN)
 	niv := modPhiN.ModInverse(privateKey.N)
 

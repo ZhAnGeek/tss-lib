@@ -13,8 +13,8 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/vss"
-	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
+	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -63,7 +63,7 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
 	}
 	proofPrmList := append(proofPrm.A[:], proofPrm.Z[:]...)
-	
+
 	// Fig 6. Round 1. preparams
 	var preParams *LocalPreParams
 	if round.save.LocalPreParams.Validate() {

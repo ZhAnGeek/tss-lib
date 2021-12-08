@@ -14,10 +14,10 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
+	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
-	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -80,7 +80,7 @@ func NewKGRound2Message(
 		return nil
 	}
 	vsbzs := make([][]byte, len(vs_flat))
-	for i, item := range(vs_flat) {
+	for i, item := range vs_flat {
 		vsbzs[i] = item.Bytes()
 	}
 	AiBzs := Ai.Bytes()
@@ -105,7 +105,7 @@ func (m *KGRound2Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.GetPaillierN()) &&
 		common.NonEmptyBytes(m.GetNTilde()) &&
 		common.NonEmptyBytes(m.GetH1()) &&
-		common.NonEmptyBytes(m.GetH2()) && 
+		common.NonEmptyBytes(m.GetH2()) &&
 		common.NonEmptyMultiBytes(m.GetAi(), 2) &&
 		common.NonEmptyBytes(m.GetRid()) &&
 		common.NonEmptyBytes(m.GetCmtRandomness()) &&
@@ -115,7 +115,7 @@ func (m *KGRound2Message) ValidateBasic() bool {
 func (m *KGRound2Message) UnmarshalVs(ec elliptic.Curve) ([]*crypto.ECPoint, error) {
 	bzs := m.GetVs()
 	vs_points := make([]*big.Int, len(bzs))
-	for i, item := range(m.GetVs()) {
+	for i, item := range m.GetVs() {
 		vs_points[i] = new(big.Int).SetBytes(item)
 	}
 	vs, err := crypto.UnFlattenECPoints(ec, vs_points)
@@ -173,7 +173,7 @@ func NewKGRound3Message(
 	proofModBzs := proofMod.Bytes()
 	proofFacBzs := proofFac.Bytes()
 	content := &KGRound3Message{
-		Share: share.Bytes(),
+		Share:    share.Bytes(),
 		ModProof: proofModBzs[:],
 		FacProof: proofFacBzs[:],
 	}

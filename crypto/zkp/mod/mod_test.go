@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	. "github.com/binance-chain/tss-lib/crypto/zkp/mod"
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/stretchr/testify/assert"
 )
 
 var (
-	Session = []byte ("session")
+	Session = []byte("session")
 )
 
 func TestMod(test *testing.T) {
@@ -35,7 +35,7 @@ func TestMod(test *testing.T) {
 	proofBzs := proof.Bytes()
 	proof, err = NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
-	
+
 	ok := proof.Verify(Session, N)
 	assert.True(test, ok, "proof must verify")
 }

@@ -44,8 +44,8 @@ func NewDGRound1Message(
 		IsToOldCommittee: false,
 	}
 	content := &DGRound1Message{
-		PubX:   PubKey.X().Bytes(),
-		PubY:   PubKey.Y().Bytes(),
+		PubX:        PubKey.X().Bytes(),
+		PubY:        PubKey.Y().Bytes(),
 		VCommitment: vct.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)

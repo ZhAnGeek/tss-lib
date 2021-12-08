@@ -113,12 +113,12 @@ func (round *base) resetOK() {
 // get ssid from local params
 func (round *base) getSSID() ([]byte, error) {
 	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
-	ssidList = append(ssidList, round.Parties().IDs().Keys()...) // parties
+	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                         // parties
 	BigXjList, err := crypto.FlattenECPoints(round.key.BigXj)
 	if err != nil {
 		return nil, round.WrapError(errors.New("read BigXj failed"), round.PartyID())
 	}
-	ssidList = append(ssidList, BigXjList...)         // BigXj
+	ssidList = append(ssidList, BigXjList...) // BigXj
 	ssid := common.SHA512_256i(ssidList...).Bytes()
 
 	return ssid, nil

@@ -14,10 +14,10 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/vss"
+	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
-	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	"github.com/binance-chain/tss-lib/tss"
 )
 

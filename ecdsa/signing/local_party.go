@@ -38,58 +38,57 @@ type (
 		data    common.SignatureData
 
 		// outbound messaging
-		out chan<- tss.Message
-		end chan<- common.SignatureData
-		dump chan<- *LocalDumpPB
+		out         chan<- tss.Message
+		end         chan<- common.SignatureData
+		dump        chan<- *LocalDumpPB
 		startRndNum int
 	}
 
 	localTempData struct {
-		// temp data (thrown away after sign) 
+		// temp data (thrown away after sign)
 		// prepare
-		w                   *big.Int
-		BigWs               []*crypto.ECPoint
-		m                   *big.Int
-		KeyDerivationDelta  *big.Int
+		w                  *big.Int
+		BigWs              []*crypto.ECPoint
+		m                  *big.Int
+		KeyDerivationDelta *big.Int
 
 		// preSig
-		ssid                []byte
-		KShare              *big.Int
-		ChiShare            *big.Int
-		BigR                *crypto.ECPoint
+		ssid     []byte
+		KShare   *big.Int
+		ChiShare *big.Int
+		BigR     *crypto.ECPoint
 
 		// sign1
-		SigmaShare          *big.Int
+		SigmaShare *big.Int
 
 		// identification1
-		K                   *big.Int
-		r1msgK              []*big.Int
-		ChiShareAlphas      []*big.Int
-		ChiShareBetas       []*big.Int
-		r2msgChiD           []*big.Int
+		K              *big.Int
+		r1msgK         []*big.Int
+		ChiShareAlphas []*big.Int
+		ChiShareBetas  []*big.Int
+		r2msgChiD      []*big.Int
 
 		// for identification
-		ChiMtAFs            []*big.Int
-		ChiMtADs            []*big.Int
-		ChiMtADProofs       []*zkpaffg.ProofAffg
+		ChiMtAFs      []*big.Int
+		ChiMtADs      []*big.Int
+		ChiMtADProofs []*zkpaffg.ProofAffg
 
 		// message store
-		r4msgSigmaShare     []*big.Int
+		r4msgSigmaShare []*big.Int
 
-		r5msgH              []*big.Int
-		r5msgProofMulstar   []*zkpmulstar.ProofMulstar
-		r5msgProofDec       []*zkpdec.ProofDec
-		r5msgDjis           [][]*big.Int
-		r5msgFjis           [][]*big.Int
+		r5msgH            []*big.Int
+		r5msgProofMulstar []*zkpmulstar.ProofMulstar
+		r5msgProofDec     []*zkpdec.ProofDec
+		r5msgDjis         [][]*big.Int
+		r5msgFjis         [][]*big.Int
 	}
 
 	LocalDump struct {
-		Temp *localTempData
+		Temp     *localTempData
 		RoundNum int
-		Index int
+		Index    int
 	}
 )
-
 
 func NewLocalParty(
 	predata *presigning.PreSignatureData,
@@ -103,14 +102,14 @@ func NewLocalParty(
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
-		BaseParty:          new(tss.BaseParty),
-		params:             params,
-		keys:               keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
-		predata:            predata,
-		temp:               localTempData{},
-		out:                out,
-		end:                end,
-		dump:               dump,
+		BaseParty: new(tss.BaseParty),
+		params:    params,
+		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		predata:   predata,
+		temp:      localTempData{},
+		out:       out,
+		end:       end,
+		dump:      dump,
 	}
 	p.temp.m = msg
 	p.startRndNum = 1
@@ -164,13 +163,13 @@ func RestoreLocalParty(
 	dump chan<- *LocalDumpPB,
 ) (tss.Party, *tss.Error) {
 	p := &LocalParty{
-		BaseParty:          new(tss.BaseParty),
-		params:             params,
-		keys:               keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
-		temp:               localTempData{},
-		out:                out,
-		end:                end,
-		dump:               dump,
+		BaseParty: new(tss.BaseParty),
+		params:    params,
+		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		temp:      localTempData{},
+		out:       out,
+		end:       end,
+		dump:      dump,
 	}
 	p.startRndNum = du.UnmarshalRoundNum()
 	dtemp, err := du.UnmarshalLocalTemp(p.params.EC())

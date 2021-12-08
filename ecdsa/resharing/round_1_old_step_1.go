@@ -45,16 +45,16 @@ func (round *round1) Start() *tss.Error {
 
 	// 0. ssid
 	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().B, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
-	ssidList = append(ssidList, round.OldParties().IDs().Keys()...) // old parties
-	ssidList = append(ssidList, round.NewParties().IDs().Keys()...) // new parties
+	ssidList = append(ssidList, round.OldParties().IDs().Keys()...)                                                                             // old parties
+	ssidList = append(ssidList, round.NewParties().IDs().Keys()...)                                                                             // new parties
 	BigXjList, err := crypto.FlattenECPoints(round.input.BigXj)
 	if err != nil {
 		return round.WrapError(errors.New("read BigXj failed"), Pi)
 	}
-	ssidList = append(ssidList, BigXjList...) // BigXj
+	ssidList = append(ssidList, BigXjList...)           // BigXj
 	ssidList = append(ssidList, round.input.NTildej...) // NCap
-	ssidList = append(ssidList, round.input.H1j...) // s
-	ssidList = append(ssidList, round.input.H2j...) // t
+	ssidList = append(ssidList, round.input.H1j...)     // s
+	ssidList = append(ssidList, round.input.H2j...)     // t
 	ssid := common.SHA512_256i(ssidList...).Bytes()
 
 	// 1. PrepareForSigning() -> w_i

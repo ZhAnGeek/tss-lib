@@ -101,14 +101,14 @@ func NewPreSignData(
 		KShare:   kShare.Bytes(),
 		ChiShare: chiShare.Bytes(),
 
-		LRK: KBzs,
-		LRr1MsgK: r1msgKBzs,
+		LRK:              KBzs,
+		LRr1MsgK:         r1msgKBzs,
 		LRChiShareAlphas: ChiShareAlphasBzs,
-		LRChiShareBetas: ChiShareBetasBzs,
-		LRr2MsgChiD: r2msgChiDBzs,
+		LRChiShareBetas:  ChiShareBetasBzs,
+		LRr2MsgChiD:      r2msgChiDBzs,
 
-		LRChiMtAFs: ChiMtAFsBzs,
-		LRChiMtADs: ChiMtADsBzs,
+		LRChiMtAFs:      ChiMtAFsBzs,
+		LRChiMtADs:      ChiMtADsBzs,
 		LRChiMtADProofs: ChiMtaDProofsBzs,
 	}
 	return content
@@ -193,7 +193,7 @@ func (m *PreSignatureData) UnmarshalTrans(ec elliptic.Curve) (*Transcript, error
 	ChiMtADProofs := make([]*zkpaffg.ProofAffg, len(ChiMtADProofsBzs)/zkpaffg.ProofAffgBytesParts)
 	for i := range ChiMtADProofs {
 		if ChiMtADProofsBzs[i*zkpaffg.ProofAffgBytesParts] != nil {
-			item, err := zkpaffg.NewProofFromBytes(ec, ChiMtADProofsBzs[(i * zkpaffg.ProofAffgBytesParts):(i*zkpaffg.ProofAffgBytesParts + zkpaffg.ProofAffgBytesParts)])
+			item, err := zkpaffg.NewProofFromBytes(ec, ChiMtADProofsBzs[(i*zkpaffg.ProofAffgBytesParts):(i*zkpaffg.ProofAffgBytesParts+zkpaffg.ProofAffgBytesParts)])
 			if err != nil {
 				return nil, err
 			}
@@ -208,9 +208,9 @@ func (m *PreSignatureData) UnmarshalTrans(ec elliptic.Curve) (*Transcript, error
 		ChiShareBetas:  ChiShareBetas,
 		R2msgChiD:      r2msgChiD,
 
-		ChiMtAFs:       ChiMtAFs,
-		ChiMtADs:       ChiMtADs,
-		ChiMtADProofs:  ChiMtADProofs,
+		ChiMtAFs:      ChiMtAFs,
+		ChiMtADs:      ChiMtADs,
+		ChiMtADProofs: ChiMtADProofs,
 	}
 	return trans, nil
 }
@@ -418,12 +418,12 @@ func NewIdentificationRound1Message(
 		}
 	}
 	content := &IdentificationRound1Message{
-		H:             H.Bytes(),
-		MulProof:      MulProofBzs[:],
-		Djis:          DjisBzs,
-		Fjis:          FjisBzs,
-		DjiProofs:     DjiProofsBzs,
-		DecProof:      DecProofBzs[:],
+		H:         H.Bytes(),
+		MulProof:  MulProofBzs[:],
+		Djis:      DjisBzs,
+		Fjis:      FjisBzs,
+		DjiProofs: DjiProofsBzs,
+		DecProof:  DecProofBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -784,7 +784,7 @@ func NewLocalDumpPB(
 		}
 	}
 	r5msgDjiLen := len(LocalTemp.r5msgDjis)
-	r5msgDjisBzs := make([][]byte, r5msgDjiLen * r5msgDjiLen)
+	r5msgDjisBzs := make([][]byte, r5msgDjiLen*r5msgDjiLen)
 	for i, row := range LocalTemp.r5msgDjis {
 		for j, item := range row {
 			if item != nil {
@@ -793,7 +793,7 @@ func NewLocalDumpPB(
 		}
 	}
 	r5msgFjiLen := len(LocalTemp.r5msgFjis)
-	r5msgFjisBzs := make([][]byte, r5msgFjiLen * r5msgFjiLen)
+	r5msgFjisBzs := make([][]byte, r5msgFjiLen*r5msgFjiLen)
 	for i, row := range LocalTemp.r5msgFjis {
 		for j, item := range row {
 			if item != nil {
@@ -817,11 +817,11 @@ func NewLocalDumpPB(
 		LTBigWs:  BigWsBzs,
 		LTKShare: KShareBzs,
 
-		LTBigGammaShare:      BigGammaShareBzs,
-		LTK:                  KBzs,
-		LTG:                  GBzs,
-		LTKNonce:             KNonceBzs,
-		LTGNonce:             GNonceBzs,
+		LTBigGammaShare: BigGammaShareBzs,
+		LTK:             KBzs,
+		LTG:             GBzs,
+		LTKNonce:        KNonceBzs,
+		LTGNonce:        GNonceBzs,
 
 		LTGammaShare:      GammaShareBzs,
 		LTDeltaShareBetas: DeltaShareBetasBzs,
@@ -857,18 +857,18 @@ func NewLocalDumpPB(
 
 		LTr4MsgSigmaShare: r4msgSigmaShareBzs,
 
-		LTDeltaMtAFs:         DeltaMtAFsBzs,
-		LTDeltaMtADs:         DeltaMtADsBzs,
-		LDDeltaMtADProofs:    DeltaMtaDProofsBzs,
-		LTChiMtAFs:           ChiMtAFsBzs,
-		LTChiMtADs:           ChiMtADsBzs,
-		LTChiMtADProofs:      ChiMtaDProofsBzs,
-		LTr5MsgH:             r5msgHBzs,
-		LTr5MsgProofMul:      r5msgProofMulBzs,
+		LTDeltaMtAFs:      DeltaMtAFsBzs,
+		LTDeltaMtADs:      DeltaMtADsBzs,
+		LDDeltaMtADProofs: DeltaMtaDProofsBzs,
+		LTChiMtAFs:        ChiMtAFsBzs,
+		LTChiMtADs:        ChiMtADsBzs,
+		LTChiMtADProofs:   ChiMtaDProofsBzs,
+		LTr5MsgH:          r5msgHBzs,
+		LTr5MsgProofMul:   r5msgProofMulBzs,
 		//LTr6MsgDeltaShareEnc: r6msgDeltaShareEncBzs,
-		LTr5MsgProofDec:      r5msgProofDecBzs,
-		LTr5MsgDjis:          r5msgDjisBzs,
-		LTr5MsgFjis:          r5msgFjisBzs,
+		LTr5MsgProofDec: r5msgProofDecBzs,
+		LTr5MsgDjis:     r5msgDjisBzs,
+		LTr5MsgFjis:     r5msgFjisBzs,
 		//LTr5MsgQ3Enc:         r5msgQ3EncBzs,
 	}
 	return content
@@ -1188,7 +1188,7 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 	DeltaMtADProofs := make([]*zkpaffg.ProofAffg, len(DeltaMtADProofsBzs)/zkpaffg.ProofAffgBytesParts)
 	for i := range DeltaMtADProofs {
 		if DeltaMtADProofsBzs[i*zkpaffg.ProofAffgBytesParts] != nil {
-			item, err := zkpaffg.NewProofFromBytes(ec, DeltaMtADProofsBzs[(i * zkpaffg.ProofAffgBytesParts):(i*zkpaffg.ProofAffgBytesParts + zkpaffg.ProofAffgBytesParts)])
+			item, err := zkpaffg.NewProofFromBytes(ec, DeltaMtADProofsBzs[(i*zkpaffg.ProofAffgBytesParts):(i*zkpaffg.ProofAffgBytesParts+zkpaffg.ProofAffgBytesParts)])
 			if err != nil {
 				return nil, err
 			}
@@ -1215,7 +1215,7 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 	ChiMtADProofs := make([]*zkpaffg.ProofAffg, len(ChiMtADProofsBzs)/zkpaffg.ProofAffgBytesParts)
 	for i := range ChiMtADProofs {
 		if ChiMtADProofsBzs[i*zkpaffg.ProofAffgBytesParts] != nil {
-			item, err := zkpaffg.NewProofFromBytes(ec, ChiMtADProofsBzs[(i * zkpaffg.ProofAffgBytesParts):(i*zkpaffg.ProofAffgBytesParts + zkpaffg.ProofAffgBytesParts)])
+			item, err := zkpaffg.NewProofFromBytes(ec, ChiMtADProofsBzs[(i*zkpaffg.ProofAffgBytesParts):(i*zkpaffg.ProofAffgBytesParts+zkpaffg.ProofAffgBytesParts)])
 			if err != nil {
 				return nil, err
 			}
@@ -1303,11 +1303,11 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 		BigWs:  BigWs,
 		KShare: KShare,
 
-		BigGammaShare:      BigGammaShare,
-		K:                  K,
-		G:                  G,
-		KNonce:             KNonce,
-		GNonce:             GNonce,
+		BigGammaShare: BigGammaShare,
+		K:             K,
+		G:             G,
+		KNonce:        KNonce,
+		GNonce:        GNonce,
 
 		GammaShare:      GammaShare,
 		DeltaShareBetas: DeltaShareBetas,
@@ -1343,18 +1343,18 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 
 		r4msgSigmaShare: r4msgSigmaShare,
 
-		DeltaMtAFs:         DeltaMtAFs,
-		DeltaMtADs:         DeltaMtADs,
-		DeltaMtADProofs:    DeltaMtADProofs,
-		ChiMtAFs:           ChiMtAFs,
-		ChiMtADs:           ChiMtADs,
-		ChiMtADProofs:      ChiMtADProofs,
-		r5msgH:             r5msgH,
-		r5msgProofMul:      r5msgProofMul,
+		DeltaMtAFs:      DeltaMtAFs,
+		DeltaMtADs:      DeltaMtADs,
+		DeltaMtADProofs: DeltaMtADProofs,
+		ChiMtAFs:        ChiMtAFs,
+		ChiMtADs:        ChiMtADs,
+		ChiMtADProofs:   ChiMtADProofs,
+		r5msgH:          r5msgH,
+		r5msgProofMul:   r5msgProofMul,
 		//r5msgDeltaShareEnc: r5msgDeltaShareEnc,
-		r5msgProofDec:      r5msgProofDec,
-		r5msgDjis:          r5msgDjis,
-		r5msgFjis:          r5msgFjis,
+		r5msgProofDec: r5msgProofDec,
+		r5msgDjis:     r5msgDjis,
+		r5msgFjis:     r5msgFjis,
 		//r5msgQ3Enc:         r5msgQ3Enc,
 	}
 

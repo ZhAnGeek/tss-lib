@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	Session = []byte ("session")
+	Session = []byte("session")
 )
 
 func TestEnc(test *testing.T) {

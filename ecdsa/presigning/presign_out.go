@@ -94,14 +94,14 @@ func (round *presignout) Start() *tss.Error {
 	transcript := &Transcript{}
 	if round.NeedsIdentifaction() {
 		transcript = &Transcript{
-			K: round.temp.K,
-			R1msgK: round.temp.r1msgK,
+			K:              round.temp.K,
+			R1msgK:         round.temp.r1msgK,
 			ChiShareAlphas: round.temp.ChiShareAlphas,
-			ChiShareBetas: round.temp.ChiShareBetas,
-			R2msgChiD: round.temp.r2msgChiD,
+			ChiShareBetas:  round.temp.ChiShareBetas,
+			R2msgChiD:      round.temp.r2msgChiD,
 
-			ChiMtAFs: round.temp.ChiMtAFs,
-			ChiMtADs: round.temp.ChiMtADs,
+			ChiMtAFs:      round.temp.ChiMtAFs,
+			ChiMtADs:      round.temp.ChiMtADs,
 			ChiMtADProofs: round.temp.ChiMtADProofs,
 		}
 	}

@@ -13,10 +13,10 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
-	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
-	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
+	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
+	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -52,7 +52,7 @@ func NewDGRound1Message(
 		EcdsaPubX:   ecdsaPub.X().Bytes(),
 		EcdsaPubY:   ecdsaPub.Y().Bytes(),
 		VCommitment: vct.Bytes(),
-		Ssid: ssid,
+		Ssid:        ssid,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -102,12 +102,12 @@ func NewDGRound2Message1(
 	proofPrmBzs := proofPrm.Bytes()
 	proofFacBzs := proofFac.Bytes()
 	content := &DGRound2Message1{
-		PaillierN:     paillierPK.N.Bytes(),
-		PrmProof:      proofPrmBzs[:],
-		NTilde:        NTildei.Bytes(),
-		H1:            H1i.Bytes(),
-		H2:            H2i.Bytes(),
-		FacProof:      proofFacBzs[:],
+		PaillierN: paillierPK.N.Bytes(),
+		PrmProof:  proofPrmBzs[:],
+		NTilde:    NTildei.Bytes(),
+		H1:        H1i.Bytes(),
+		H2:        H2i.Bytes(),
+		FacProof:  proofFacBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)

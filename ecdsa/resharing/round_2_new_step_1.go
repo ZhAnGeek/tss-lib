@@ -11,9 +11,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
+	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -86,7 +86,6 @@ func (round *round2) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(errors.New("create proofFac failed"), Pi)
 	}
-
 
 	r2msg2 := NewDGRound2Message1(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),

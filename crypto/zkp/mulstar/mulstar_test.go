@@ -22,25 +22,25 @@ import (
 
 // Using a modulus length of 2048 is recommended in the GG18 spec
 const (
-    testSafePrimeBits = 1024
+	testSafePrimeBits = 1024
 )
 
 var (
-	Session = []byte ("session")
+	Session = []byte("session")
 )
 
 func TestMulstar(test *testing.T) {
-    ec := tss.EC()
-    q := ec.Params().N
+	ec := tss.EC()
+	q := ec.Params().N
 
 	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits), common.GetRandomPrimeInt(testSafePrimeBits)}
 	NCap, s, t, err := crypto.GenerateNTildei(primes)
-    assert.NoError(test, err)
+	assert.NoError(test, err)
 
-    sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
-    assert.NoError(test, err)
+	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
+	assert.NoError(test, err)
 
-    x := common.GetRandomPositiveInt(q)
+	x := common.GetRandomPositiveInt(q)
 	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy)
 	X := crypto.ScalarBaseMult(ec, x)
 
@@ -51,9 +51,9 @@ func TestMulstar(test *testing.T) {
 	D, rho, err := pk.HomoMultObfuscate(x, C)
 	assert.NoError(test, err)
 
-    proof, err := NewProof(Session, ec, pk, g, X, C, D, NCap, s, t, x, rho)
-    assert.NoError(test, err)
+	proof, err := NewProof(Session, ec, pk, g, X, C, D, NCap, s, t, x, rho)
+	assert.NoError(test, err)
 
-    ok := proof.Verify(Session, ec, pk, g, X, C, D, NCap, s, t)
-    assert.True(test, ok, "proof must verify")
+	ok := proof.Verify(Session, ec, pk, g, X, C, D, NCap, s, t)
+	assert.True(test, ok, "proof must verify")
 }

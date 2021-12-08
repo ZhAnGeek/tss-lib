@@ -18,7 +18,7 @@ import (
 )
 
 var (
-	Session = []byte ("session")
+	Session = []byte("session")
 )
 
 func TestSchnorrProof(t *testing.T) {

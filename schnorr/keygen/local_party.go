@@ -38,7 +38,7 @@ type (
 
 	localTempData struct {
 		// temp data (thrown away after keygen)
-		ssid          []byte 
+		ssid          []byte
 		ui            *big.Int // used for tests
 		KGCs          []cmt.HashCommitment
 		vs            vss.Vs

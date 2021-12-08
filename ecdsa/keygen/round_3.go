@@ -115,7 +115,7 @@ func (round *round3) Start() *tss.Error {
 			if err != nil {
 				errChs <- round.WrapError(errors.New("encrypt error"), Pi)
 			}
-			
+
 			r3msg := NewKGRound3Message(Pj, round.PartyID(), Cij, proofMod, proofFac)
 			round.out <- r3msg
 		}(j, Pj)

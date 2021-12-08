@@ -47,7 +47,7 @@ func (round *identification2) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			
+
 			proofMul := round.temp.r5msgProofMul[j]
 			ok := proofMul.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j], round.temp.r1msgG[j], round.temp.r5msgH[j])
 			if !ok {

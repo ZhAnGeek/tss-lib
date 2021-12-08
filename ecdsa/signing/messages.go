@@ -95,13 +95,13 @@ func NewIdentificationRound1Message(
 		}
 	}
 	content := &IdentificationRound1Message{
-		H:             H.Bytes(),
-		MulProof:      MulProofBzs[:],
-		Djis:          DjisBzs,
-		Fjis:          FjisBzs,
-		DjiProofs:     DjiProofsBzs,
-		DecProof:      DecProofBzs[:],
-		Q3Enc:         Q3Enc.Bytes(),
+		H:         H.Bytes(),
+		MulProof:  MulProofBzs[:],
+		Djis:      DjisBzs,
+		Fjis:      FjisBzs,
+		DjiProofs: DjiProofsBzs,
+		DecProof:  DecProofBzs[:],
+		Q3Enc:     Q3Enc.Bytes(),
 		//SigmaShareEnc: SigmaShareEnc.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
@@ -311,7 +311,7 @@ func NewLocalDumpPB(
 		}
 	}
 	r5msgDjiLen := len(LocalTemp.r5msgDjis)
-	r5msgDjisBzs := make([][]byte, r5msgDjiLen * r5msgDjiLen)
+	r5msgDjisBzs := make([][]byte, r5msgDjiLen*r5msgDjiLen)
 	for i, row := range LocalTemp.r5msgDjis {
 		for j, item := range row {
 			if item != nil {
@@ -320,7 +320,7 @@ func NewLocalDumpPB(
 		}
 	}
 	r5msgFjiLen := len(LocalTemp.r5msgFjis)
-	r5msgFjisBzs := make([][]byte, r5msgFjiLen * r5msgFjiLen)
+	r5msgFjisBzs := make([][]byte, r5msgFjiLen*r5msgFjiLen)
 	for i, row := range LocalTemp.r5msgFjis {
 		for j, item := range row {
 			if item != nil {
@@ -344,31 +344,31 @@ func NewLocalDumpPB(
 		LTm:                  mBzs,
 		LTKeyDerivationDelta: KeyDerivationDeltaBzs,
 
-		LTssid:   LocalTemp.ssid,
-		LTKShare: KShareBzs,
+		LTssid:     LocalTemp.ssid,
+		LTKShare:   KShareBzs,
 		LTChiShare: ChiShareBzs,
-		LTBigR: BigRBzs,
+		LTBigR:     BigRBzs,
 
 		LTSigmaShare: SigmaShareBzs,
 
-		LTK: KBzs,
-		LTr1MsgK: r1msgKBzs,
+		LTK:              KBzs,
+		LTr1MsgK:         r1msgKBzs,
 		LTChiShareAlphas: ChiShareAlphasBzs,
-		LTChiShareBetas: ChiShareBetasBzs,
-		LTr2MsgChiD: r2msgChiDBzs,
+		LTChiShareBetas:  ChiShareBetasBzs,
+		LTr2MsgChiD:      r2msgChiDBzs,
 
-		LTChiMtAFs: ChiMtAFsBzs,
-		LTChiMtADs: ChiMtADsBzs,
+		LTChiMtAFs:      ChiMtAFsBzs,
+		LTChiMtADs:      ChiMtADsBzs,
 		LTChiMtADProofs: ChiMtaDProofsBzs,
 
 		LTr4MsgSigmaShare: r4msgSigmaShareBzs,
 
-		LTr5MsgH: r5msgHBzs,
+		LTr5MsgH:            r5msgHBzs,
 		LTr5MsgProofMulstar: r5msgProofMulstarBzs,
 		//LTr5MsgSigmaShareEnc: r5msgSigmaShareBzs,
 		LTr5MsgProofDec: r5msgProofDecBzs,
-		LTr5MsgDjis: r5msgDjisBzs,
-		LTr5MsgFjis: r5msgFjisBzs,
+		LTr5MsgDjis:     r5msgDjisBzs,
+		LTr5MsgFjis:     r5msgFjisBzs,
 		//LTr5MsgQ3Enc: r5msgQ3EncBzs,
 
 	}
@@ -521,24 +521,24 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 	//}
 
 	LocalTemp := &localTempData{
-		w: w,
-		BigWs: BigWs,
-		m: msg,
+		w:                  w,
+		BigWs:              BigWs,
+		m:                  msg,
 		KeyDerivationDelta: keyDerivationDelta,
 
-		ssid: ssid,
-		KShare: KShare,
+		ssid:     ssid,
+		KShare:   KShare,
 		ChiShare: ChiShare,
-		BigR: BigR,
+		BigR:     BigR,
 
-		SigmaShare: SigmaShare,
+		SigmaShare:      SigmaShare,
 		r4msgSigmaShare: r4msgSigmaShare,
 
-		r5msgH: r5msgH,
+		r5msgH:            r5msgH,
 		r5msgProofMulstar: r5msgProofMulstar,
-		r5msgProofDec: r5msgProofDec,
-		r5msgDjis: r5msgDjis,
-		r5msgFjis: r5msgFjis,
+		r5msgProofDec:     r5msgProofDec,
+		r5msgDjis:         r5msgDjis,
+		r5msgFjis:         r5msgFjis,
 		//r5msgQ3Enc: r5msgQ3Enc,
 	}
 
