@@ -8,6 +8,7 @@ package keygen
 
 import (
 	"encoding/hex"
+	"fmt"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -76,14 +77,17 @@ func (preParams LocalPreParams) ValidateWithProof() bool {
 
 // BuildLocalSaveDataSubset re-creates the LocalPartySaveData to contain data for only the list of signing parties.
 func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.SortedPartyIDs) LocalPartySaveData {
+	fmt.Printf("sourceData: %v, sortedIDs: %v, sourceData.Ks: %v\n", sourceData, sortedIDs, sourceData.Ks)
 	keysToIndices := make(map[string]int, len(sourceData.Ks))
 	for j, kj := range sourceData.Ks {
 		keysToIndices[hex.EncodeToString(kj.Bytes())] = j
 	}
+	fmt.Printf("keysToIndices: %v\n", keysToIndices)
 	newData := NewLocalPartySaveData(sortedIDs.Len())
 	newData.LocalPreParams = sourceData.LocalPreParams
 	newData.LocalSecrets = sourceData.LocalSecrets
 	newData.ECDSAPub = sourceData.ECDSAPub
+	fmt.Printf("newData: %v\n", newData)
 	for j, id := range sortedIDs {
 		savedIdx, ok := keysToIndices[hex.EncodeToString(id.Key)]
 		if !ok {
@@ -96,5 +100,6 @@ func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.Sorte
 		newData.BigXj[j] = sourceData.BigXj[savedIdx]
 		newData.PaillierPKs[j] = sourceData.PaillierPKs[savedIdx]
 	}
+	fmt.Printf("newData: %v\n", newData)
 	return newData
 }

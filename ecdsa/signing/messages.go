@@ -28,6 +28,8 @@ var (
 
 func NewSignRoundMessage(
 	from *tss.PartyID,
+	Rx *big.Int,
+	Ry *big.Int,
 	SigmaShare *big.Int,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
@@ -35,6 +37,8 @@ func NewSignRoundMessage(
 		IsBroadcast: true,
 	}
 	content := &SignRoundMessage{
+		Rx: Rx.Bytes(),
+		Ry: Ry.Bytes(),
 		SigmaShare: SigmaShare.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)

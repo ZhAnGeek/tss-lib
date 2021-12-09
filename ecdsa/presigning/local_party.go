@@ -117,6 +117,7 @@ func NewLocalParty(
 	dump chan<- *LocalDumpPB,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
+	fmt.Printf("partyCount: %d, %v\n", partyCount, params.Parties().IDs())
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
 		params:    params,
@@ -126,6 +127,8 @@ func NewLocalParty(
 		end:       end,
 		dump:      dump,
 	}
+
+	fmt.Printf("p: %v\n", p)
 	p.startRndNum = 1
 	// temp data init
 	p.temp.keyDerivationDelta = keyDerivationDelta
@@ -160,6 +163,7 @@ func NewLocalParty(
 	p.temp.r6msgDeltaShareEnc = make([]*big.Int, partyCount)
 	p.temp.r6msgProofDec = make([]*zkpdec.ProofDec, partyCount)
 
+	fmt.Printf("make success!\n")
 	return p
 }
 
