@@ -7,6 +7,7 @@
 package presigning_test
 
 import (
+	"encoding/base64"
 	"fmt"
 	"math/big"
 	"runtime"
@@ -22,6 +23,7 @@ import (
 	sign "github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/binance-chain/tss-lib/test"
 	"github.com/binance-chain/tss-lib/tss"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -223,9 +225,16 @@ presign_1_loop:
 		//fmt.Printf("Presign1 select messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			i := du.UnmarshalIndex()
+			dum, _ :=  proto.Marshal(du)
+			dumStr := base64.StdEncoding.EncodeToString(dum)
+			dumStrDec, _ := base64.StdEncoding.DecodeString(dumStr)
+			var duRestored LocalDumpPB
+			proto.Unmarshal(dumStrDec, &duRestored)
+
+			i := duRestored.UnmarshalIndex()
 			//i := du.Index
-			r1dumps[i] = du
+			r1dumps[i] = &duRestored
+			//r1dumps[i] = du
 			atomic.AddInt32(&presign_1_ended, 1)
 			fmt.Printf("Party%2d [presign 1]: done and status dumped \n", i)
 			if atomic.LoadInt32(&presign_1_ended) == int32(len(signPIDs)) {
@@ -287,9 +296,16 @@ presign_2_loop:
 		//fmt.Printf("Presign2 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			i := du.UnmarshalIndex()
+			dum, _ :=  proto.Marshal(du)
+			dumStr := base64.StdEncoding.EncodeToString(dum)
+			dumStrDec, _ := base64.StdEncoding.DecodeString(dumStr)
+			var duRestored LocalDumpPB
+			proto.Unmarshal(dumStrDec, &duRestored)
+
+			i := duRestored.UnmarshalIndex()
 			//i := du.Index
-			r2dumps[i] = du
+			r2dumps[i] = &duRestored
+			//r2dumps[i] = du
 			atomic.AddInt32(&presign_2_ended, 1)
 			fmt.Printf("Party%2d [presign 2]: done and status dumped \n", i)
 			if atomic.LoadInt32(&presign_2_ended) == int32(len(signPIDs)) {
@@ -352,9 +368,16 @@ presign_3_loop:
 		//fmt.Printf("Presign3 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			i := du.UnmarshalIndex()
+			dum, _ :=  proto.Marshal(du)
+			dumStr := base64.StdEncoding.EncodeToString(dum)
+			dumStrDec, _ := base64.StdEncoding.DecodeString(dumStr)
+			var duRestored LocalDumpPB
+			proto.Unmarshal(dumStrDec, &duRestored)
+
+			i := duRestored.UnmarshalIndex()
 			//i := du.Index
-			r3dumps[i] = du
+			r3dumps[i] = &duRestored
+			//r3dumps[i] = du
 			atomic.AddInt32(&presign_3_ended, 1)
 			fmt.Printf("Party%2d [presign 3]: done and status dumped \n", i)
 			if atomic.LoadInt32(&presign_3_ended) == int32(len(signPIDs)) {

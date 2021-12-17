@@ -44,9 +44,9 @@ func (round *presign2) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			Kj := round.temp.r1msgK[j]
-			proof := round.temp.r1msgProof[j]
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			Kj := round.temp.R1msgK[j]
+			proof := round.temp.R1msgProof[j]
+			ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 			ok := proof.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round2: proofEnc verify failed"), Pj)
@@ -74,11 +74,11 @@ func (round *presign2) Start() *tss.Error {
 			continue
 		}
 
-		ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
+		ContextI := append(round.temp.Ssid, big.NewInt(int64(i)).Bytes()...)
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			Kj := round.temp.r1msgK[j]
+			Kj := round.temp.R1msgK[j]
 
 			DeltaOut := make(chan *MtAOut, 1)
 			ChiOut := make(chan *MtAOut, 1)
@@ -99,7 +99,7 @@ func (round *presign2) Start() *tss.Error {
 			wgj.Add(1)
 			go func(j int, Pj *tss.PartyID) {
 				defer wgj.Done()
-				ChiMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.w, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+				ChiMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.W, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 				if err != nil {
 					errChs <- round.WrapError(errors.New("MtAChi failed"))
 					return
@@ -165,11 +165,15 @@ func (round *presign2) Start() *tss.Error {
 }
 
 func (round *presign2) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r2msgDeltaD {
+	for j, msg := range round.temp.R2msgDeltaD {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil {
+		if msg == nil || round.temp.R2msgBigGammaShare[j] == nil ||
+		   round.temp.R2msgChiD[j] == nil || round.temp.R2msgChiF[j] == nil ||
+		   round.temp.R2msgChiProof[j] == nil || round.temp.R2msgDeltaF[j] == nil ||
+		   round.temp.R2msgDeltaProof[j] == nil {
+
 			return false, nil
 		}
 		round.ok[j] = true
