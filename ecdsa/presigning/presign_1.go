@@ -82,7 +82,7 @@ func (round *presign1) Start() *tss.Error {
 		return err
 	}
 
-	round.temp.ssid = ssid
+	round.temp.Ssid = ssid
 	round.temp.KShare = KShare
 	round.temp.GammaShare = GammaShare
 	round.temp.G = G
@@ -115,11 +115,11 @@ func (round *presign1) Update() (bool, *tss.Error) {
 	// 	round.ok[j] = true
 	// }
 	// return true, nil
-	for j, msg := range round.temp.r1msgK {
+	for j, msg := range round.temp.R1msgK {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil {
+		if msg == nil || round.temp.R1msgK[j] == nil || round.temp.R1msgProof[j] == nil {
 			return false, nil
 		}
 		round.ok[j] = true
@@ -164,7 +164,7 @@ func (round *presign1) prepare() error {
 	}
 	wi, BigWs := PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, BigXs)
 
-	round.temp.w = wi
+	round.temp.W = wi
 	round.temp.BigWs = BigWs
 	return nil
 }

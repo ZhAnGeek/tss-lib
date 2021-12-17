@@ -53,11 +53,11 @@ message IdentificationRound1Message {
  * Container for output presignatures
  */
  message PreSignatureData {
-    int32 index = 1;
-    bytes ssid = 2;
+    int32 Index = 1;
+    bytes Ssid = 2;
     repeated bytes bigR = 3;
-    bytes kShare = 4;
-    bytes chiShare = 5;
+    bytes KShare = 4;
+    bytes ChiShare = 5;
 
     // Transcript for signing identification
     bytes LRK = 6;

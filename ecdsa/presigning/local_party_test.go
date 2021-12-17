@@ -22,6 +22,7 @@ import (
 	sign "github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/binance-chain/tss-lib/test"
 	"github.com/binance-chain/tss-lib/tss"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -223,9 +224,19 @@ presign_1_loop:
 		//fmt.Printf("Presign1 select messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			i := du.UnmarshalIndex()
+			//fmt.Println("1", du.LTr2MsgBigGammaShare[0], len(du.LTr2MsgBigGammaShare))
+			dum, _ :=  proto.Marshal(du)
+			//dumStr := base64.StdEncoding.EncodeToString(dum)
+			//dumStrDec, _ := base64.StdEncoding.DecodeString(dumStr)
+			var duRestored LocalDumpPB
+			proto.Unmarshal(dum, &duRestored)
+			//fmt.Println("2", duRestored.LTr2MsgBigGammaShare[0], len(duRestored.LTr2MsgBigGammaShare))
+
+
+			i := duRestored.UnmarshalIndex()
 			//i := du.Index
-			r1dumps[i] = du
+			r1dumps[i] = &duRestored
+			//r1dumps[i] = du
 			atomic.AddInt32(&presign_1_ended, 1)
 			fmt.Printf("Party%2d [presign 1]: done and status dumped \n", i)
 			if atomic.LoadInt32(&presign_1_ended) == int32(len(signPIDs)) {

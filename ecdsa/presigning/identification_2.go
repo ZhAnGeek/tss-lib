@@ -42,22 +42,22 @@ func (round *identification2) Start() *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proofMul := round.temp.r5msgProofMul[j]
-			ok := proofMul.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.r1msgK[j], round.temp.r1msgG[j], round.temp.r5msgH[j])
+			proofMul := round.temp.R5msgProofMul[j]
+			ok := proofMul.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.R1msgK[j], round.temp.R1msgG[j], round.temp.R5msgH[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)
 				return
 			}
 
 			modN2 := common.ModInt(round.key.PaillierPKs[j].NSquare())
-			DeltaShareEnc := round.temp.r5msgH[j]
-			Q3Enc, err := round.key.PaillierPKs[j].EncryptWithRandomness(q3, new(big.Int).SetBytes(round.temp.ssid))
+			DeltaShareEnc := round.temp.R5msgH[j]
+			Q3Enc, err := round.key.PaillierPKs[j].EncryptWithRandomness(q3, new(big.Int).SetBytes(round.temp.Ssid))
 			if err != nil {
 				errChs <- round.WrapError(err, round.PartyID())
 				return
@@ -69,14 +69,14 @@ func (round *identification2) Start() *tss.Error {
 				var err error
 				Djk := round.temp.DeltaMtADs[j]
 				if k != i {
-					Djk = round.temp.r5msgDjis[k][j]
+					Djk = round.temp.R5msgDjis[k][j]
 				}
 				DeltaShareEnc, err = round.key.PaillierPKs[j].HomoAdd(DeltaShareEnc, Djk)
 				if err != nil {
 					errChs <- round.WrapError(err, Pj)
 					return
 				}
-				Fkj := round.temp.r5msgFjis[j][k]
+				Fkj := round.temp.R5msgFjis[j][k]
 				FinvEnc := modN2.ModInverse(Fkj)
 				//BetaEnc := modN2.Mul(round.temp.r5msgQ3Enc[j], FinvEnc)
 				BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
@@ -90,8 +90,8 @@ func (round *identification2) Start() *tss.Error {
 					return
 				}
 			}
-			proofDec := round.temp.r5msgProofDec[j]
-			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], DeltaShareEnc, round.temp.r3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
+			proofDec := round.temp.R5msgProofDec[j]
+			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], DeltaShareEnc, round.temp.R3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofdec verify failed"), Pj)
 				return

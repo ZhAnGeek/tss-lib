@@ -33,7 +33,7 @@ func (round *identification1) Start() *tss.Error {
 	i := round.PartyID().Index
 	Pi := round.PartyID()
 	round.ok[i] = true
-	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
+	ContextI := append(round.temp.Ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// Fig 7. Output.2
 	H, rho, err := round.key.PaillierSK.HomoMultObfuscate(round.temp.KShare, round.temp.G)
@@ -59,7 +59,7 @@ func (round *identification1) Start() *tss.Error {
 	q := round.EC().Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q3, q)
-	Q3Enc, err := round.key.PaillierSK.EncryptWithRandomness(q3, new(big.Int).SetBytes(round.temp.ssid))
+	Q3Enc, err := round.key.PaillierSK.EncryptWithRandomness(q3, new(big.Int).SetBytes(round.temp.Ssid))
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -71,7 +71,7 @@ func (round *identification1) Start() *tss.Error {
 			continue
 		}
 		var err error
-		DeltaShareEnc, err = round.key.PaillierSK.HomoAdd(DeltaShareEnc, round.temp.r2msgDeltaD[k])
+		DeltaShareEnc, err = round.key.PaillierSK.HomoAdd(DeltaShareEnc, round.temp.R2msgDeltaD[k])
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
@@ -108,7 +108,7 @@ func (round *identification1) Start() *tss.Error {
 }
 
 func (round *identification1) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r5msgH {
+	for j, msg := range round.temp.R5msgH {
 		if round.ok[j] {
 			continue
 		}

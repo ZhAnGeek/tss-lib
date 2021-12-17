@@ -44,8 +44,8 @@ type (
 
 	localTempData struct {
 		// temp data (thrown away after sign) / round 1
-		ssid   []byte
-		w      *big.Int
+		Ssid   []byte
+		W      *big.Int
 		BigWs  []*crypto.ECPoint
 		KShare *big.Int
 
@@ -70,24 +70,24 @@ type (
 		Rx         *big.Int
 		SigmaShare *big.Int
 		// msg store
-		r1msgG     []*big.Int
-		r1msgK     []*big.Int
-		r1msgProof []*zkpenc.ProofEnc
+		R1msgG     []*big.Int
+		R1msgK     []*big.Int
+		R1msgProof []*zkpenc.ProofEnc
 
-		r2msgBigGammaShare []*crypto.ECPoint
-		r2msgDeltaD        []*big.Int
-		r2msgDeltaF        []*big.Int
-		r2msgDeltaProof    []*zkpaffg.ProofAffg
-		r2msgChiD          []*big.Int
-		r2msgChiF          []*big.Int
-		r2msgChiProof      []*zkpaffg.ProofAffg
-		r2msgProofLogstar  []*zkplogstar.ProofLogstar
+		R2msgBigGammaShare []*crypto.ECPoint
+		R2msgDeltaD        []*big.Int
+		R2msgDeltaF        []*big.Int
+		R2msgDeltaProof    []*zkpaffg.ProofAffg
+		R2msgChiD          []*big.Int
+		R2msgChiF          []*big.Int
+		R2msgChiProof      []*zkpaffg.ProofAffg
+		R2msgProofLogstar  []*zkplogstar.ProofLogstar
 
-		r3msgDeltaShare    []*big.Int
-		r3msgBigDeltaShare []*crypto.ECPoint
-		r3msgProofLogstar  []*zkplogstar.ProofLogstar
+		R3msgDeltaShare    []*big.Int
+		R3msgBigDeltaShare []*crypto.ECPoint
+		R3msgProofLogstar  []*zkplogstar.ProofLogstar
 
-		r4msgSigmaShare []*big.Int
+		R4msgSigmaShare []*big.Int
 		// for identification
 		DeltaMtAFs      []*big.Int
 		DeltaMtADs      []*big.Int
@@ -95,11 +95,11 @@ type (
 		ChiMtAFs        []*big.Int
 		ChiMtADs        []*big.Int
 		ChiMtADProofs   []*zkpaffg.ProofAffg
-		r5msgH          []*big.Int
-		r5msgProofMul   []*zkpmul.ProofMul
-		r5msgProofDec   []*zkpdec.ProofDec
-		r5msgDjis       [][]*big.Int
-		r5msgFjis       [][]*big.Int
+		R5msgH          []*big.Int
+		R5msgProofMul   []*zkpmul.ProofMul
+		R5msgProofDec   []*zkpdec.ProofDec
+		R5msgDjis       [][]*big.Int
+		R5msgFjis       [][]*big.Int
 	}
 
 	LocalDump struct {
@@ -146,21 +146,21 @@ func NewLocalParty(
 	p.temp.DeltaShareAlphas = make([]*big.Int, partyCount)
 	p.temp.ChiShareAlphas = make([]*big.Int, partyCount)
 	// temp message data init
-	p.temp.r1msgG = make([]*big.Int, partyCount)
-	p.temp.r1msgK = make([]*big.Int, partyCount)
-	p.temp.r1msgProof = make([]*zkpenc.ProofEnc, partyCount)
-	p.temp.r2msgBigGammaShare = make([]*crypto.ECPoint, partyCount)
-	p.temp.r2msgDeltaD = make([]*big.Int, partyCount)
-	p.temp.r2msgDeltaF = make([]*big.Int, partyCount)
-	p.temp.r2msgDeltaProof = make([]*zkpaffg.ProofAffg, partyCount)
-	p.temp.r2msgChiD = make([]*big.Int, partyCount)
-	p.temp.r2msgChiF = make([]*big.Int, partyCount)
-	p.temp.r2msgChiProof = make([]*zkpaffg.ProofAffg, partyCount)
-	p.temp.r2msgProofLogstar = make([]*zkplogstar.ProofLogstar, partyCount)
-	p.temp.r3msgDeltaShare = make([]*big.Int, partyCount)
-	p.temp.r3msgBigDeltaShare = make([]*crypto.ECPoint, partyCount)
-	p.temp.r3msgProofLogstar = make([]*zkplogstar.ProofLogstar, partyCount)
-	p.temp.r4msgSigmaShare = make([]*big.Int, partyCount)
+	p.temp.R1msgG = make([]*big.Int, partyCount)
+	p.temp.R1msgK = make([]*big.Int, partyCount)
+	p.temp.R1msgProof = make([]*zkpenc.ProofEnc, partyCount)
+	p.temp.R2msgBigGammaShare = make([]*crypto.ECPoint, partyCount)
+	p.temp.R2msgDeltaD = make([]*big.Int, partyCount)
+	p.temp.R2msgDeltaF = make([]*big.Int, partyCount)
+	p.temp.R2msgDeltaProof = make([]*zkpaffg.ProofAffg, partyCount)
+	p.temp.R2msgChiD = make([]*big.Int, partyCount)
+	p.temp.R2msgChiF = make([]*big.Int, partyCount)
+	p.temp.R2msgChiProof = make([]*zkpaffg.ProofAffg, partyCount)
+	p.temp.R2msgProofLogstar = make([]*zkplogstar.ProofLogstar, partyCount)
+	p.temp.R3msgDeltaShare = make([]*big.Int, partyCount)
+	p.temp.R3msgBigDeltaShare = make([]*crypto.ECPoint, partyCount)
+	p.temp.R3msgProofLogstar = make([]*zkplogstar.ProofLogstar, partyCount)
+	p.temp.R4msgSigmaShare = make([]*big.Int, partyCount)
 	// for identification
 	p.temp.DeltaMtAFs = make([]*big.Int, partyCount)
 	p.temp.DeltaMtADs = make([]*big.Int, partyCount)
@@ -168,11 +168,11 @@ func NewLocalParty(
 	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
 	p.temp.ChiMtADs = make([]*big.Int, partyCount)
 	p.temp.ChiMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
-	p.temp.r5msgH = make([]*big.Int, partyCount)
-	p.temp.r5msgProofMul = make([]*zkpmul.ProofMul, partyCount)
-	p.temp.r5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
-	p.temp.r5msgDjis = make([][]*big.Int, partyCount)
-	p.temp.r5msgFjis = make([][]*big.Int, partyCount)
+	p.temp.R5msgH = make([]*big.Int, partyCount)
+	p.temp.R5msgProofMul = make([]*zkpmul.ProofMul, partyCount)
+	p.temp.R5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
+	p.temp.R5msgDjis = make([][]*big.Int, partyCount)
+	p.temp.R5msgFjis = make([][]*big.Int, partyCount)
 
 	return p
 }
@@ -265,62 +265,62 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	switch msg.Content().(type) {
 	case *PreSignRound1Message:
 		r1msg := msg.Content().(*PreSignRound1Message)
-		p.temp.r1msgG[fromPIdx] = r1msg.UnmarshalG()
-		p.temp.r1msgK[fromPIdx] = r1msg.UnmarshalK()
+		p.temp.R1msgG[fromPIdx] = r1msg.UnmarshalG()
+		p.temp.R1msgK[fromPIdx] = r1msg.UnmarshalK()
 		Proof, err := r1msg.UnmarshalEncProof()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r1msgProof[fromPIdx] = Proof
+		p.temp.R1msgProof[fromPIdx] = Proof
 	case *PreSignRound2Message:
 		r2msg := msg.Content().(*PreSignRound2Message)
 		BigGammaShare, err := r2msg.UnmarshalBigGammaShare(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r2msgBigGammaShare[fromPIdx] = BigGammaShare
-		p.temp.r2msgDeltaD[fromPIdx] = r2msg.UnmarshalDjiDelta()
-		p.temp.r2msgDeltaF[fromPIdx] = r2msg.UnmarshalFjiDelta()
+		p.temp.R2msgBigGammaShare[fromPIdx] = BigGammaShare
+		p.temp.R2msgDeltaD[fromPIdx] = r2msg.UnmarshalDjiDelta()
+		p.temp.R2msgDeltaF[fromPIdx] = r2msg.UnmarshalFjiDelta()
 		proofDelta, err := r2msg.UnmarshalAffgProofDelta(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r2msgDeltaProof[fromPIdx] = proofDelta
-		p.temp.r2msgChiD[fromPIdx] = r2msg.UnmarshalDjiChi()
-		p.temp.r2msgChiF[fromPIdx] = r2msg.UnmarshalFjiChi()
+		p.temp.R2msgDeltaProof[fromPIdx] = proofDelta
+		p.temp.R2msgChiD[fromPIdx] = r2msg.UnmarshalDjiChi()
+		p.temp.R2msgChiF[fromPIdx] = r2msg.UnmarshalFjiChi()
 		proofChi, err := r2msg.UnmarshalAffgProofChi(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r2msgChiProof[fromPIdx] = proofChi
+		p.temp.R2msgChiProof[fromPIdx] = proofChi
 	case *PreSignRound3Message:
 		r3msg := msg.Content().(*PreSignRound3Message)
-		p.temp.r3msgDeltaShare[fromPIdx] = r3msg.UnmarshalDeltaShare()
+		p.temp.R3msgDeltaShare[fromPIdx] = r3msg.UnmarshalDeltaShare()
 		BigDeltaShare, err := r3msg.UnmarshalBigDeltaShare(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r3msgBigDeltaShare[fromPIdx] = BigDeltaShare
+		p.temp.R3msgBigDeltaShare[fromPIdx] = BigDeltaShare
 		proofLogStar, err := r3msg.UnmarshalProofLogstar(p.params.EC())
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r3msgProofLogstar[fromPIdx] = proofLogStar
+		p.temp.R3msgProofLogstar[fromPIdx] = proofLogStar
 	case *IdentificationRound1Message:
 		r6msg := msg.Content().(*IdentificationRound1Message)
-		p.temp.r5msgH[fromPIdx] = r6msg.UnmarshalH()
+		p.temp.R5msgH[fromPIdx] = r6msg.UnmarshalH()
 		proofMul, err := r6msg.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r5msgProofMul[fromPIdx] = proofMul
-		p.temp.r5msgDjis[fromPIdx] = r6msg.UnmarshalDjis()
-		p.temp.r5msgFjis[fromPIdx] = r6msg.UnmarshalFjis()
+		p.temp.R5msgProofMul[fromPIdx] = proofMul
+		p.temp.R5msgDjis[fromPIdx] = r6msg.UnmarshalDjis()
+		p.temp.R5msgFjis[fromPIdx] = r6msg.UnmarshalFjis()
 		proofDec, err := r6msg.UnmarshalProofDec()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r5msgProofDec[fromPIdx] = proofDec
+		p.temp.R5msgProofDec[fromPIdx] = proofDec
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
 		return false, nil

@@ -41,13 +41,13 @@ func (round *presignout) Start() *tss.Error {
 			continue
 		}
 
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			Kj := round.temp.r1msgK[j]
-			BigDeltaSharej := round.temp.r3msgBigDeltaShare[j]
-			proofLogstar := round.temp.r3msgProofLogstar[j]
+			Kj := round.temp.R1msgK[j]
+			BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
+			proofLogstar := round.temp.R3msgProofLogstar[j]
 
 			ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
@@ -74,8 +74,8 @@ func (round *presignout) Start() *tss.Error {
 		if j == i {
 			continue
 		}
-		Delta = modN.Add(Delta, round.temp.r3msgDeltaShare[j])
-		BigDeltaShare := round.temp.r3msgBigDeltaShare[j]
+		Delta = modN.Add(Delta, round.temp.R3msgDeltaShare[j])
+		BigDeltaShare := round.temp.R3msgBigDeltaShare[j]
 		var err error
 		BigDelta, err = BigDelta.Add(BigDeltaShare)
 		if err != nil {
@@ -95,10 +95,10 @@ func (round *presignout) Start() *tss.Error {
 	if round.NeedsIdentifaction() {
 		transcript = &Transcript{
 			K:              round.temp.K,
-			R1msgK:         round.temp.r1msgK,
+			R1msgK:         round.temp.R1msgK,
 			ChiShareAlphas: round.temp.ChiShareAlphas,
 			ChiShareBetas:  round.temp.ChiShareBetas,
-			R2msgChiD:      round.temp.r2msgChiD,
+			R2msgChiD:      round.temp.R2msgChiD,
 
 			ChiMtAFs:      round.temp.ChiMtAFs,
 			ChiMtADs:      round.temp.ChiMtADs,
@@ -106,7 +106,7 @@ func (round *presignout) Start() *tss.Error {
 		}
 	}
 
-	preSignData := NewPreSignData(i, round.temp.ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript)
+	preSignData := NewPreSignData(i, round.temp.Ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript)
 	round.end <- preSignData
 
 	// retire unused variables
@@ -130,7 +130,7 @@ func (round *presignout) Start() *tss.Error {
 }
 
 func (round *presignout) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r4msgSigmaShare {
+	for j, msg := range round.temp.R4msgSigmaShare {
 		if round.ok[j] {
 			continue
 		}
