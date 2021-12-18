@@ -170,9 +170,9 @@ func (round *presign2) Update() (bool, *tss.Error) {
 			continue
 		}
 		if msg == nil || round.temp.R2msgBigGammaShare[j] == nil ||
-		   round.temp.R2msgChiD[j] == nil || round.temp.R2msgChiF[j] == nil ||
-		   round.temp.R2msgChiProof[j] == nil || round.temp.R2msgDeltaF[j] == nil ||
-		   round.temp.R2msgDeltaProof[j] == nil {
+			round.temp.R2msgChiD[j] == nil || round.temp.R2msgChiF[j] == nil ||
+			round.temp.R2msgChiProof[j] == nil || round.temp.R2msgDeltaF[j] == nil ||
+			round.temp.R2msgDeltaProof[j] == nil {
 
 			return false, nil
 		}

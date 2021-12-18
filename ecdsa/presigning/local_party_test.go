@@ -225,7 +225,7 @@ presign_1_loop:
 		//fmt.Printf("Presign1 select messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			dum, _ :=  proto.Marshal(du)
+			dum, _ := proto.Marshal(du)
 			dumStr := base64.StdEncoding.EncodeToString(dum)
 			dumStrDec, _ := base64.StdEncoding.DecodeString(dumStr)
 			var duRestored LocalDumpPB
@@ -296,7 +296,7 @@ presign_2_loop:
 		//fmt.Printf("Presign2 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			dum, _ :=  proto.Marshal(du)
+			dum, _ := proto.Marshal(du)
 			dumStr := base64.StdEncoding.EncodeToString(dum)
 			dumStrDec, _ := base64.StdEncoding.DecodeString(dumStr)
 			var duRestored LocalDumpPB
@@ -368,7 +368,7 @@ presign_3_loop:
 		//fmt.Printf("Presign3 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			dum, _ :=  proto.Marshal(du)
+			dum, _ := proto.Marshal(du)
 			dumStr := base64.StdEncoding.EncodeToString(dum)
 			dumStrDec, _ := base64.StdEncoding.DecodeString(dumStr)
 			var duRestored LocalDumpPB
