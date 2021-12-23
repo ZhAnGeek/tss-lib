@@ -56,15 +56,6 @@ func (round *round1) Start() *tss.Error {
 	rid := new(big.Int).SetBytes(ridBz)
 
 	// Fig 6. Round 1. preparams
-	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
-	ContextI := big.NewInt(int64(i)).Bytes()
-	proofPrm, err := zkpprm.NewProof(ContextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
-	if err != nil {
-		return round.WrapError(errors.New("create proofPrm failed"), Pi)
-	}
-	proofPrmList := append(proofPrm.A[:], proofPrm.Z[:]...)
-
-	// Fig 6. Round 1. preparams
 	var preParams *LocalPreParams
 	if round.save.LocalPreParams.Validate() {
 		preParams = &round.save.LocalPreParams
@@ -73,7 +64,19 @@ func (round *round1) Start() *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}
+		round.save.LocalPreParams = *preParams
+		round.save.NTildej[i] = preParams.NTildei
+		round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
 	}
+
+	// Fig 6. Round 1.
+	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
+	ContextI := big.NewInt(int64(i)).Bytes()
+	proofPrm, err := zkpprm.NewProof(ContextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
+	if err != nil {
+		return round.WrapError(errors.New("create proofPrm failed"), Pi)
+	}
+	proofPrmList := append(proofPrm.A[:], proofPrm.Z[:]...)
 
 	listToHash, err := crypto.FlattenECPoints(vs)
 	if err != nil {
@@ -100,13 +103,8 @@ func (round *round1) Start() *tss.Error {
 	round.temp.vs = vs
 	round.temp.ui = ui
 	round.save.Ks = ids
-	round.save.LocalPreParams = *preParams
-	round.save.NTildej[i] = preParams.NTildei
-	round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
 	round.save.ShareID = ids[i]
 	round.temp.shares = shares
-	round.save.PaillierSK = preParams.PaillierSK
-	round.save.PaillierPKs[i] = &preParams.PaillierSK.PublicKey
 
 	return nil
 }

@@ -210,16 +210,16 @@ keygen:
 				for j, Pj := range parties {
 					pShares := make(vss.Shares, 0)
 					for j2, P := range parties {
+						var shareStruct *vss.Share
 						if j2 == j {
-							continue
-						}
-						// vssMsgs := P.temp.kgRound3Messages
-						// share := vssMsgs[j].Content().(*KGRound3Message).Share
-						share := P.temp.r3msgxij[j]
-						shareStruct := &vss.Share{
-							Threshold: threshold,
-							ID:        P.PartyID().KeyInt(),
-							Share:     share, //new(big.Int).SetBytes(share),
+							shareStruct = P.temp.shares[j2]
+						} else {
+							share := P.temp.r3msgxij[j]
+							shareStruct = &vss.Share{
+								Threshold: threshold,
+								ID:        P.PartyID().KeyInt(),
+								Share:     share, //new(big.Int).SetBytes(share),
+							}
 						}
 						pShares = append(pShares, shareStruct)
 					}
