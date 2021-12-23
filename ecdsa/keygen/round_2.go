@@ -45,7 +45,11 @@ func (round *round2) Update() (bool, *tss.Error) {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil {
+		if msg == nil || round.save.PaillierPKs[j] == nil ||
+			round.save.NTildej[j] == nil || round.save.H1j[j] == nil ||
+			round.save.H2j[j] == nil || round.temp.r2msgAs[j] == nil ||
+			round.temp.r2msgCmtRandomness[j] == nil ||
+			round.temp.r2msgRids[j] == nil || round.temp.r2msgpfprm[j] == nil {
 			return false, nil
 		}
 		round.ok[j] = true

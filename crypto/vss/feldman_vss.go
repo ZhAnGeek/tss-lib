@@ -54,7 +54,7 @@ func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
 		visited[vModStr] = struct{}{}
 		indexes[i] = vMod
 	}
-	return indexes, nil
+	return indexes, nil //TODO no change indexes
 }
 
 // Returns a new array of secret shares created by Shamir's Secret Sharing Algorithm,

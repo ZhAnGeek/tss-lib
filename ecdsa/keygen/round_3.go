@@ -27,8 +27,8 @@ func (round *round3) Start() *tss.Error {
 	round.started = true
 	round.resetOK()
 
-	i := round.PartyID().Index
-	Pi := round.Parties().IDs()[i]
+	Pi := round.PartyID()
+	i := Pi.Index
 	round.ok[i] = true
 
 	// Fig 5. Round 3.1 / Fig 6. Round 3.1
@@ -41,7 +41,7 @@ func (round *round3) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			contextJ := big.NewInt(int64(j)).Bytes()
+			contextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
 			if ok := round.temp.r2msgpfprm[j].Verify(contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
 				errChs <- round.WrapError(errors.New("proofPrm verify failed"), Pj)
 			}
@@ -85,7 +85,7 @@ func (round *round3) Start() *tss.Error {
 		}
 		Rid_all = new(big.Int).Xor(Rid_all, round.temp.r2msgRids[j])
 	}
-	RidAllBz := Rid_all.Bytes()
+	RidAllBz := append(round.temp.ssid, Rid_all.Bytes()...)
 	// Fig 5. Round 3.2 / Fig 6. Round 3.2 proofs
 	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
@@ -144,7 +144,7 @@ func (round *round3) Update() (bool, *tss.Error) {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil {
+		if msg == nil || round.temp.r3msgpffac[j] == nil || round.temp.r3msgpfmod[j] == nil {
 			return false, nil
 		}
 		round.ok[j] = true

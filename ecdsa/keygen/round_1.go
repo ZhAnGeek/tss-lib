@@ -69,9 +69,9 @@ func (round *round1) Start() *tss.Error {
 		round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
 	}
 
-	// Fig 6. Round 1.
+	// Fig 6. Round 1. preparams
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
-	ContextI := big.NewInt(int64(i)).Bytes()
+	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 	proofPrm, err := zkpprm.NewProof(ContextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
@@ -95,6 +95,9 @@ func (round *round1) Start() *tss.Error {
 		round.out <- msg
 	}
 
+	round.save.Ks = ids
+	round.save.ShareID = ids[i]
+
 	round.temp.proofPrm = proofPrm
 	round.temp.alphai = alphai
 	round.temp.Ai = Ai
@@ -102,8 +105,6 @@ func (round *round1) Start() *tss.Error {
 	round.temp.rid = rid
 	round.temp.vs = vs
 	round.temp.ui = ui
-	round.save.Ks = ids
-	round.save.ShareID = ids[i]
 	round.temp.shares = shares
 
 	return nil
@@ -121,7 +122,7 @@ func (round *round1) Update() (bool, *tss.Error) {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil {
+		if msg == nil { //TODO: check all received vars
 			return false, nil
 		}
 		round.ok[j] = true

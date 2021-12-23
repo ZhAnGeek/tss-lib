@@ -40,6 +40,7 @@ type (
 	}
 
 	localTempData struct {
+		ssid          []byte
 		// temp data (thrown away after keygen)
 		ui            *big.Int // used for tests
 		shares        vss.Shares
