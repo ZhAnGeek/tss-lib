@@ -49,7 +49,6 @@ func TestE2EConcurrent(t *testing.T) {
 	assert.Equal(t, testThreshold+1, len(signPIDs))
 
 	// PHASE: signing
-
 	p2pCtx := tss.NewPeerContext(signPIDs)
 	parties := make([]*LocalParty, 0, len(signPIDs))
 
@@ -60,11 +59,12 @@ func TestE2EConcurrent(t *testing.T) {
 	updater := test.SharedPartyUpdater
 
 	msg := big.NewInt(200).Bytes()
+	keyDerivationDelta := big.NewInt(666777)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -120,11 +120,27 @@ signing:
 				// END check s correctness
 
 				// BEGIN EDDSA verify
-				pkX, pkY := keys[0].EDDSAPub.X(), keys[0].EDDSAPub.Y()
+				PKwDelta := ecPointToExtendedElement(tss.Edwards(), keys[0].EDDSAPub.X(), keys[1].EDDSAPub.Y())
+				if keyDerivationDelta.Cmp(zero) != 0 {
+					var gDelta edwards25519.ExtendedGroupElement
+					kdBytes := bigIntToEncodedBytes(keyDerivationDelta)
+					edwards25519.GeScalarMultBase(&gDelta, kdBytes)
+					PKwDelta = addExtendedElements(PKwDelta, gDelta)
+				}
+				var recip, pkx, pky edwards25519.FieldElement
+				var xBz, yBz [32]byte
+				edwards25519.FeInvert(&recip, &PKwDelta.Z)
+				edwards25519.FeMul(&pkx, &PKwDelta.X, &recip)
+				edwards25519.FeMul(&pky, &PKwDelta.Y, &recip)
+				edwards25519.FeToBytes(&xBz, &pkx)
+				edwards25519.FeToBytes(&yBz, &pky)
+				PKX := encodedBytesToBigInt(&xBz)
+				PKY := encodedBytesToBigInt(&yBz)
+
 				pk := edwards.PublicKey{
 					Curve: tss.Edwards(),
-					X:     pkX,
-					Y:     pkY,
+					X:     PKX,
+					Y:     PKY,
 				}
 
 				newSig, err := edwards.ParseSignature(parties[0].data.Signature)

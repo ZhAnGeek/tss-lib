@@ -47,19 +47,22 @@ type (
 		localMessageStore
 
 		// temp data (thrown away after sign) / round 1
-		ssid     []byte
-		wi       *big.Int
-		ri       *big.Int
-		m        []byte
-		pointRi  *crypto.ECPoint
-		deCommit cmt.HashDeCommitment
+		ssid               []byte
+		wi                 *big.Int
+		ri                 *big.Int
+		m                  []byte
+		KeyDerivationDelta *big.Int
+		pointRi            *crypto.ECPoint
+		deCommit           cmt.HashDeCommitment
 
 		// round 2
 		cjs []*big.Int
 		si  *[32]byte
 
 		// round 3
-		r *big.Int
+		r   *big.Int
+		PKX *big.Int
+		PKY *big.Int
 	}
 )
 
@@ -67,6 +70,7 @@ func NewLocalParty(
 	msg []byte,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
+	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
 ) tss.Party {
@@ -86,6 +90,7 @@ func NewLocalParty(
 	p.temp.signRound3Messages = make([]tss.ParsedMessage, partyCount)
 
 	// temp data init
+	p.temp.KeyDerivationDelta = keyDerivationDelta
 	p.temp.m = msg
 	p.temp.cjs = make([]*big.Int, partyCount)
 	return p

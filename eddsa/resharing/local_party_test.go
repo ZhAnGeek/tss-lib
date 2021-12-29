@@ -165,7 +165,8 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.Edwards(), signP2pCtx, signPID, len(signPIDs), newThreshold, false)
-		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
+		keyDerivationDelta := big.NewInt(0)
+		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], keyDerivationDelta, signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(); err != nil {

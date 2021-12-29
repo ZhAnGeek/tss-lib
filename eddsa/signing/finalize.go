@@ -17,6 +17,10 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
+var (
+	zero = big.NewInt(0)
+)
+
 func (round *finalization) Start() *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
@@ -46,9 +50,9 @@ func (round *finalization) Start() *tss.Error {
 	round.data.M = round.temp.m
 
 	pk := edwards.PublicKey{
-		Curve: round.Params().EC(),
-		X:     round.key.EDDSAPub.X(),
-		Y:     round.key.EDDSAPub.Y(),
+		Curve: round.EC(),
+		X:     round.temp.PKX,
+		Y:     round.temp.PKY,
 	}
 
 	ok := edwards.Verify(&pk, round.temp.m, round.temp.r, s)

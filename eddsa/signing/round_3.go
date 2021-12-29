@@ -13,6 +13,7 @@ import (
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/pkg/errors"
 
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/tss"
@@ -69,10 +70,28 @@ func (round *round3) Start() *tss.Error {
 		R = addExtendedElements(R, extendedRj)
 	}
 
+	// Compute PubKey with Delta
+	PKwDelta := ecPointToExtendedElement(round.EC(), round.key.EDDSAPub.X(), round.key.EDDSAPub.Y())
+	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
+		var gDelta edwards25519.ExtendedGroupElement
+		kdBytes := bigIntToEncodedBytes(round.temp.KeyDerivationDelta)
+		edwards25519.GeScalarMultBase(&gDelta, kdBytes)
+		PKwDelta = addExtendedElements(PKwDelta, gDelta)
+	}
+	var recip, pkx, pky edwards25519.FieldElement
+	var xBz, yBz [32]byte
+	edwards25519.FeInvert(&recip, &PKwDelta.Z)
+	edwards25519.FeMul(&pkx, &PKwDelta.X, &recip)
+	edwards25519.FeMul(&pky, &PKwDelta.Y, &recip)
+	edwards25519.FeToBytes(&xBz, &pkx)
+	edwards25519.FeToBytes(&yBz, &pky)
+	round.temp.PKX = encodedBytesToBigInt(&xBz)
+	round.temp.PKY = encodedBytesToBigInt(&yBz)
+
 	// 7. compute lambda
 	var encodedR [32]byte
 	R.ToBytes(&encodedR)
-	encodedPubKey := ecPointToEncodedBytes(round.key.EDDSAPub.X(), round.key.EDDSAPub.Y())
+	encodedPubKey := ecPointToEncodedBytes(round.temp.PKX, round.temp.PKY)
 
 	// h = hash512(k || A || M)
 	h := sha512.New()
@@ -88,7 +107,12 @@ func (round *round3) Start() *tss.Error {
 
 	// 8. compute si
 	var localS [32]byte
-	edwards25519.ScMulAdd(&localS, &lambdaReduced, bigIntToEncodedBytes(round.temp.wi), riBytes)
+	modN := common.ModInt(round.EC().Params().N)
+	wiDelta := round.temp.wi
+	if i == 0 {
+		wiDelta = modN.Add(round.temp.wi, round.temp.KeyDerivationDelta)
+	}
+	edwards25519.ScMulAdd(&localS, &lambdaReduced, bigIntToEncodedBytes(wiDelta), riBytes)
 
 	// 9. store r3 message pieces
 	round.temp.si = &localS

@@ -128,7 +128,7 @@ signing:
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
-		keyDerivationDelta := big.NewInt(0)
+		keyDerivationDelta := big.NewInt(10)
 		P := NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*LocalParty)
 		signParties = append(signParties, P)
 		go func(P *LocalParty) {
