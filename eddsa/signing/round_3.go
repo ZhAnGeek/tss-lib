@@ -13,7 +13,6 @@ import (
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/pkg/errors"
 
-	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/tss"
@@ -107,12 +106,7 @@ func (round *round3) Start() *tss.Error {
 
 	// 8. compute si
 	var localS [32]byte
-	modN := common.ModInt(round.EC().Params().N)
-	wiDelta := round.temp.wi
-	if i == 0 {
-		wiDelta = modN.Add(round.temp.wi, round.temp.KeyDerivationDelta)
-	}
-	edwards25519.ScMulAdd(&localS, &lambdaReduced, bigIntToEncodedBytes(wiDelta), riBytes)
+	edwards25519.ScMulAdd(&localS, &lambdaReduced, bigIntToEncodedBytes(round.temp.wi), riBytes)
 
 	// 9. store r3 message pieces
 	round.temp.si = &localS

@@ -95,6 +95,11 @@ func (round *round1) prepare() error {
 	xi := round.key.Xi
 	ks := round.key.Ks
 
+	modN := common.ModInt(round.EC().Params().N)
+	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
+		xi = modN.Add(xi, round.temp.KeyDerivationDelta)
+	}
+
 	if round.Threshold()+1 > len(ks) {
 		// TODO: this should not panic
 		return fmt.Errorf("t+1=%d is not consistent with the key count %d", round.Threshold()+1, len(ks))
