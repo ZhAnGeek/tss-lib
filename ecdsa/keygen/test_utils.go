@@ -61,7 +61,7 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
 	for i, key := range keys {
-		pMoniker := fmt.Sprintf("%d", i+start+1)
+		pMoniker := fmt.Sprintf("Peer{%d}", i+start+1)
 		partyIDs[i] = tss.NewPartyID(pMoniker, pMoniker, key.ShareID)
 	}
 	sortedPIDs := tss.SortPartyIDs(partyIDs)

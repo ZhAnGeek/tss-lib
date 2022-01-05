@@ -19,9 +19,9 @@ func (round *round3) Start() *tss.Error {
 	round.number = 3
 	round.started = true
 	round.resetOK() // resets both round.oldOK and round.newOK
-	round.allNewOK()
 
 	if !round.ReSharingParams().IsOldCommittee() {
+		round.allNewOK()
 		return nil
 	}
 	round.allOldOK()
@@ -60,7 +60,8 @@ func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
 func (round *round3) Update() (bool, *tss.Error) {
 	// only the new committee receive in this round
 	if !round.ReSharingParams().IsNewCommittee() {
-		return true, nil
+		rnd4 := &round4{round}
+		return rnd4.Update()
 	}
 	// accept messages from old -> new committee
 	for j, msg1 := range round.temp.dgRound3Message1s {
@@ -81,5 +82,8 @@ func (round *round3) Update() (bool, *tss.Error) {
 
 func (round *round3) NextRound() tss.Round {
 	round.started = false
+	if round.IsOldCommittee() {
+		return &round5{&round4{round}}
+	}
 	return &round4{round}
 }

@@ -24,9 +24,9 @@ func (round *round2) Start() *tss.Error {
 	round.number = 2
 	round.started = true
 	round.resetOK() // resets both round.oldOK and round.newOK
-	round.allOldOK()
 
 	if !round.ReSharingParams().IsNewCommittee() {
+		round.allOldOK()
 		return nil
 	}
 
@@ -48,10 +48,10 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 2. "broadcast" "ACK" members of the OLD committee
-	r2msg1 := NewDGRound2Message2(
+	r2msg2 := NewDGRound2Message2(
 		round.OldParties().IDs().Exclude(round.PartyID()), round.PartyID())
-	round.temp.dgRound2Message2s[i] = r2msg1
-	round.out <- r2msg1
+	round.temp.dgRound2Message2s[i] = r2msg2
+	round.out <- r2msg2
 
 	// 1.
 	// generate Paillier public key E_i, private key and proof
@@ -87,11 +87,11 @@ func (round *round2) Start() *tss.Error {
 		return round.WrapError(errors.New("create proofFac failed"), Pi)
 	}
 
-	r2msg2 := NewDGRound2Message1(
+	r2msg1 := NewDGRound2Message1(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
 		&preParams.PaillierSK.PublicKey, proofPrm, preParams.NTildei, preParams.H1i, preParams.H2i, proofFac)
-	round.temp.dgRound2Message1s[i] = r2msg2
-	round.out <- r2msg2
+	round.temp.dgRound2Message1s[i] = r2msg1
+	round.out <- r2msg1
 
 	round.temp.SSID = SSID
 
@@ -153,6 +153,10 @@ func (round *round2) Update() (bool, *tss.Error) {
 		}
 	} else {
 		return false, round.WrapError(errors.New("this party is not in the old or the new committee"), round.PartyID())
+	}
+	if !round.IsOldCommittee() {
+		rnd3 := &round3{round}
+		return rnd3.Update()
 	}
 	return true, nil
 }
