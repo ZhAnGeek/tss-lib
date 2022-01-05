@@ -38,7 +38,7 @@ func (round *round1) Start() *tss.Error {
 		round.allNewOK()
 		return nil
 	}
-	round.allOldOK() //TODO this round old->new, old received none messages, new not run this line for breaked before
+	round.allOldOK()
 
 	Pi := round.PartyID()
 	i := Pi.Index
