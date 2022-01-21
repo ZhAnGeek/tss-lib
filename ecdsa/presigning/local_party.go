@@ -293,6 +293,11 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.R2msgChiProof[fromPIdx] = proofChi
+		proofLogStar, err := r2msg.UnmarshalLogstarProof(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.R2msgProofLogstar[fromPIdx] = proofLogStar
 	case *PreSignRound3Message:
 		r3msg := msg.Content().(*PreSignRound3Message)
 		p.temp.R3msgDeltaShare[fromPIdx] = r3msg.UnmarshalDeltaShare()
