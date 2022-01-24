@@ -9,7 +9,6 @@ package presigning
 import (
 	"errors"
 	"math/big"
-	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -33,37 +32,53 @@ func (round *presignout) Start() *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
+	///// Fig 7. Output.1 verify proof logstar
+	///errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	///wg := sync.WaitGroup{}
+	///for j, Pj := range round.Parties().IDs() {
+	///	if j == i {
+	///		continue
+	///	}
+
+	///	ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
+	///	wg.Add(1)
+	///	go func(j int, Pj *tss.PartyID) {
+	///		defer wg.Done()
+	///		Kj := round.temp.R1msgK[j]
+	///		BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
+	///		proofLogstar := round.temp.R3msgProofLogstar[j]
+
+	///		ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
+	///		if !ok {
+	///			errChs <- round.WrapError(errors.New("proof verify failed"), Pj)
+	///			return
+	///		}
+	///	}(j, Pj)
+	///}
+	///wg.Wait()
+	///close(errChs)
+	///culprits := make([]*tss.PartyID, 0)
+	///for err := range errChs {
+	///	culprits = append(culprits, err.Culprits()...)
+	///}
+	///if len(culprits) > 0 {
+	///	return round.WrapError(errors.New("failed to verify proofs"), culprits...)
+	///}
 	// Fig 7. Output.1 verify proof logstar
-	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
-	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
 
 		ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
-		wg.Add(1)
-		go func(j int, Pj *tss.PartyID) {
-			defer wg.Done()
-			Kj := round.temp.R1msgK[j]
-			BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
-			proofLogstar := round.temp.R3msgProofLogstar[j]
+		Kj := round.temp.R1msgK[j]
+		BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
+		proofLogstar := round.temp.R3msgProofLogstar[j]
 
-			ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
-			if !ok {
-				errChs <- round.WrapError(errors.New("proof verify failed"), Pj)
-				return
-			}
-		}(j, Pj)
-	}
-	wg.Wait()
-	close(errChs)
-	culprits := make([]*tss.PartyID, 0)
-	for err := range errChs {
-		culprits = append(culprits, err.Culprits()...)
-	}
-	if len(culprits) > 0 {
-		return round.WrapError(errors.New("failed to verify proofs"), culprits...)
+		ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
+		if !ok {
+			return round.WrapError(errors.New("proof verify failed"), Pj)
+		}
 	}
 
 	// Fig 7. Output.2 check equality

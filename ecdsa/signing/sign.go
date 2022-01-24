@@ -59,11 +59,12 @@ func (round *sign1) Start() *tss.Error {
 	// Fig 8. Round 1. compute signature share
 	modN := common.ModInt(round.EC().Params().N)
 	Rx := round.temp.BigR.X()
+	Ry := round.temp.BigR.Y()
 	SigmaShare := modN.Add(modN.Mul(round.temp.KShare, round.temp.m), modN.Mul(Rx, round.temp.ChiShare))
 	SigmaShareDelta := modN.Mul(Rx, modN.Mul(round.temp.KShare, round.temp.KeyDerivationDelta))
 	SigmaShare = modN.Add(SigmaShare, SigmaShareDelta)
 
-	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare)
+	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare, Rx, Ry)
 	round.out <- r1msg
 
 	round.temp.SigmaShare = SigmaShare

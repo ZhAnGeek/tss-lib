@@ -9,7 +9,6 @@ package presigning
 import (
 	"errors"
 	"math/big"
-	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -178,31 +177,42 @@ func (round *presign3) Start() *tss.Error {
 		ChiShare = modN.Add(ChiShare, round.temp.ChiShareBetas[j])
 	}
 
-	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
-	wg := sync.WaitGroup{}
+	///errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	///wg := sync.WaitGroup{}
+	///for j, Pj := range round.Parties().IDs() {
+	///	if j == i {
+	///		continue
+	///	}
+	///	ProofOut := make(chan *zkplogstar.ProofLogstar, 1)
+	///	wg.Add(1)
+	///	go func(j int, Pj *tss.PartyID) {
+	///		defer wg.Done()
+	///		ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
+	///		if err != nil {
+	///			errChs <- round.WrapError(errors.New("proofLogStar generation failed"), Pi)
+	///		}
+	///		ProofOut <- ProofLogstar
+	///	}(j, Pj)
+
+	///	ProofLogstar := <-ProofOut
+	///	r3msg := NewPreSignRound3Message(Pj, round.PartyID(), DeltaShare, BigDeltaShare, ProofLogstar)
+	///	round.out <- r3msg
+	///}
+	///wg.Wait()
+	///close(errChs)
+	///for err := range errChs {
+	///	return err
+	///}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
-		ProofOut := make(chan *zkplogstar.ProofLogstar, 1)
-		wg.Add(1)
-		go func(j int, Pj *tss.PartyID) {
-			defer wg.Done()
-			ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
-			if err != nil {
-				errChs <- round.WrapError(errors.New("proofLogStar generation failed"), Pi)
-			}
-			ProofOut <- ProofLogstar
-		}(j, Pj)
-
-		ProofLogstar := <-ProofOut
+		ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
+		if err != nil {
+			return round.WrapError(errors.New("proofLogStar generation failed"), Pi)
+		}
 		r3msg := NewPreSignRound3Message(Pj, round.PartyID(), DeltaShare, BigDeltaShare, ProofLogstar)
 		round.out <- r3msg
-	}
-	wg.Wait()
-	close(errChs)
-	for err := range errChs {
-		return err
 	}
 
 	round.temp.DeltaShare = DeltaShare
