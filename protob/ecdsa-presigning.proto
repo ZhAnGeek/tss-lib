@@ -15,6 +15,7 @@ message PreSignRound1Message {
     bytes K = 1;
     bytes G = 2;
     repeated bytes EncProof = 3;
+    repeated bytes LogstarProof = 4;
 }
 
 /*
@@ -28,7 +29,6 @@ message PreSignRound2Message {
     bytes FjiChi = 5;
     repeated bytes AffgProofDelta = 6;
     repeated bytes AffgProofChi = 7;
-    repeated bytes LogstarProof = 8;
 }
 
 /*

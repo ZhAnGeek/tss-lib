@@ -220,6 +220,7 @@ func NewPreSignRound1Message(
 	K *big.Int,
 	G *big.Int,
 	EncProof *zkpenc.ProofEnc,
+	LogstarProof *zkplogstar.ProofLogstar,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -227,10 +228,12 @@ func NewPreSignRound1Message(
 		IsBroadcast: false,
 	}
 	pfBz := EncProof.Bytes()
+	LogstarBz := LogstarProof.Bytes()
 	content := &PreSignRound1Message{
-		K:        K.Bytes(),
-		G:        G.Bytes(),
-		EncProof: pfBz[:],
+		K:            K.Bytes(),
+		G:            G.Bytes(),
+		EncProof:     pfBz[:],
+		LogstarProof: LogstarBz[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -240,7 +243,8 @@ func (m *PreSignRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.K) &&
 		common.NonEmptyBytes(m.G) &&
-		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts)
+		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts) &&
+		common.NonEmptyMultiBytes(m.LogstarProof, zkplogstar.ProofLogstarBytesParts)
 }
 
 func (m *PreSignRound1Message) UnmarshalK() *big.Int {
@@ -255,6 +259,10 @@ func (m *PreSignRound1Message) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
 	return zkpenc.NewProofFromBytes(m.GetEncProof())
 }
 
+func (m *PreSignRound1Message) UnmarshalLogstarProof(ec elliptic.Curve) (*zkplogstar.ProofLogstar, error) {
+	return zkplogstar.NewProofFromBytes(ec, m.GetLogstarProof())
+}
+
 // ----- //
 
 func NewPreSignRound2Message(
@@ -266,7 +274,6 @@ func NewPreSignRound2Message(
 	FjiChi *big.Int,
 	AffgProofDelta *zkpaffg.ProofAffg,
 	AffgProofChi *zkpaffg.ProofAffg,
-	LogstarProof *zkplogstar.ProofLogstar,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -276,7 +283,6 @@ func NewPreSignRound2Message(
 	BigGammaBytes := BigGammaShare.Bytes()
 	AffgDeltaBz := AffgProofDelta.Bytes()
 	AffgChiBz := AffgProofChi.Bytes()
-	LogstarBz := LogstarProof.Bytes()
 	content := &PreSignRound2Message{
 		BigGammaShare:  BigGammaBytes[:],
 		DjiDelta:       DjiDelta.Bytes(),
@@ -285,7 +291,6 @@ func NewPreSignRound2Message(
 		FjiChi:         FjiChi.Bytes(),
 		AffgProofDelta: AffgDeltaBz[:],
 		AffgProofChi:   AffgChiBz[:],
-		LogstarProof:   LogstarBz[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -299,8 +304,7 @@ func (m *PreSignRound2Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.DjiChi) &&
 		common.NonEmptyBytes(m.FjiChi) &&
 		common.NonEmptyMultiBytes(m.AffgProofDelta, zkpaffg.ProofAffgBytesParts) &&
-		common.NonEmptyMultiBytes(m.AffgProofChi, zkpaffg.ProofAffgBytesParts) &&
-		common.NonEmptyMultiBytes(m.LogstarProof, zkplogstar.ProofLogstarBytesParts)
+		common.NonEmptyMultiBytes(m.AffgProofChi, zkpaffg.ProofAffgBytesParts)
 }
 
 func (m *PreSignRound2Message) UnmarshalBigGammaShare(ec elliptic.Curve) (*crypto.ECPoint, error) {
@@ -331,9 +335,6 @@ func (m *PreSignRound2Message) UnmarshalAffgProofChi(ec elliptic.Curve) (*zkpaff
 	return zkpaffg.NewProofFromBytes(ec, m.GetAffgProofChi())
 }
 
-func (m *PreSignRound2Message) UnmarshalLogstarProof(ec elliptic.Curve) (*zkplogstar.ProofLogstar, error) {
-	return zkplogstar.NewProofFromBytes(ec, m.GetLogstarProof())
-}
 
 // ----- //
 

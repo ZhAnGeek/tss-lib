@@ -10,9 +10,12 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	sync "sync"
 
 	"github.com/binance-chain/tss-lib/common"
+	"github.com/binance-chain/tss-lib/crypto"
 	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
+	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -54,45 +57,39 @@ func (round *presign1) Start() *tss.Error {
 	}
 
 	// Fig 7. Round 1. create proof enc
-	///errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
-	///wg := sync.WaitGroup{}
-	///for j, Pj := range round.Parties().IDs() {
-	///	if j == i {
-	///		continue
-	///	}
-	///	wg.Add(1)
-	///	go func(j int, Pj *tss.PartyID) {
-	///		defer wg.Done()
-
-	///		ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
-	///		proof, err := zkpenc.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
-	///		if err != nil {
-	///			errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err))
-	///			return
-	///		}
-
-	///		r1msg := NewPreSignRound1Message(Pj, round.PartyID(), K, G, proof)
-	///		round.out <- r1msg
-	///	}(j, Pj)
-	///}
-	///wg.Wait()
-	///close(errChs)
-	///for err := range errChs {
-	///	return err
-	///}
-	// Fig 7. Round 1. create proof enc
+	BigGammaShare := crypto.ScalarBaseMult(round.Params().EC(), GammaShare)
+	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
+	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	wg := sync.WaitGroup{}
 	ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
-		proof, err := zkpenc.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
-		if err != nil {
-			return round.WrapError(fmt.Errorf("ProofEnc failed: %v", err))
-		}
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
 
-		r1msg := NewPreSignRound1Message(Pj, round.PartyID(), K, G, proof)
-		round.out <- r1msg
+			proof, err := zkpenc.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
+			if err != nil {
+				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pi)
+				return
+			}
+
+			ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, G, BigGammaShare, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], GammaShare, GNonce)
+			if err != nil {
+				errChs <- round.WrapError(errors.New("prooflogstar failed"), Pi)
+				return
+			}
+
+			r1msg := NewPreSignRound1Message(Pj, round.PartyID(), K, G, proof, ProofLogstar) // TODO
+			round.out <- r1msg
+		}(j, Pj)
+	}
+	wg.Wait()
+	close(errChs)
+	for err := range errChs {
+		return err
 	}
 
 	round.temp.Ssid = ssid
@@ -102,8 +99,7 @@ func (round *presign1) Start() *tss.Error {
 	round.temp.K = K
 	round.temp.KNonce = KNonce
 	round.temp.GNonce = GNonce
-	// retire unused variables
-	/// round.temp.KeyDerivationDelta = nil
+	round.temp.BigGammaShare = BigGammaShare
 
 	du := &LocalDump{
 		Temp:     round.temp,

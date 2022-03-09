@@ -9,9 +9,8 @@ package presigning
 import (
 	"errors"
 	"math/big"
+	sync "sync"
 
-	"github.com/binance-chain/tss-lib/crypto"
-	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -160,55 +159,58 @@ func (round *presign2) Start() *tss.Error {
 	///	return err
 	///}
 	// Fig 7. Round 2.2 compute MtA and generate proofs
-	BigGammaShare := crypto.ScalarBaseMult(round.Params().EC(), round.temp.GammaShare)
-	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
+	BigGammaShare := round.temp.BigGammaShare
 	ContextI := append(round.temp.Ssid, big.NewInt(int64(i)).Bytes()...)
+	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
 
-		Kj := round.temp.R1msgK[j]
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
 
-		DeltaMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
-		if err != nil {
-			return round.WrapError(errors.New("MtADelta failed"))
-		}
+			Kj := round.temp.R1msgK[j]
 
-		ChiMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.W, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
-		if err != nil {
-			return round.WrapError(errors.New("MtAChi failed"))
-		}
+			DeltaMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			if err != nil {
+				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
+				return
+			}
 
-		ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, BigGammaShare, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.GammaShare, round.temp.GNonce)
-		if err != nil {
-			return round.WrapError(errors.New("prooflogstar failed"))
-		}
+			ChiMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.W, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			if err != nil {
+				errChs <- round.WrapError(errors.New("MtAChi failed"), Pi)
+				return
+			}
 
-		r2msg := NewPreSignRound2Message(Pj, round.PartyID(), BigGammaShare, DeltaMtA.Dji, DeltaMtA.Fji, ChiMtA.Dji, ChiMtA.Fji, DeltaMtA.Proofji, ChiMtA.Proofji, ProofLogstar)
-		round.out <- r2msg
+			//r2msg := NewPreSignRound2Message(Pj, round.PartyID(), BigGammaShare, DeltaMtA.Dji, DeltaMtA.Fji, ChiMtA.Dji, ChiMtA.Fji, DeltaMtA.Proofji, ChiMtA.Proofji, ProofLogstar)
+			r2msg := NewPreSignRound2Message(Pj, round.PartyID(), BigGammaShare, DeltaMtA.Dji, DeltaMtA.Fji, ChiMtA.Dji, ChiMtA.Fji, DeltaMtA.Proofji, ChiMtA.Proofji)
+			round.out <- r2msg
 
-		round.temp.DeltaShareBetas[j] = DeltaMtA.Beta
-		round.temp.ChiShareBetas[j] = ChiMtA.Beta
+			round.temp.DeltaShareBetas[j] = DeltaMtA.Beta
+			round.temp.ChiShareBetas[j] = ChiMtA.Beta
 
-		if round.NeedsIdentifaction() {
-			// record transcript for presign identification 1
-			round.temp.DeltaMtAFs[j] = DeltaMtA.Fji
-			round.temp.DeltaMtADs[j] = DeltaMtA.Dji
-			round.temp.DeltaMtADProofs[j] = DeltaMtA.Proofji
+			if round.NeedsIdentifaction() {
+				// record transcript for presign identification 1
+				round.temp.DeltaMtAFs[j] = DeltaMtA.Fji
+				round.temp.DeltaMtADs[j] = DeltaMtA.Dji
+				round.temp.DeltaMtADProofs[j] = DeltaMtA.Proofji
 
-			// record transcript for sign identification 1
-			round.temp.ChiMtAFs[j] = ChiMtA.Fji
-			round.temp.ChiMtADs[j] = ChiMtA.Dji
-			round.temp.ChiMtADProofs[j] = ChiMtA.Proofji
-		}
+				// record transcript for sign identification 1
+				round.temp.ChiMtAFs[j] = ChiMtA.Fji
+				round.temp.ChiMtADs[j] = ChiMtA.Dji
+				round.temp.ChiMtADProofs[j] = ChiMtA.Proofji
+			}
+		}(j, Pj)
 	}
-
-	round.temp.BigGammaShare = BigGammaShare
-	// retire unused variables
-	///round.temp.G = nil
-	///round.temp.GNonce = nil
-	///round.temp.R1msgProof = nil
+	wg.Wait()
+	close(errChs)
+	for err := range errChs {
+		return err
+	}
 
 	du := &LocalDump{
 		Temp:     round.temp,
@@ -230,6 +232,7 @@ func (round *presign2) Update() (bool, *tss.Error) {
 		if msg == nil || round.temp.R2msgBigGammaShare[j] == nil ||
 			round.temp.R2msgChiD[j] == nil || round.temp.R2msgChiF[j] == nil ||
 			round.temp.R2msgChiProof[j] == nil || round.temp.R2msgDeltaF[j] == nil ||
+			//round.temp.R2msgDeltaProof[j] == nil || round.temp.R2msgProofLogstar[j] == nil {
 			round.temp.R2msgDeltaProof[j] == nil {
 
 			return false, nil
