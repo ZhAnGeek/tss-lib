@@ -8,6 +8,7 @@ package keygen
 
 import (
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -57,17 +58,21 @@ func (round *round1) Start() *tss.Error {
 
 	// Fig 6. Round 1. preparams
 	var preParams *LocalPreParams
+	fmt.Printf("preParams: %v, %v\n", &round.save.LocalPreParams, round.save.LocalPreParams.Validate())
 	if round.save.LocalPreParams.Validate() {
 		preParams = &round.save.LocalPreParams
+		fmt.Printf("preParams validate true: %v\n", preParams)
 	} else {
 		preParams, err = GeneratePreParams(round.SafePrimeGenTimeout())
+		fmt.Printf("preParams validate false: %v\n", preParams)
 		if err != nil {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}
 		round.save.LocalPreParams = *preParams
-		round.save.NTildej[i] = preParams.NTildei
-		round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
 	}
+	round.save.NTildej[i] = preParams.NTildei
+	round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
+	round.save.PaillierPKs[i] = &preParams.PaillierSK.PublicKey
 
 	// Fig 6. Round 1. preparams
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))

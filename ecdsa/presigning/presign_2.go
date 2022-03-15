@@ -176,13 +176,13 @@ func (round *presign2) Start() *tss.Error {
 
 			DeltaMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if err != nil {
-				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
+				errChs <- round.WrapError(errors.New("MtADelta failed"), Pj)
 				return
 			}
 
 			ChiMtA, err := NewMtA(ContextI, round.EC(), Kj, round.temp.W, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if err != nil {
-				errChs <- round.WrapError(errors.New("MtAChi failed"), Pi)
+				errChs <- round.WrapError(errors.New("MtAChi failed"), Pj)
 				return
 			}
 
