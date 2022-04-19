@@ -24,9 +24,9 @@ func (round *round2) Start() *tss.Error {
 	round.number = 2
 	round.started = true
 	round.resetOK() // resets both round.oldOK and round.newOK
+	round.allOldOK()
 
 	if !round.ReSharingParams().IsNewCommittee() {
-		round.allOldOK()
 		return nil
 	}
 
@@ -154,17 +154,10 @@ func (round *round2) Update() (bool, *tss.Error) {
 	} else {
 		return false, round.WrapError(errors.New("this party is not in the old or the new committee"), round.PartyID())
 	}
-	if !round.IsOldCommittee() {
-		rnd3 := &round3{round}
-		return rnd3.Update()
-	}
 	return true, nil
 }
 
 func (round *round2) NextRound() tss.Round {
 	round.started = false
-	if round.IsOldCommittee() {
-		return &round3{round}
-	}
-	return &round4{&round3{round}}
+	return &round3{round}
 }

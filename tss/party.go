@@ -160,7 +160,7 @@ func BaseRestore(p Party, task string) *Error {
 }
 
 // an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)
-func BaseUpdate2(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
+func BaseUpdateRec(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	// fast-fail on an invalid message; do not lock the mutex yet
 	if _, err := p.ValidateMessage(msg); err != nil {
 		return false, err

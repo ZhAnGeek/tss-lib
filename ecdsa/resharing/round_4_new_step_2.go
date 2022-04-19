@@ -77,17 +77,6 @@ func (round *round4) Start() *tss.Error {
 		return round.WrapError(errors.New("paillier verify failed"), culprits...)
 	}
 
-	//// save NTilde_j, h1_j, h2_j received in NewCommitteeStep1 here
-	//for j, msg := range round.temp.dgRound2Message1s {
-	//	if j == i {
-	//		continue
-	//	}
-	//	r2msg1 := msg.Content().(*DGRound2Message1)
-	//	round.save.NTildej[j] = r2msg1.UnmarshalNTilde()
-	//	round.save.H1j[j] = r2msg1.UnmarshalH1()
-	//	round.save.H2j[j] = r2msg1.UnmarshalH2()
-	//}
-
 	// 4.
 	newXi := big.NewInt(0)
 
