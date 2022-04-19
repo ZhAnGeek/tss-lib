@@ -42,8 +42,8 @@ func NewSignRound1Message(
 	}
 	content := &SignRound1Message{
 		SigmaShare: SigmaShare.Bytes(),
-		Rx: Rx.Bytes(),
-		Ry: Ry.Bytes(),
+		Rx:         Rx.Bytes(),
+		Ry:         Ry.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)

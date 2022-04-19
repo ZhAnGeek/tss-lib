@@ -335,7 +335,6 @@ func (m *PreSignRound2Message) UnmarshalAffgProofChi(ec elliptic.Curve) (*zkpaff
 	return zkpaffg.NewProofFromBytes(ec, m.GetAffgProofChi())
 }
 
-
 // ----- //
 
 func NewPreSignRound3Message(
