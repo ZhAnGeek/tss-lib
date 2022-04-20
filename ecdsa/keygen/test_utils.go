@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
-	"math/rand"
+	//"math/rand"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -71,12 +71,14 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
 	keys := make([]LocalPartySaveData, 0, qty)
 	plucked := make(map[int]interface{}, qty)
-	for i := 0; len(plucked) < qty; i = (i + 1) % fixtureCount {
-		_, have := plucked[i]
-		if pluck := rand.Float32() < 0.5; !have && pluck {
-			plucked[i] = new(struct{})
-		}
-	}
+	//for i := 0; len(plucked) < qty; i = (i + 1) % fixtureCount {
+	//	_, have := plucked[i]
+	//	if pluck := rand.Float32() < 0.5; !have && pluck {
+	//		plucked[i] = new(struct{})
+	//	}
+	//}
+	plucked[1] = new(struct{})
+	plucked[2] = new(struct{})
 	for i := range plucked {
 		fixtureFilePath := makeTestFixtureFilePath(i)
 		bz, err := ioutil.ReadFile(fixtureFilePath)

@@ -9,6 +9,7 @@ package resharing
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
 
 	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
@@ -59,7 +60,8 @@ func (round *round2) Start() *tss.Error {
 	// compute ntilde, h1, h2 (uses safe primes)
 	// use the pre-params if they were provided to the LocalParty constructor
 	var preParams *keygen.LocalPreParams
-	if round.save.LocalPreParams.Validate() {
+	if round.save.LocalPreParams.ValidateWithProof() {
+		fmt.Println("############ preparams validated")
 		preParams = &round.save.LocalPreParams
 	} else {
 		var err error
@@ -75,7 +77,8 @@ func (round *round2) Start() *tss.Error {
 
 	//paillierPf := preParams.PaillierSK.Proof(Pi.KeyInt(), round.save.ECDSAPub)
 	ContextI := append(SSID, big.NewInt(int64(i)).Bytes()...)
-	Phi := new(big.Int).Mul(new(big.Int).Lsh(preParams.P, 1), new(big.Int).Lsh(preParams.Q, 1))
+	fmt.Println("###########", round.save.LocalPreParams.P, round.save.LocalPreParams.Q)
+	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), new(big.Int).Lsh(round.save.LocalPreParams.Q, 1))
 	proofPrm, err := zkpprm.NewProof(ContextI, preParams.H1i, preParams.H2i, preParams.NTildei, Phi, preParams.Beta)
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
