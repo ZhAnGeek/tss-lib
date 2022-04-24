@@ -39,7 +39,7 @@ func setUp(level string) {
 }
 
 func TestE2EConcurrent(t *testing.T) {
-	setUp("info")
+	setUp("debug")
 
 	// tss.SetCurve(elliptic.P256())
 

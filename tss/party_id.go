@@ -53,7 +53,7 @@ func NewPartyID(id, moniker string, key *big.Int) *PartyID {
 }
 
 func (pid PartyID) String() string {
-	return fmt.Sprintf("{%d,%s}", pid.Index, pid.Moniker)
+	return fmt.Sprintf("{%d,%s,%d}", pid.Index, pid.Moniker, pid.KeyInt().Int64())
 }
 
 // ----- //
