@@ -78,7 +78,11 @@ func TestAffg(test *testing.T) {
 	proof, err = NewProof(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
 	assert.NoError(test, err)
 
-	ok = proof.Verify(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
+	proofBz := proof.Bytes()
+	proof2, err := NewProofFromBytes(ec, proofBz[:])
+	assert.NoError(test, err)
+
+	ok = proof2.Verify(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
 	assert.False(test, ok, "proof must verify")
 
 	x = common.GetRandomPositiveInt(q)

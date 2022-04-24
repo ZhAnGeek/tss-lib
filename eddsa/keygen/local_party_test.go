@@ -11,12 +11,13 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path"
 	"runtime"
 	"sync/atomic"
 	"testing"
 
 	"github.com/decred/dcrd/dcrec/edwards/v2"
-	"github.com/ipfs/go-log"
+	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -171,7 +172,8 @@ keygen:
 				}
 				println("u len: ", len(u.Bytes()))
 				sk, _, err := edwards.PrivKeyFromScalar(u.Bytes())
-				// fmt.Println("err: ", err.Error())
+				//fmt.Println("err: ", err.Error())
+				assert.NoError(t, err)
 
 				// test pub key, should be on curve and match pkX, pkY
 				assert.True(t, pk.IsOnCurve(pkX, pkY), "public key must be on curve")
@@ -212,6 +214,8 @@ keygen:
 func tryWriteTestFixtureFile(t *testing.T, index int, data LocalPartySaveData) {
 	fixtureFileName := makeTestFixtureFilePath(index)
 
+	dir := path.Dir(fixtureFileName)
+	os.MkdirAll(dir, 0751)
 	// fixture file does not already exist?
 	// if it does, we won't re-create it here
 	fi, err := os.Stat(fixtureFileName)

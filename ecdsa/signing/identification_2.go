@@ -50,16 +50,16 @@ func (round *identification2) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proofMulstar := round.temp.r5msgProofMulstar[j]
+			proofMulstar := round.temp.R5msgProofMulstar[j]
 			g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
-			ok := proofMulstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], g, round.temp.BigWs[j], round.temp.r1msgK[j], round.temp.r5msgH[j], round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			ok := proofMulstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], g, round.temp.BigWs[j], round.temp.R1msgK[j], round.temp.R5msgH[j], round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)
 				return
 			}
 
 			modN2 := common.ModInt(round.key.PaillierPKs[j].NSquare())
-			ChiShareEnc := round.temp.r5msgH[j]
+			ChiShareEnc := round.temp.R5msgH[j]
 			Q3Enc, err := round.key.PaillierPKs[j].EncryptWithRandomness(q3, new(big.Int).SetBytes(round.temp.ssid))
 			if err != nil {
 				errChs <- round.WrapError(err, round.PartyID())
@@ -72,14 +72,14 @@ func (round *identification2) Start() *tss.Error {
 				var err error
 				Djk := round.temp.ChiMtADs[j]
 				if k != i {
-					Djk = round.temp.r5msgDjis[k][j]
+					Djk = round.temp.R5msgDjis[k][j]
 				}
 				ChiShareEnc, err = round.key.PaillierPKs[j].HomoAdd(ChiShareEnc, Djk)
 				if err != nil {
 					errChs <- round.WrapError(err, Pj)
 					return
 				}
-				Fkj := round.temp.r5msgFjis[j][k]
+				Fkj := round.temp.R5msgFjis[j][k]
 				FinvEnc := modN2.ModInverse(Fkj)
 				//BetaEnc := modN2.Mul(round.temp.r5msgQ3Enc[j], FinvEnc)
 				BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
@@ -93,7 +93,7 @@ func (round *identification2) Start() *tss.Error {
 					return
 				}
 			}
-			SigmaShareEnc, err := round.key.PaillierPKs[j].HomoMult(round.temp.m, round.temp.r1msgK[j])
+			SigmaShareEnc, err := round.key.PaillierPKs[j].HomoMult(round.temp.m, round.temp.R1msgK[j])
 			if err != nil {
 				errChs <- round.WrapError(err, Pj)
 				return
@@ -109,8 +109,8 @@ func (round *identification2) Start() *tss.Error {
 				return
 			}
 
-			proofDec := round.temp.r5msgProofDec[j]
-			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], SigmaShareEnc, round.temp.r4msgSigmaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
+			proofDec := round.temp.R5msgProofDec[j]
+			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], SigmaShareEnc, round.temp.R4msgSigmaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofdec verify failed"), Pj)
 				return

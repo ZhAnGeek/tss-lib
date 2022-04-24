@@ -15,7 +15,7 @@ import (
 
 const (
 	Iterations         = 13
-	ProofModBytesParts = Iterations*4 + 1
+	ProofModBytesParts = Iterations*2 + 3
 )
 
 var (
@@ -26,8 +26,8 @@ type (
 	ProofMod struct {
 		W *big.Int
 		X [Iterations]*big.Int
-		A [Iterations]*big.Int
-		B [Iterations]*big.Int
+		A *big.Int
+		B *big.Int
 		Z [Iterations]*big.Int
 	}
 )
@@ -56,8 +56,9 @@ func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
 	NINV := new(big.Int).ModInverse(N, Phi)
 	X := [Iterations]*big.Int{}
-	A := [Iterations]*big.Int{}
-	B := [Iterations]*big.Int{}
+	var Abz, Bbz []byte
+	Abz = append(Abz, byte(255)) // add sentinel to ensuring the len(A.Bytes()) == Iterations+1
+	Bbz = append(Bbz, byte(255))
 	Z := [Iterations]*big.Int{}
 
 	for i := range Y {
@@ -76,10 +77,14 @@ func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 				e = modPhi.Mul(e, e)
 				Xi := modN.Exp(Yi, e)
 				Zi := modN.Exp(Y[i], NINV)
-				X[i], A[i], B[i], Z[i] = Xi, big.NewInt(int64(a)), big.NewInt(int64(b)), Zi
+				X[i], Z[i] = Xi, Zi
+				Abz = append(Abz, byte(a))
+				Bbz = append(Bbz, byte(b))
 			}
 		}
 	}
+	A := new(big.Int).SetBytes(Abz)
+	B := new(big.Int).SetBytes(Bbz)
 
 	return &ProofMod{W: W, X: [Iterations]*big.Int(X), A: A, B: B, Z: Z}, nil
 }
@@ -96,20 +101,14 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
 	X := [Iterations]*big.Int{}
 	copy(X[:], bis[1:(Iterations+1)])
 
-	A := [Iterations]*big.Int{}
-	copy(A[:], bis[(Iterations+1):(Iterations*2+1)])
-
-	B := [Iterations]*big.Int{}
-	copy(B[:], bis[(Iterations*2+1):(Iterations*3+1)])
-
 	Z := [Iterations]*big.Int{}
-	copy(Z[:], bis[(Iterations*3+1):])
+	copy(Z[:], bis[(Iterations+3):])
 
 	return &ProofMod{
 		W: bis[0],
 		X: X,
-		A: A,
-		B: B,
+		A: bis[Iterations+1],
+		B: bis[Iterations+2],
 		Z: Z,
 	}, nil
 }
@@ -143,7 +142,8 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 		}(i)
 
 		go func(i int) {
-			a, b := pf.A[i].Int64(), pf.B[i].Int64()
+			a := int(pf.A.Bytes()[i+1]) // sentinel at 0
+			b := int(pf.B.Bytes()[i+1])
 			left := modN.Exp(pf.X[i], big.NewInt(4))
 			right := Y[i]
 			if a > 0 {
@@ -177,15 +177,11 @@ func (pf *ProofMod) ValidateBasic() bool {
 			return false
 		}
 	}
-	for i := range pf.A {
-		if pf.A[i] == nil {
-			return false
-		}
+	if pf.A == nil {
+		return false
 	}
-	for i := range pf.B {
-		if pf.B[i] == nil {
-			return false
-		}
+	if pf.B == nil {
+		return false
 	}
 	for i := range pf.Z {
 		if pf.Z[i] == nil {
@@ -201,14 +197,10 @@ func (pf *ProofMod) Bytes() [ProofModBytesParts][]byte {
 	for i := range pf.X {
 		bzs[1+i] = pf.X[i].Bytes()
 	}
-	for i := range pf.A {
-		bzs[Iterations+1+i] = pf.A[i].Bytes()
-	}
-	for i := range pf.B {
-		bzs[Iterations*2+1+i] = pf.B[i].Bytes()
-	}
+	bzs[Iterations+1] = pf.A.Bytes()
+	bzs[Iterations+2] = pf.B.Bytes()
 	for i := range pf.Z {
-		bzs[Iterations*3+1+i] = pf.Z[i].Bytes()
+		bzs[Iterations+3+i] = pf.Z[i].Bytes()
 	}
 	return bzs
 }

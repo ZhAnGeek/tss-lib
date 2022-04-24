@@ -87,7 +87,6 @@ type (
 		R3msgBigDeltaShare []*crypto.ECPoint
 		R3msgProofLogstar  []*zkplogstar.ProofLogstar
 
-		R4msgSigmaShare []*big.Int
 		// for identification
 		DeltaMtAFs      []*big.Int
 		DeltaMtADs      []*big.Int
@@ -160,7 +159,6 @@ func NewLocalParty(
 	p.temp.R3msgDeltaShare = make([]*big.Int, partyCount)
 	p.temp.R3msgBigDeltaShare = make([]*crypto.ECPoint, partyCount)
 	p.temp.R3msgProofLogstar = make([]*zkplogstar.ProofLogstar, partyCount)
-	p.temp.R4msgSigmaShare = make([]*big.Int, partyCount)
 	// for identification
 	p.temp.DeltaMtAFs = make([]*big.Int, partyCount)
 	p.temp.DeltaMtADs = make([]*big.Int, partyCount)
@@ -272,11 +270,6 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.R1msgProof[fromPIdx] = Proof
-		proofLogStar, err := r1msg.UnmarshalLogstarProof(p.params.EC())
-		if err != nil {
-			return false, p.WrapError(err, msg.GetFrom())
-		}
-		p.temp.R2msgProofLogstar[fromPIdx] = proofLogStar // TODO: rename to R1msg
 	case *PreSignRound2Message:
 		r2msg := msg.Content().(*PreSignRound2Message)
 		BigGammaShare, err := r2msg.UnmarshalBigGammaShare(p.params.EC())
@@ -298,6 +291,11 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.R2msgChiProof[fromPIdx] = proofChi
+		proofLogStar, err := r2msg.UnmarshalLogstarProof(p.params.EC())
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.R2msgProofLogstar[fromPIdx] = proofLogStar
 	case *PreSignRound3Message:
 		r3msg := msg.Content().(*PreSignRound3Message)
 		p.temp.R3msgDeltaShare[fromPIdx] = r3msg.UnmarshalDeltaShare()
@@ -312,16 +310,16 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		}
 		p.temp.R3msgProofLogstar[fromPIdx] = proofLogStar
 	case *IdentificationRound1Message:
-		r6msg := msg.Content().(*IdentificationRound1Message)
-		p.temp.R5msgH[fromPIdx] = r6msg.UnmarshalH()
-		proofMul, err := r6msg.UnmarshalProofMul()
+		r5msg := msg.Content().(*IdentificationRound1Message)
+		p.temp.R5msgH[fromPIdx] = r5msg.UnmarshalH()
+		proofMul, err := r5msg.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.R5msgProofMul[fromPIdx] = proofMul
-		p.temp.R5msgDjis[fromPIdx] = r6msg.UnmarshalDjis()
-		p.temp.R5msgFjis[fromPIdx] = r6msg.UnmarshalFjis()
-		proofDec, err := r6msg.UnmarshalProofDec()
+		p.temp.R5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
+		p.temp.R5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
+		proofDec, err := r5msg.UnmarshalProofDec()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}

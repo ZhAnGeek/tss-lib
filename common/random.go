@@ -35,6 +35,7 @@ func MustGetRandomInt(bits int) *big.Int {
 	return n
 }
 
+// GetRandomPositiveInt returns a big.Int less than a threshold
 func GetRandomPositiveInt(lessThan *big.Int) *big.Int {
 	if lessThan == nil || zero.Cmp(lessThan) != -1 {
 		return nil
@@ -49,6 +50,7 @@ func GetRandomPositiveInt(lessThan *big.Int) *big.Int {
 	return try
 }
 
+// GetRandomPrimeInt returns a prime with specified bits length
 func GetRandomPrimeInt(bits int) *big.Int {
 	if bits <= 0 {
 		return nil
@@ -67,7 +69,7 @@ func GetRandomPrimeInt(bits int) *big.Int {
 	return try
 }
 
-// Generate a random element in the group of all the elements in Z/nZ that
+// GetRandomPositiveRelativelyPrimeInt generates a random element in the group of all the elements in Z/nZ that
 // has a multiplicative inverse.
 func GetRandomPositiveRelativelyPrimeInt(n *big.Int) *big.Int {
 	if n == nil || zero.Cmp(n) != -1 {
@@ -83,6 +85,7 @@ func GetRandomPositiveRelativelyPrimeInt(n *big.Int) *big.Int {
 	return try
 }
 
+// IsNumberInMultiplicativeGroup checks if values in the same multiplicative group
 func IsNumberInMultiplicativeGroup(n, v *big.Int) bool {
 	if n == nil || v == nil || zero.Cmp(n) != -1 {
 		return false
@@ -92,7 +95,7 @@ func IsNumberInMultiplicativeGroup(n, v *big.Int) bool {
 		gcd.GCD(nil, nil, v, n).Cmp(one) == 0
 }
 
-//  Return a random generator of RQn with high probability.
+// GetRandomGeneratorOfTheQuadraticResidue returns a random generator of RQn with high probability.
 //  THIS METHOD ONLY WORKS IF N IS THE PRODUCT OF TWO SAFE PRIMES!
 // https://github.com/didiercrunch/paillier/blob/d03e8850a8e4c53d04e8016a2ce8762af3278b71/utils.go#L39
 func GetRandomGeneratorOfTheQuadraticResidue(n *big.Int) *big.Int {
@@ -101,6 +104,7 @@ func GetRandomGeneratorOfTheQuadraticResidue(n *big.Int) *big.Int {
 	return fSq.Mod(fSq, n)
 }
 
+// GetRandomQuandraticNonResidue returns a quandratic non residue of n.
 func GetRandomQuandraticNonResidue(n *big.Int) *big.Int {
 	for {
 		w := GetRandomPositiveInt(n)
@@ -110,6 +114,7 @@ func GetRandomQuandraticNonResidue(n *big.Int) *big.Int {
 	}
 }
 
+// GetRandomBytes returns random bytes of length.
 func GetRandomBytes(length int) ([]byte, error) {
 	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
 	if length <= 0 {

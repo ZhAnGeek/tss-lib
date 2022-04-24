@@ -9,6 +9,7 @@ package presigning
 import (
 	"errors"
 	"math/big"
+	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -37,115 +38,67 @@ func (round *presign3) Start() *tss.Error {
 
 	// Fig 7. Round 3.1 verify proofs received and decrypt alpha share of MtA output
 	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
-	//errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*3)
-	//wg := sync.WaitGroup{}
-	//for j, Pj := range round.Parties().IDs() {
-	//	if j == i {
-	//		continue
-	//	}
-	//	BigGammaSharej := round.temp.R2msgBigGammaShare[j]
-	//	ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
-
-	//	wg.Add(1)
-	//	go func(j int, Pj *tss.PartyID) {
-	//		defer wg.Done()
-	//		DeltaD := round.temp.R2msgDeltaD[j]
-	//		DeltaF := round.temp.R2msgDeltaF[j]
-	//		proofAffgDelta := round.temp.R2msgDeltaProof[j]
-	//		ok := proofAffgDelta.Verify(ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, BigGammaSharej)
-	//		if !ok {
-	//			errChs <- round.WrapError(errors.New("failed to verify affg delta"))
-	//			return
-	//		}
-	//		AlphaDelta, err := round.key.PaillierSK.Decrypt(DeltaD)
-	//		if err != nil {
-	//			errChs <- round.WrapError(errors.New("failed to do mta"))
-	//			return
-	//		}
-	//		round.temp.DeltaShareAlphas[j] = AlphaDelta
-	//	}(j, Pj)
-
-	//	wg.Add(1)
-	//	go func(j int, Pj *tss.PartyID) {
-	//		defer wg.Done()
-	//		ChiD := round.temp.R2msgChiD[j]
-	//		ChiF := round.temp.R2msgChiF[j]
-	//		proofAffgChi := round.temp.R2msgChiProof[j]
-	//		ok := proofAffgChi.Verify(ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
-	//		if !ok {
-	//			errChs <- round.WrapError(errors.New("failed to verify affg chi"))
-	//			return
-	//		}
-	//		AlphaChi, err := round.key.PaillierSK.Decrypt(ChiD)
-	//		if err != nil {
-	//			errChs <- round.WrapError(errors.New("failed to do mta"))
-	//			return
-	//		}
-	//		round.temp.ChiShareAlphas[j] = AlphaChi
-	//	}(j, Pj)
-
-	//	wg.Add(1)
-	//	go func(j int, Pj *tss.PartyID) {
-	//		defer wg.Done()
-	//		proofLogstar := round.temp.R2msgProofLogstar[j]
-	//		Gj := round.temp.R1msgG[j]
-	//		ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Gj, BigGammaSharej, g, round.key.NTildei, round.key.H1i, round.key.H2i)
-	//		if !ok {
-	//			errChs <- round.WrapError(errors.New("failed to verify logstar"))
-	//			return
-	//		}
-	//	}(j, Pj)
-	//}
-	//wg.Wait()
-	//close(errChs)
-	//culprits := make([]*tss.PartyID, 0)
-	//for err := range errChs {
-	//	culprits = append(culprits, err.Culprits()...)
-	//}
-	//if len(culprits) > 0 {
-	//	return round.WrapError(errors.New("round3: failed to verify proofs"), culprits...)
-	//}
-	////////////////////////////////////////////////////////////////////////////////////////
-
+	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*5)
+	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
-		BigGammaSharej := round.temp.R2msgBigGammaShare[j]
-		ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 
-		DeltaD := round.temp.R2msgDeltaD[j]
-		DeltaF := round.temp.R2msgDeltaF[j]
-		proofAffgDelta := round.temp.R2msgDeltaProof[j]
-		ok := proofAffgDelta.Verify(ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, BigGammaSharej)
-		if !ok {
-			return round.WrapError(errors.New("failed to verify affg delta"), Pj)
-		}
-		AlphaDelta, err := round.key.PaillierSK.Decrypt(DeltaD)
-		if err != nil {
-			return round.WrapError(errors.New("failed to do mta"))
-		}
-		round.temp.DeltaShareAlphas[j] = AlphaDelta
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
 
-		ChiD := round.temp.R2msgChiD[j]
-		ChiF := round.temp.R2msgChiF[j]
-		proofAffgChi := round.temp.R2msgChiProof[j]
-		ok = proofAffgChi.Verify(ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
-		if !ok {
-			return round.WrapError(errors.New("failed to verify affg chi"), Pj)
-		}
-		AlphaChi, err := round.key.PaillierSK.Decrypt(ChiD)
-		if err != nil {
-			return round.WrapError(errors.New("failed to do mta"))
-		}
-		round.temp.ChiShareAlphas[j] = AlphaChi
+			BigGammaSharej := round.temp.R2msgBigGammaShare[j]
+			ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 
-		proofLogstar := round.temp.R2msgProofLogstar[j]
-		Gj := round.temp.R1msgG[j]
-		ok = proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Gj, BigGammaSharej, g, round.key.NTildei, round.key.H1i, round.key.H2i)
-		if !ok {
-			return round.WrapError(errors.New("failed to verify logstar"))
-		}
+			DeltaD := round.temp.R2msgDeltaD[j]
+			DeltaF := round.temp.R2msgDeltaF[j]
+			proofAffgDelta := round.temp.R2msgDeltaProof[j]
+			ok := proofAffgDelta.Verify(ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, BigGammaSharej)
+			if !ok {
+				errChs <- round.WrapError(errors.New("failed to verify affg delta"), Pj)
+				return
+			}
+			AlphaDelta, err := round.key.PaillierSK.Decrypt(DeltaD)
+			if err != nil {
+				errChs <- round.WrapError(errors.New("failed to do mta"), Pi)
+				return
+			}
+			round.temp.DeltaShareAlphas[j] = AlphaDelta
+
+			ChiD := round.temp.R2msgChiD[j]
+			ChiF := round.temp.R2msgChiF[j]
+			proofAffgChi := round.temp.R2msgChiProof[j]
+			ok = proofAffgChi.Verify(ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
+			if !ok {
+				errChs <- round.WrapError(errors.New("failed to verify affg chi"), Pj)
+				return
+			}
+			AlphaChi, err := round.key.PaillierSK.Decrypt(ChiD)
+			if err != nil {
+				errChs <- round.WrapError(errors.New("failed to do mta"), Pi)
+				return
+			}
+			round.temp.ChiShareAlphas[j] = AlphaChi
+
+			proofLogstar := round.temp.R2msgProofLogstar[j]
+			Gj := round.temp.R1msgG[j]
+			ok = proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Gj, BigGammaSharej, g, round.key.NTildei, round.key.H1i, round.key.H2i)
+			if !ok {
+				errChs <- round.WrapError(errors.New("failed to verify logstar"), Pj)
+				return
+			}
+		}(j, Pj)
+	}
+	wg.Wait()
+	close(errChs)
+	culprits := make([]*tss.PartyID, 0)
+	for err := range errChs {
+		culprits = append(culprits, err.Culprits()...)
+	}
+	if len(culprits) > 0 {
+		return round.WrapError(errors.New("round3: mta verify failed"), culprits...)
 	}
 
 	// Fig 7. Round 3.2 accumulate results from MtA
@@ -177,76 +130,46 @@ func (round *presign3) Start() *tss.Error {
 		ChiShare = modN.Add(ChiShare, round.temp.ChiShareBetas[j])
 	}
 
-	///errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
-	///wg := sync.WaitGroup{}
-	///for j, Pj := range round.Parties().IDs() {
-	///	if j == i {
-	///		continue
-	///	}
-	///	ProofOut := make(chan *zkplogstar.ProofLogstar, 1)
-	///	wg.Add(1)
-	///	go func(j int, Pj *tss.PartyID) {
-	///		defer wg.Done()
-	///		ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
-	///		if err != nil {
-	///			errChs <- round.WrapError(errors.New("proofLogStar generation failed"), Pi)
-	///		}
-	///		ProofOut <- ProofLogstar
-	///	}(j, Pj)
-
-	///	ProofLogstar := <-ProofOut
-	///	r3msg := NewPreSignRound3Message(Pj, round.PartyID(), DeltaShare, BigDeltaShare, ProofLogstar)
-	///	round.out <- r3msg
-	///}
-	///wg.Wait()
-	///close(errChs)
-	///for err := range errChs {
-	///	return err
-	///}
+	errChs = make(chan *tss.Error, len(round.Parties().IDs())-1)
+	wg = sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
-		ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
-		if err != nil {
-			return round.WrapError(errors.New("proofLogStar generation failed"), Pi)
-		}
-		r3msg := NewPreSignRound3Message(Pj, round.PartyID(), DeltaShare, BigDeltaShare, ProofLogstar)
-		round.out <- r3msg
+
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+
+			ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
+			if err != nil {
+				errChs <- round.WrapError(errors.New("proofLogStar generation failed"), Pi)
+				return
+			}
+			r3msg := NewPreSignRound3Message(Pj, round.PartyID(), DeltaShare, BigDeltaShare, ProofLogstar)
+			round.out <- r3msg
+		}(j, Pj)
+	}
+	wg.Wait()
+	close(errChs)
+	for err := range errChs {
+		return err
 	}
 
 	round.temp.DeltaShare = DeltaShare
 	round.temp.ChiShare = ChiShare
 	round.temp.BigDeltaShare = BigDeltaShare
 	round.temp.BigGamma = BigGamma
-	// retire unused variables
-	///round.temp.w = nil
-	///round.temp.BigWs = nil
-	///round.temp.GammaShare = nil
-	///round.temp.BigGammaShare = nil
-	///round.temp.K = nil
-	///round.temp.KNonce = nil
-	///round.temp.DeltaShareBetas = nil
-	///round.temp.ChiShareBetas = nil
-	///round.temp.DeltaShareAlphas = nil
-	///round.temp.ChiShareAlphas = nil
-	///round.temp.R1msgG = nil
-	///round.temp.R2msgDeltaD = nil
-	///round.temp.R2msgDeltaF = nil
-	///round.temp.R2msgChiD = nil
-	///round.temp.R2msgChiF = nil
-	///round.temp.R2msgDeltaProof = nil
-	///round.temp.R2msgChiProof = nil
-	///round.temp.R2msgProofLogstar = nil
 
-	du := &LocalDump{
-		Temp:     round.temp,
-		RoundNum: round.number,
-		Index:    i,
+	if round.dump != nil {
+		du := &LocalDump{
+			Temp:     round.temp,
+			RoundNum: round.number,
+			Index:    i,
+		}
+		duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
+		round.dump <- duPB
 	}
-	duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
-
-	round.dump <- duPB
 
 	return nil
 }

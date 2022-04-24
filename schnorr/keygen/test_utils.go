@@ -25,10 +25,10 @@ const (
 	// To change these parameters, you must first delete the text fixture files in test/_fixtures/ and then run the keygen test alone.
 	// Then the signing and resharing tests will work with the new n, t configuration using the newly written fixture files.
 	TestParticipants = test.TestParticipants
-	TestThreshold    = test.TestParticipants / 2
+	TestThreshold    = test.TestThreshold
 )
 const (
-	testFixtureDirFormat  = "%s/../../test/_schnorr_fixtures"
+	testFixtureDirFormat  = "%s/../../test/_schnorr_fixtures_%d_%d"
 	testFixtureFileFormat = "keygen_data_%d.json"
 )
 
@@ -112,6 +112,6 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 func makeTestFixtureFilePath(partyIndex int) string {
 	_, callerFileName, _, _ := runtime.Caller(0)
 	srcDirName := filepath.Dir(callerFileName)
-	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName)
+	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, test.TestThreshold, test.TestParticipants)
 	return fmt.Sprintf("%s/"+testFixtureFileFormat, fixtureDirName, partyIndex)
 }

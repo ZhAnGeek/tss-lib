@@ -10,12 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
-	sync "sync"
+	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
 	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
-	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -38,7 +36,7 @@ func (round *presign1) Start() *tss.Error {
 	Pi := round.PartyID()
 	round.ok[i] = true
 
-	// Fig 7. Round 1. generate ssid
+	// Fig 7. Round 1. generate ssid #TODO missing run_id & pre_data idx as input
 	ssid, err := round.getSSID()
 	if err != nil {
 		return round.WrapError(err, Pi)
@@ -49,16 +47,14 @@ func (round *presign1) Start() *tss.Error {
 	GammaShare := common.GetRandomPositiveInt(round.EC().Params().N)
 	K, KNonce, err := round.key.PaillierSK.EncryptAndReturnRandomness(KShare)
 	if err != nil {
-		return round.WrapError(fmt.Errorf("paillier encryption failed"))
+		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
 	G, GNonce, err := round.key.PaillierSK.EncryptAndReturnRandomness(GammaShare)
 	if err != nil {
-		return round.WrapError(fmt.Errorf("paillier encryption failed"))
+		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
 
 	// Fig 7. Round 1. create proof enc
-	BigGammaShare := crypto.ScalarBaseMult(round.Params().EC(), GammaShare)
-	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg := sync.WaitGroup{}
 	ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
@@ -76,13 +72,7 @@ func (round *presign1) Start() *tss.Error {
 				return
 			}
 
-			ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, G, BigGammaShare, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], GammaShare, GNonce)
-			if err != nil {
-				errChs <- round.WrapError(errors.New("prooflogstar failed"), Pi)
-				return
-			}
-
-			r1msg := NewPreSignRound1Message(Pj, round.PartyID(), K, G, proof, ProofLogstar) // TODO
+			r1msg := NewPreSignRound1Message(Pj, round.PartyID(), K, G, proof)
 			round.out <- r1msg
 		}(j, Pj)
 	}
@@ -99,36 +89,26 @@ func (round *presign1) Start() *tss.Error {
 	round.temp.K = K
 	round.temp.KNonce = KNonce
 	round.temp.GNonce = GNonce
-	round.temp.BigGammaShare = BigGammaShare
 
-	du := &LocalDump{
-		Temp:     round.temp,
-		RoundNum: round.number,
-		Index:    i,
+	if round.dump != nil {
+		du := &LocalDump{
+			Temp:     round.temp,
+			RoundNum: round.number,
+			Index:    i,
+		}
+		duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
+		round.dump <- duPB
 	}
-	duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
-
-	round.dump <- duPB
 
 	return nil
 }
 
 func (round *presign1) Update() (bool, *tss.Error) {
-	// for j, msg := range round.temp.presignRound1Messages {
-	// 	if round.ok[j] {
-	// 		continue
-	// 	}
-	// 	if msg == nil || !round.CanAccept(msg) {
-	// 		return false, nil
-	// 	}
-	// 	round.ok[j] = true
-	// }
-	// return true, nil
 	for j, msg := range round.temp.R1msgK {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil || round.temp.R1msgK[j] == nil || round.temp.R1msgProof[j] == nil {
+		if msg == nil || round.temp.R1msgG[j] == nil || round.temp.R1msgProof[j] == nil {
 			return false, nil
 		}
 		round.ok[j] = true
@@ -145,9 +125,6 @@ func (round *presign1) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *presign1) NextRound() tss.Round {
 	round.started = false
-	// if round.runToDump {
-	// 	return nil
-	// }
 	return &presign2{round}
 }
 
@@ -160,13 +137,6 @@ func (round *presign1) prepare() error {
 	xi := round.key.Xi
 	ks := round.key.Ks
 	BigXs := round.key.BigXj
-
-	// adding the key derivation delta to the xi's
-	// Suppose x has shamir shares x_0,     x_1,     ..., x_n
-	// So x + D has shamir shares  x_0 + D, x_1 + D, ..., x_n + D
-	//mod := common.ModInt(round.Params().EC().Params().N)
-	//xi = mod.Add(round.temp.keyDerivationDelta, xi)
-	//round.key.Xi = xi
 
 	if round.Threshold()+1 > len(ks) {
 		return fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks))

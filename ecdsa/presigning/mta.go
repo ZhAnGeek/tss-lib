@@ -31,6 +31,7 @@ func NewMtA(Session []byte, ec elliptic.Curve, Kj *big.Int, gammai *big.Int, Big
 	q3 = new(big.Int).Mul(q, q3)
 
 	betaNeg := common.GetRandomPositiveInt(q3)
+	beta := new(big.Int).Sub(q3, betaNeg)
 
 	gammaK, err := pkj.HomoMult(gammai, Kj)
 	if err != nil {
@@ -49,9 +50,6 @@ func NewMtA(Session []byte, ec elliptic.Curve, Kj *big.Int, gammai *big.Int, Big
 	if err != nil {
 		return nil, err
 	}
-
-	//beta := common.ModInt(q).Sub(zero, betaNeg)
-	beta := new(big.Int).Sub(q3, betaNeg)
 
 	Psiji, err := zkpaffg.NewProof(Session, ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
 	if err != nil {

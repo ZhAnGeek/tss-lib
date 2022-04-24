@@ -33,8 +33,6 @@ var (
 func NewSignRound1Message(
 	from *tss.PartyID,
 	SigmaShare *big.Int,
-	Rx *big.Int,
-	Ry *big.Int,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -42,8 +40,6 @@ func NewSignRound1Message(
 	}
 	content := &SignRound1Message{
 		SigmaShare: SigmaShare.Bytes(),
-		Rx:         Rx.Bytes(),
-		Ry:         Ry.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -56,14 +52,6 @@ func (m *SignRound1Message) ValidateBasic() bool {
 
 func (m *SignRound1Message) UnmarshalSigmaShare() *big.Int {
 	return new(big.Int).SetBytes(m.GetSigmaShare())
-}
-
-func (m *SignRound1Message) UnmarshalRx() *big.Int {
-	return new(big.Int).SetBytes(m.GetRx())
-}
-
-func (m *SignRound1Message) UnmarshalRy() *big.Int {
-	return new(big.Int).SetBytes(m.GetRy())
 }
 
 // ----- //
@@ -124,9 +112,10 @@ func (m *IdentificationRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.H) &&
 		common.NonEmptyMultiBytes(m.MulProof, zkpmulstar.ProofMulstarBytesParts) &&
-		common.NonEmptyMultiBytes(m.Djis) &&
-		common.NonEmptyMultiBytes(m.Fjis) &&
-		common.NonEmptyMultiBytes(m.DjiProofs) &&
+		// TOCO check excluding index
+		// common.NonEmptyMultiBytes(m.Djis) &&
+		// common.NonEmptyMultiBytes(m.Fjis) &&
+		// common.NonEmptyMultiBytes(m.DjiProofs) &&
 		common.NonEmptyMultiBytes(m.DecProof, zkpdec.ProofDecBytesParts)
 }
 
@@ -238,8 +227,8 @@ func NewLocalDumpPB(
 	if LocalTemp.K != nil {
 		KBzs = LocalTemp.K.Bytes()
 	}
-	r1msgKBzs := make([][]byte, len(LocalTemp.r1msgK))
-	for i, item := range LocalTemp.r1msgK {
+	r1msgKBzs := make([][]byte, len(LocalTemp.R1msgK))
+	for i, item := range LocalTemp.R1msgK {
 		if item != nil {
 			r1msgKBzs[i] = item.Bytes()
 		}
@@ -256,8 +245,8 @@ func NewLocalDumpPB(
 			ChiShareBetasBzs[i] = item.Bytes()
 		}
 	}
-	r2msgChiDBzs := make([][]byte, len(LocalTemp.r2msgChiD))
-	for i, item := range LocalTemp.r2msgChiD {
+	r2msgChiDBzs := make([][]byte, len(LocalTemp.R2msgChiD))
+	for i, item := range LocalTemp.R2msgChiD {
 		if item != nil {
 			r2msgChiDBzs[i] = item.Bytes()
 		}
@@ -285,21 +274,21 @@ func NewLocalDumpPB(
 		}
 	}
 
-	r4msgSigmaShareBzs := make([][]byte, len(LocalTemp.r4msgSigmaShare))
-	for i, item := range LocalTemp.r4msgSigmaShare {
+	r4msgSigmaShareBzs := make([][]byte, len(LocalTemp.R4msgSigmaShare))
+	for i, item := range LocalTemp.R4msgSigmaShare {
 		if item != nil {
 			r4msgSigmaShareBzs[i] = item.Bytes()
 		}
 	}
 
-	r5msgHBzs := make([][]byte, len(LocalTemp.r5msgH))
-	for i, item := range LocalTemp.r5msgH {
+	r5msgHBzs := make([][]byte, len(LocalTemp.R5msgH))
+	for i, item := range LocalTemp.R5msgH {
 		if item != nil {
 			r5msgHBzs[i] = item.Bytes()
 		}
 	}
-	r5msgProofMulstarBzs := make([][]byte, len(LocalTemp.r5msgProofMulstar)*zkpmulstar.ProofMulstarBytesParts)
-	for i, item := range LocalTemp.r5msgProofMulstar {
+	r5msgProofMulstarBzs := make([][]byte, len(LocalTemp.R5msgProofMulstar)*zkpmulstar.ProofMulstarBytesParts)
+	for i, item := range LocalTemp.R5msgProofMulstar {
 		if item != nil {
 			itemBzs := item.Bytes()
 			for j := 0; j < zkpmulstar.ProofMulstarBytesParts; j++ {
@@ -313,8 +302,8 @@ func NewLocalDumpPB(
 	//		r5msgSigmaShareEncBzs[i] = item.Bytes()
 	//	}
 	//}
-	r5msgProofDecBzs := make([][]byte, len(LocalTemp.r5msgProofDec)*zkpdec.ProofDecBytesParts)
-	for i, item := range LocalTemp.r5msgProofDec {
+	r5msgProofDecBzs := make([][]byte, len(LocalTemp.R5msgProofDec)*zkpdec.ProofDecBytesParts)
+	for i, item := range LocalTemp.R5msgProofDec {
 		if item != nil {
 			itemBzs := item.Bytes()
 			for j := 0; j < zkpdec.ProofDecBytesParts; j++ {
@@ -322,18 +311,18 @@ func NewLocalDumpPB(
 			}
 		}
 	}
-	r5msgDjiLen := len(LocalTemp.r5msgDjis)
+	r5msgDjiLen := len(LocalTemp.R5msgDjis)
 	r5msgDjisBzs := make([][]byte, r5msgDjiLen*r5msgDjiLen)
-	for i, row := range LocalTemp.r5msgDjis {
+	for i, row := range LocalTemp.R5msgDjis {
 		for j, item := range row {
 			if item != nil {
 				r5msgDjisBzs[i*r5msgDjiLen+j] = item.Bytes()
 			}
 		}
 	}
-	r5msgFjiLen := len(LocalTemp.r5msgFjis)
+	r5msgFjiLen := len(LocalTemp.R5msgFjis)
 	r5msgFjisBzs := make([][]byte, r5msgFjiLen*r5msgFjiLen)
-	for i, row := range LocalTemp.r5msgFjis {
+	for i, row := range LocalTemp.R5msgFjis {
 		for j, item := range row {
 			if item != nil {
 				r5msgFjisBzs[i*r5msgFjiLen+j] = item.Bytes()
@@ -544,13 +533,13 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 		BigR:     BigR,
 
 		SigmaShare:      SigmaShare,
-		r4msgSigmaShare: r4msgSigmaShare,
+		R4msgSigmaShare: r4msgSigmaShare,
 
-		r5msgH:            r5msgH,
-		r5msgProofMulstar: r5msgProofMulstar,
-		r5msgProofDec:     r5msgProofDec,
-		r5msgDjis:         r5msgDjis,
-		r5msgFjis:         r5msgFjis,
+		R5msgH:            r5msgH,
+		R5msgProofMulstar: r5msgProofMulstar,
+		R5msgProofDec:     r5msgProofDec,
+		R5msgDjis:         r5msgDjis,
+		R5msgFjis:         r5msgFjis,
 		//r5msgQ3Enc: r5msgQ3Enc,
 	}
 

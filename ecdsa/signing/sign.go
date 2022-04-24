@@ -59,26 +59,20 @@ func (round *sign1) Start() *tss.Error {
 	// Fig 8. Round 1. compute signature share
 	modN := common.ModInt(round.EC().Params().N)
 	Rx := round.temp.BigR.X()
-	Ry := round.temp.BigR.Y()
 	SigmaShare := modN.Add(modN.Mul(round.temp.KShare, round.temp.m), modN.Mul(Rx, round.temp.ChiShare))
 	SigmaShareDelta := modN.Mul(Rx, modN.Mul(round.temp.KShare, round.temp.KeyDerivationDelta))
 	SigmaShare = modN.Add(SigmaShare, SigmaShareDelta)
 
-	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare, Rx, Ry)
+	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare)
 	round.out <- r1msg
 
 	round.temp.SigmaShare = SigmaShare
-	// retire unused variables
-	//round.temp.r1msgK = nil
-	//round.temp.r3msgBigDeltaShare = nil
-	//round.temp.r3msgDeltaShare = nil
-	//round.temp.r3msgProofLogstar = nil
 
 	return nil
 }
 
 func (round *sign1) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r4msgSigmaShare {
+	for j, msg := range round.temp.R4msgSigmaShare {
 		if round.ok[j] {
 			continue
 		}
@@ -108,13 +102,6 @@ func (round *sign1) prepare() error {
 	xi := round.key.Xi
 	ks := round.key.Ks
 	BigXs := round.key.BigXj
-
-	// adding the key derivation delta to the xi's
-	// Suppose x has shamir shares x_0,     x_1,     ..., x_n
-	// So x + D has shamir shares  x_0 + D, x_1 + D, ..., x_n + D
-	//mod := common.ModInt(round.Params().EC().Params().N)
-	//xi = mod.Add(round.temp.KeyDerivationDelta, xi)
-	//round.key.Xi = xi
 
 	if round.Threshold()+1 > len(ks) {
 		return fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks))

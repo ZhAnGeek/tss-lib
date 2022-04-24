@@ -19,6 +19,7 @@ var (
 	two  = big.NewInt(2)
 )
 
+// ModInt init a modInt from big.Int
 func ModInt(mod *big.Int) *modInt {
 	return (*modInt)(mod)
 }

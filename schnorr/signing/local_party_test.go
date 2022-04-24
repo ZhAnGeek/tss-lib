@@ -7,11 +7,14 @@
 package signing
 
 import (
+	"fmt"
 	"math/big"
+	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log"
+	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -32,6 +35,79 @@ func setUp(level string) {
 
 	// only for test
 	tss.SetCurve(tss.S256())
+}
+
+func BenchmarkE2E(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		E2E(b)
+	}
+}
+
+func E2E(b *testing.B) {
+	b.StopTimer()
+	setUp("error")
+
+	threshold := testThreshold
+
+	// PHASE: load keygen fixtures
+	keys, signPIDs, _ := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
+
+	// PHASE: signing
+
+	p2pCtx := tss.NewPeerContext(signPIDs)
+	parties := make([]*LocalParty, 0, len(signPIDs))
+
+	errCh := make(chan *tss.Error, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs))
+	endCh := make(chan common.SignatureData, len(signPIDs))
+
+	updater := test.SharedPartyUpdater
+
+	msg := big.NewInt(200).Bytes()
+	// init the parties
+	wg := sync.WaitGroup{}
+
+	b.StartTimer()
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+
+		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		parties = append(parties, P)
+		wg.Add(1)
+		go func(P *LocalParty) {
+			defer wg.Done()
+			if err := P.Start(); err != nil {
+				errCh <- err
+			}
+		}(P)
+	}
+	wg.Wait()
+
+	var ended int32
+signing:
+	for {
+		select {
+		case <-errCh:
+			break signing
+		case msg := <-outCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range parties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(P, msg, errCh)
+				}
+			} else {
+				go updater(parties[dest[0].Index], msg, errCh)
+			}
+		case <-endCh:
+			atomic.AddInt32(&ended, 1)
+			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
+				break signing
+			}
+		}
+	}
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -58,21 +134,26 @@ func TestE2EConcurrent(t *testing.T) {
 
 	msg := big.NewInt(200).Bytes()
 	// init the parties
+	wg := sync.WaitGroup{}
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
 
 		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
 		}(P)
 	}
+	wg.Wait()
 
 	var ended int32
 signing:
 	for {
+		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
 			common.Logger.Errorf("Error: %s", err)

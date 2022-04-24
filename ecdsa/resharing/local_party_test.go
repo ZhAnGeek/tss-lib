@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log"
+	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -46,18 +46,14 @@ func TestE2EConcurrent(t *testing.T) {
 	threshold, newThreshold := testThreshold, testThreshold
 
 	// PHASE: load keygen fixtures
-	//firstPartyIdx, extraParties := 1, 0 // extra can be 0 to N-first
-	//oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
-	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(2, 3)
-	fmt.Println("########### len(oldPIDs):", len(oldPIDs))
-
+	firstPartyIdx, extraParties := 0, 1 // extra can be 0 to N-first
+	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
 	assert.NoError(t, err, "should load keygen fixtures")
 
 	// PHASE: resharing
 	oldP2PCtx := tss.NewPeerContext(oldPIDs)
 	// init the new parties; re-use the fixture pre-params for speed
-	//fixtures, _, err := keygen.LoadKeygenTestFixtures(testParticipants)
-	fixtures, _, err := keygen.LoadKeygenTestFixturesRandomSet(2, 3)
+	fixtures, _, err := keygen.LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
 		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 	}

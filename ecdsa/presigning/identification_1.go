@@ -112,7 +112,8 @@ func (round *identification1) Update() (bool, *tss.Error) {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil {
+		if msg == nil || round.temp.R5msgDjis[j] == nil || round.temp.R5msgFjis[j] == nil ||
+			round.temp.R5msgProofDec[j] == nil || round.temp.R5msgProofMul[j] == nil {
 			return false, nil
 		}
 		round.ok[j] = true

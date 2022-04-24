@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
-	//"math/rand"
+	"math/rand"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -23,13 +23,7 @@ import (
 )
 
 const (
-	// To change these parameters, you must first delete the text fixture files in test/_fixtures/ and then run the keygen test alone.
-	// Then the signing and resharing tests will work with the new n, t configuration using the newly written fixture files.
-	TestParticipants = test.TestParticipants
-	TestThreshold    = test.TestThreshold
-)
-const (
-	testFixtureDirFormat  = "%s/../../test/_ecdsa_fixtures"
+	testFixtureDirFormat  = "%s/../../test/_ecdsa_fixtures_%d_%d"
 	testFixtureFileFormat = "keygen_data_%d.json"
 )
 
@@ -71,14 +65,12 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
 	keys := make([]LocalPartySaveData, 0, qty)
 	plucked := make(map[int]interface{}, qty)
-	//for i := 0; len(plucked) < qty; i = (i + 1) % fixtureCount {
-	//	_, have := plucked[i]
-	//	if pluck := rand.Float32() < 0.5; !have && pluck {
-	//		plucked[i] = new(struct{})
-	//	}
-	//}
-	plucked[1] = new(struct{})
-	plucked[2] = new(struct{})
+	for i := 0; len(plucked) < qty; i = (i + 1) % fixtureCount {
+		_, have := plucked[i]
+		if pluck := rand.Float32() < 0.5; !have && pluck {
+			plucked[i] = new(struct{})
+		}
+	}
 	for i := range plucked {
 		fixtureFilePath := makeTestFixtureFilePath(i)
 		bz, err := ioutil.ReadFile(fixtureFilePath)
@@ -125,6 +117,6 @@ func LoadNTildeH1H2FromTestFixture(idx int) (NTildei, h1i, h2i *big.Int, err err
 func makeTestFixtureFilePath(partyIndex int) string {
 	_, callerFileName, _, _ := runtime.Caller(0)
 	srcDirName := filepath.Dir(callerFileName)
-	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName)
+	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, test.TestThreshold, test.TestParticipants)
 	return fmt.Sprintf("%s/"+testFixtureFileFormat, fixtureDirName, partyIndex)
 }

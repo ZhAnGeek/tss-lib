@@ -73,7 +73,7 @@ func (round *identification1) Start() *tss.Error {
 			continue
 		}
 		var err error
-		ChiShareEnc, err = round.key.PaillierSK.HomoAdd(ChiShareEnc, round.temp.r2msgChiD[k])
+		ChiShareEnc, err = round.key.PaillierSK.HomoAdd(ChiShareEnc, round.temp.R2msgChiD[k])
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
@@ -123,11 +123,12 @@ func (round *identification1) Start() *tss.Error {
 }
 
 func (round *identification1) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.r5msgH {
+	for j, msg := range round.temp.R5msgH {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil {
+		if msg == nil || round.temp.R5msgDjis[j] == nil || round.temp.R5msgFjis[j] == nil ||
+			round.temp.R5msgProofDec[j] == nil || round.temp.R5msgProofMulstar[j] == nil {
 			return false, nil
 		}
 		round.ok[j] = true

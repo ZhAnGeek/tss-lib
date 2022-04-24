@@ -8,7 +8,6 @@ package common
 
 import (
 	"crypto"
-	_ "crypto/sha512"
 	"encoding/binary"
 	"math/big"
 )
@@ -17,7 +16,7 @@ const (
 	hashInputDelimiter = byte('$')
 )
 
-// SHA-512/256 is protected against length extension attacks and is more performant than SHA-256 on 64-bit architectures.
+// SHA512_256 SHA-512/256 is protected against length extension attacks and is more performant than SHA-256 on 64-bit architectures.
 // https://en.wikipedia.org/wiki/Template:Comparison_of_SHA_functions
 func SHA512_256(in ...[]byte) []byte {
 	var data []byte
@@ -50,6 +49,7 @@ func SHA512_256(in ...[]byte) []byte {
 	return state.Sum(nil)
 }
 
+// SHA512_256_TAGGED Tagged version of SHA512_256
 func SHA512_256_TAGGED(tag []byte, in ...[]byte) []byte {
 	tagBz := SHA512_256(tag)
 	var data []byte
@@ -84,6 +84,7 @@ func SHA512_256_TAGGED(tag []byte, in ...[]byte) []byte {
 	return state.Sum(nil)
 }
 
+// SHA512_256i hash for big.Int slice
 func SHA512_256i(in ...*big.Int) *big.Int {
 	var data []byte
 	state := crypto.SHA512_256.New()
@@ -117,6 +118,7 @@ func SHA512_256i(in ...*big.Int) *big.Int {
 	return new(big.Int).SetBytes(state.Sum(nil))
 }
 
+// SHA512_256i_TAGGED tagged version of SHA512_256i
 func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
 	tagBz := SHA512_256(tag)
 	var data []byte
@@ -153,6 +155,7 @@ func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
 	return new(big.Int).SetBytes(state.Sum(nil))
 }
 
+// SHA512_256iOne hash for one big.Int, returns a big.Int
 func SHA512_256iOne(in *big.Int) *big.Int {
 	var data []byte
 	state := crypto.SHA512_256.New()

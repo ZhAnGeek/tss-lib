@@ -9,6 +9,7 @@ package presigning
 import (
 	"errors"
 	"math/big"
+	"sync"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -32,53 +33,37 @@ func (round *presignout) Start() *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
-	///// Fig 7. Output.1 verify proof logstar
-	///errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
-	///wg := sync.WaitGroup{}
-	///for j, Pj := range round.Parties().IDs() {
-	///	if j == i {
-	///		continue
-	///	}
-
-	///	ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
-	///	wg.Add(1)
-	///	go func(j int, Pj *tss.PartyID) {
-	///		defer wg.Done()
-	///		Kj := round.temp.R1msgK[j]
-	///		BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
-	///		proofLogstar := round.temp.R3msgProofLogstar[j]
-
-	///		ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
-	///		if !ok {
-	///			errChs <- round.WrapError(errors.New("proof verify failed"), Pj)
-	///			return
-	///		}
-	///	}(j, Pj)
-	///}
-	///wg.Wait()
-	///close(errChs)
-	///culprits := make([]*tss.PartyID, 0)
-	///for err := range errChs {
-	///	culprits = append(culprits, err.Culprits()...)
-	///}
-	///if len(culprits) > 0 {
-	///	return round.WrapError(errors.New("failed to verify proofs"), culprits...)
-	///}
 	// Fig 7. Output.1 verify proof logstar
+	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
 
 		ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
-		Kj := round.temp.R1msgK[j]
-		BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
-		proofLogstar := round.temp.R3msgProofLogstar[j]
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+			Kj := round.temp.R1msgK[j]
+			BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
+			proofLogstar := round.temp.R3msgProofLogstar[j]
 
-		ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
-		if !ok {
-			return round.WrapError(errors.New("proof verify failed"), Pj)
-		}
+			ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
+			if !ok {
+				errChs <- round.WrapError(errors.New("proof verify failed"), Pj)
+				return
+			}
+		}(j, Pj)
+	}
+	wg.Wait()
+	close(errChs)
+	culprits := make([]*tss.PartyID, 0)
+	for err := range errChs {
+		culprits = append(culprits, err.Culprits()...)
+	}
+	if len(culprits) > 0 {
+		return round.WrapError(errors.New("failed to verify proofs"), culprits...)
 	}
 
 	// Fig 7. Output.2 check equality
@@ -124,20 +109,13 @@ func (round *presignout) Start() *tss.Error {
 	preSignData := NewPreSignData(i, round.temp.Ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript)
 	round.end <- preSignData
 
-	// retire unused variables
-	///round.temp.R1msgK = nil
-	///round.temp.R3msgBigDeltaShare = nil
-	///round.temp.R3msgDeltaShare = nil
-	///round.temp.R3msgProofLogstar = nil
-
-	if round.NeedsIdentifaction() {
+	if round.NeedsIdentifaction() && round.dump != nil {
 		du := &LocalDump{
 			Temp:     round.temp,
 			RoundNum: round.number + 1, // Notice, dierct restore into identification 1
 			Index:    i,
 		}
 		duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
-
 		round.dump <- duPB
 	}
 
@@ -145,16 +123,7 @@ func (round *presignout) Start() *tss.Error {
 }
 
 func (round *presignout) Update() (bool, *tss.Error) {
-	for j, msg := range round.temp.R4msgSigmaShare {
-		if round.ok[j] {
-			continue
-		}
-		if msg == nil {
-			return false, nil
-		}
-		round.ok[j] = true
-	}
-	return true, nil
+	return false, nil
 }
 
 func (round *presignout) CanAccept(msg tss.ParsedMessage) bool {

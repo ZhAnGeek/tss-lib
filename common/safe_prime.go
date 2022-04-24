@@ -23,20 +23,24 @@ const (
 )
 
 type (
+	// GermainSafePrime is prime q=2p+1 if p is also prime
 	GermainSafePrime struct {
 		q,
 		p *big.Int // p = 2q + 1
 	}
 )
 
+// Prime returns safe prime enclosed
 func (sgp *GermainSafePrime) Prime() *big.Int {
 	return sgp.q
 }
 
+// SafePrime returns underline p of safe prime
 func (sgp *GermainSafePrime) SafePrime() *big.Int {
 	return sgp.p
 }
 
+// Validate checks if enclused p && q forms safe prime
 func (sgp *GermainSafePrime) Validate() bool {
 	return probablyPrime(sgp.q) &&
 		getSafePrime(sgp.q).Cmp(sgp.p) == 0 &&

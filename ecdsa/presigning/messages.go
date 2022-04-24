@@ -220,7 +220,6 @@ func NewPreSignRound1Message(
 	K *big.Int,
 	G *big.Int,
 	EncProof *zkpenc.ProofEnc,
-	LogstarProof *zkplogstar.ProofLogstar,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -228,12 +227,10 @@ func NewPreSignRound1Message(
 		IsBroadcast: false,
 	}
 	pfBz := EncProof.Bytes()
-	LogstarBz := LogstarProof.Bytes()
 	content := &PreSignRound1Message{
-		K:            K.Bytes(),
-		G:            G.Bytes(),
-		EncProof:     pfBz[:],
-		LogstarProof: LogstarBz[:],
+		K:        K.Bytes(),
+		G:        G.Bytes(),
+		EncProof: pfBz[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -243,8 +240,7 @@ func (m *PreSignRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.K) &&
 		common.NonEmptyBytes(m.G) &&
-		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts) &&
-		common.NonEmptyMultiBytes(m.LogstarProof, zkplogstar.ProofLogstarBytesParts)
+		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts)
 }
 
 func (m *PreSignRound1Message) UnmarshalK() *big.Int {
@@ -259,10 +255,6 @@ func (m *PreSignRound1Message) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
 	return zkpenc.NewProofFromBytes(m.GetEncProof())
 }
 
-func (m *PreSignRound1Message) UnmarshalLogstarProof(ec elliptic.Curve) (*zkplogstar.ProofLogstar, error) {
-	return zkplogstar.NewProofFromBytes(ec, m.GetLogstarProof())
-}
-
 // ----- //
 
 func NewPreSignRound2Message(
@@ -274,6 +266,7 @@ func NewPreSignRound2Message(
 	FjiChi *big.Int,
 	AffgProofDelta *zkpaffg.ProofAffg,
 	AffgProofChi *zkpaffg.ProofAffg,
+	LogstarProof *zkplogstar.ProofLogstar,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -283,6 +276,7 @@ func NewPreSignRound2Message(
 	BigGammaBytes := BigGammaShare.Bytes()
 	AffgDeltaBz := AffgProofDelta.Bytes()
 	AffgChiBz := AffgProofChi.Bytes()
+	LogstarBz := LogstarProof.Bytes()
 	content := &PreSignRound2Message{
 		BigGammaShare:  BigGammaBytes[:],
 		DjiDelta:       DjiDelta.Bytes(),
@@ -291,6 +285,7 @@ func NewPreSignRound2Message(
 		FjiChi:         FjiChi.Bytes(),
 		AffgProofDelta: AffgDeltaBz[:],
 		AffgProofChi:   AffgChiBz[:],
+		LogstarProof:   LogstarBz[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -304,7 +299,8 @@ func (m *PreSignRound2Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.DjiChi) &&
 		common.NonEmptyBytes(m.FjiChi) &&
 		common.NonEmptyMultiBytes(m.AffgProofDelta, zkpaffg.ProofAffgBytesParts) &&
-		common.NonEmptyMultiBytes(m.AffgProofChi, zkpaffg.ProofAffgBytesParts)
+		common.NonEmptyMultiBytes(m.AffgProofChi, zkpaffg.ProofAffgBytesParts) &&
+		common.NonEmptyMultiBytes(m.LogstarProof, zkplogstar.ProofLogstarBytesParts)
 }
 
 func (m *PreSignRound2Message) UnmarshalBigGammaShare(ec elliptic.Curve) (*crypto.ECPoint, error) {
@@ -333,6 +329,10 @@ func (m *PreSignRound2Message) UnmarshalAffgProofDelta(ec elliptic.Curve) (*zkpa
 
 func (m *PreSignRound2Message) UnmarshalAffgProofChi(ec elliptic.Curve) (*zkpaffg.ProofAffg, error) {
 	return zkpaffg.NewProofFromBytes(ec, m.GetAffgProofChi())
+}
+
+func (m *PreSignRound2Message) UnmarshalLogstarProof(ec elliptic.Curve) (*zkplogstar.ProofLogstar, error) {
+	return zkplogstar.NewProofFromBytes(ec, m.GetLogstarProof())
 }
 
 // ----- //
@@ -433,9 +433,10 @@ func (m *IdentificationRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.H) &&
 		common.NonEmptyMultiBytes(m.MulProof, zkpmul.ProofMulBytesParts) &&
-		common.NonEmptyMultiBytes(m.Djis) &&
-		common.NonEmptyMultiBytes(m.Fjis) &&
-		common.NonEmptyMultiBytes(m.DjiProofs) &&
+		// TODO not empty excluding own index
+		//common.NonEmptyMultiBytes(m.Djis) &&
+		//common.NonEmptyMultiBytes(m.Fjis) &&
+		//common.NonEmptyMultiBytes(m.DjiProofs, zkpaffg.ProofAffgBytesParts) &&
 		common.NonEmptyMultiBytes(m.DecProof, zkpdec.ProofDecBytesParts)
 }
 
@@ -704,13 +705,6 @@ func NewLocalDumpPB(
 		}
 	}
 
-	R4msgSigmaShareBzs := make([][]byte, len(LocalTemp.R4msgSigmaShare))
-	for i, item := range LocalTemp.R4msgSigmaShare {
-		if item != nil {
-			R4msgSigmaShareBzs[i] = item.Bytes()
-		}
-	}
-
 	DeltaMtAFsBzs := make([][]byte, len(LocalTemp.DeltaMtAFs))
 	for i, item := range LocalTemp.DeltaMtAFs {
 		if item != nil {
@@ -854,8 +848,6 @@ func NewLocalDumpPB(
 		LTr3MsgDeltaShare:    R3msgDeltaShareBzs,
 		LTr3MsgBigDeltaShare: R3msgBigDeltaShareBzs,
 		LTr3MsgProofLogstar:  R3msgProofLogstarBzs,
-
-		LTr4MsgSigmaShare: R4msgSigmaShareBzs,
 
 		LTDeltaMtAFs:      DeltaMtAFsBzs,
 		LTDeltaMtADs:      DeltaMtADsBzs,
@@ -1189,16 +1181,6 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 		}
 	}
 
-	R4msgSigmaShareBzs := m.GetLTr4MsgSigmaShare()
-	R4msgSigmaShare := make([]*big.Int, len(R4msgSigmaShareBzs))
-	for i := range R4msgSigmaShare {
-		Bzs := R4msgSigmaShareBzs[i]
-		//if Bzs != nil {
-		if len(Bzs) > 0 {
-			R4msgSigmaShare[i] = new(big.Int).SetBytes(Bzs)
-		}
-	}
-
 	DeltaMtAFsBzs := m.GetLTDeltaMtAFs()
 	DeltaMtAFs := make([]*big.Int, len(DeltaMtAFsBzs))
 	for i := range DeltaMtAFs {
@@ -1382,8 +1364,6 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 		R3msgDeltaShare:    R3msgDeltaShare,
 		R3msgBigDeltaShare: R3msgBigDeltaShare,
 		R3msgProofLogstar:  R3msgProofLogstar,
-
-		R4msgSigmaShare: R4msgSigmaShare,
 
 		DeltaMtAFs:      DeltaMtAFs,
 		DeltaMtADs:      DeltaMtADs,

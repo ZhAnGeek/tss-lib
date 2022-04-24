@@ -8,6 +8,7 @@ package signing
 
 import (
 	"math/big"
+	"sync"
 
 	"github.com/pkg/errors"
 
@@ -44,50 +45,70 @@ func (round *round3) Start() *tss.Error {
 	round.temp.Djs[i] = round.temp.pointDi
 	round.temp.Ejs[i] = round.temp.pointEi
 	// check proofs
+	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
 
-		msg := round.temp.signRound2Messages[j]
-		r2msg := msg.Content().(*SignRound2Message)
-		cmtDeCmt := commitments.HashCommitDecommit{C: round.temp.cjs[j], D: r2msg.UnmarshalDeCommitment()}
-		ok, coordinates := cmtDeCmt.DeCommit()
-		if !ok {
-			return round.WrapError(errors.New("de-commitment verify failed"))
-		}
-		if len(coordinates) != 4 {
-			return round.WrapError(errors.New("length of de-commitment should be 4"))
-		}
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
 
-		pointDj, err := crypto.NewECPoint(round.Params().EC(), coordinates[0], coordinates[1])
-		if err != nil {
-			return round.WrapError(errors.Wrapf(err, "NewECPoint(Dj)"), Pj)
-		}
-		proofD, err := r2msg.UnmarshalZKProofD(round.Params().EC())
-		if err != nil {
-			return round.WrapError(errors.New("failed to unmarshal Dj proof"), Pj)
-		}
-		ok = proofD.Verify(ContextJ, pointDj)
-		if !ok {
-			return round.WrapError(errors.New("failed to prove Dj"), Pj)
-		}
-		round.temp.Djs[j] = pointDj
+			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			msg := round.temp.signRound2Messages[j]
+			r2msg := msg.Content().(*SignRound2Message)
+			cmtDeCmt := commitments.HashCommitDecommit{C: round.temp.cjs[j], D: r2msg.UnmarshalDeCommitment()}
+			ok, coordinates := cmtDeCmt.DeCommit()
+			if !ok {
+				errChs <- round.WrapError(errors.New("de-commitment verify failed"))
+				return
+			}
+			if len(coordinates) != 4 {
+				errChs <- round.WrapError(errors.New("length of de-commitment should be 4"))
+				return
+			}
 
-		pointEj, err := crypto.NewECPoint(round.Params().EC(), coordinates[2], coordinates[3])
-		if err != nil {
-			return round.WrapError(errors.Wrapf(err, "NewECPoint(Ej)"), Pj)
-		}
-		proofE, err := r2msg.UnmarshalZKProofE(round.Params().EC())
-		if err != nil {
-			return round.WrapError(errors.New("failed to unmarshal Ej proof"), Pj)
-		}
-		ok = proofE.Verify(ContextJ, pointEj)
-		if !ok {
-			return round.WrapError(errors.New("failed to prove Ej"), Pj)
-		}
-		round.temp.Ejs[j] = pointEj
+			pointDj, err := crypto.NewECPoint(round.Params().EC(), coordinates[0], coordinates[1])
+			if err != nil {
+				errChs <- round.WrapError(errors.Wrapf(err, "NewECPoint(Dj)"), Pj)
+				return
+			}
+			proofD, err := r2msg.UnmarshalZKProofD(round.Params().EC())
+			if err != nil {
+				errChs <- round.WrapError(errors.New("failed to unmarshal Dj proof"), Pj)
+				return
+			}
+			ok = proofD.Verify(ContextJ, pointDj)
+			if !ok {
+				errChs <- round.WrapError(errors.New("failed to prove Dj"), Pj)
+				return
+			}
+			round.temp.Djs[j] = pointDj
+
+			pointEj, err := crypto.NewECPoint(round.Params().EC(), coordinates[2], coordinates[3])
+			if err != nil {
+				errChs <- round.WrapError(errors.Wrapf(err, "NewECPoint(Ej)"), Pj)
+				return
+			}
+			proofE, err := r2msg.UnmarshalZKProofE(round.Params().EC())
+			if err != nil {
+				errChs <- round.WrapError(errors.New("failed to unmarshal Ej proof"), Pj)
+				return
+			}
+			ok = proofE.Verify(ContextJ, pointEj)
+			if !ok {
+				errChs <- round.WrapError(errors.New("failed to prove Ej"), Pj)
+				return
+			}
+			round.temp.Ejs[j] = pointEj
+		}(j, Pj)
+	}
+	wg.Wait()
+	close(errChs)
+	for err := range errChs {
+		return err
 	}
 
 	// compute Rj

@@ -11,11 +11,12 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path"
 	"runtime"
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log"
+	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -189,6 +190,8 @@ keygen:
 func tryWriteTestFixtureFile(t *testing.T, index int, data LocalPartySaveData) {
 	fixtureFileName := makeTestFixtureFilePath(index)
 
+	dir := path.Dir(fixtureFileName)
+	os.MkdirAll(dir, 0751)
 	// fixture file does not already exist?
 	// if it does, we won't re-create it here
 	fi, err := os.Stat(fixtureFileName)

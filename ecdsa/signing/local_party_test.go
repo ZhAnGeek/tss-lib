@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package signing
+package signing_test
 
 import (
 	"fmt"
@@ -13,13 +13,13 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log"
+	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	presigning "github.com/binance-chain/tss-lib/ecdsa/presigning"
-	//. "github.com/binance-chain/tss-lib/ecdsa/signing"
+	. "github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/binance-chain/tss-lib/test"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -377,7 +377,7 @@ identification:
 
 func TestFillTo32BytesInPlace(t *testing.T) {
 	s := big.NewInt(123456789)
-	normalizedS := padToLengthBytesInPlace(s.Bytes(), 32)
+	normalizedS := PadToLengthBytesInPlace(s.Bytes(), 32)
 	assert.True(t, big.NewInt(0).SetBytes(normalizedS).Cmp(s) == 0)
 	assert.Equal(t, 32, len(normalizedS))
 	assert.NotEqual(t, 32, len(s.Bytes()))

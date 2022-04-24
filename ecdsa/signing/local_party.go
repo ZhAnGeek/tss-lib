@@ -63,10 +63,10 @@ type (
 
 		// identification1
 		K              *big.Int
-		r1msgK         []*big.Int
+		R1msgK         []*big.Int
 		ChiShareAlphas []*big.Int
 		ChiShareBetas  []*big.Int
-		r2msgChiD      []*big.Int
+		R2msgChiD      []*big.Int
 
 		// for identification
 		ChiMtAFs      []*big.Int
@@ -74,13 +74,13 @@ type (
 		ChiMtADProofs []*zkpaffg.ProofAffg
 
 		// message store
-		r4msgSigmaShare []*big.Int
+		R4msgSigmaShare []*big.Int
 
-		r5msgH            []*big.Int
-		r5msgProofMulstar []*zkpmulstar.ProofMulstar
-		r5msgProofDec     []*zkpdec.ProofDec
-		r5msgDjis         [][]*big.Int
-		r5msgFjis         [][]*big.Int
+		R5msgH            []*big.Int
+		R5msgProofMulstar []*zkpmulstar.ProofMulstar
+		R5msgProofDec     []*zkpdec.ProofDec
+		R5msgDjis         [][]*big.Int
+		R5msgFjis         [][]*big.Int
 	}
 
 	LocalDump struct {
@@ -119,28 +119,28 @@ func NewLocalParty(
 
 	p.temp.ChiShareAlphas = make([]*big.Int, partyCount)
 	p.temp.ChiShareBetas = make([]*big.Int, partyCount)
-	p.temp.r2msgChiD = make([]*big.Int, partyCount)
+	p.temp.R2msgChiD = make([]*big.Int, partyCount)
 	// for identification
 	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
 	p.temp.ChiMtADs = make([]*big.Int, partyCount)
 	p.temp.ChiMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
 
-	p.temp.r4msgSigmaShare = make([]*big.Int, partyCount)
+	p.temp.R4msgSigmaShare = make([]*big.Int, partyCount)
 
-	p.temp.r5msgH = make([]*big.Int, partyCount)
-	p.temp.r5msgProofMulstar = make([]*zkpmulstar.ProofMulstar, partyCount)
-	p.temp.r5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
-	p.temp.r5msgDjis = make([][]*big.Int, partyCount)
-	p.temp.r5msgFjis = make([][]*big.Int, partyCount)
+	p.temp.R5msgH = make([]*big.Int, partyCount)
+	p.temp.R5msgProofMulstar = make([]*zkpmulstar.ProofMulstar, partyCount)
+	p.temp.R5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
+	p.temp.R5msgDjis = make([][]*big.Int, partyCount)
+	p.temp.R5msgFjis = make([][]*big.Int, partyCount)
 
 	if p.params.NeedsIdentifaction() {
 		trans, err := predata.UnmarshalTrans(p.params.EC())
 		if err == nil {
 			p.temp.K = trans.K
-			p.temp.r1msgK = trans.R1msgK
+			p.temp.R1msgK = trans.R1msgK
 			p.temp.ChiShareAlphas = trans.ChiShareAlphas
 			p.temp.ChiShareBetas = trans.ChiShareBetas
-			p.temp.r2msgChiD = trans.R2msgChiD
+			p.temp.R2msgChiD = trans.R2msgChiD
 
 			p.temp.ChiMtAFs = trans.ChiMtAFs
 			p.temp.ChiMtADs = trans.ChiMtADs
@@ -182,10 +182,10 @@ func RestoreLocalParty(
 		trans, err := predata.UnmarshalTrans(p.params.EC())
 		if err == nil {
 			p.temp.K = trans.K
-			p.temp.r1msgK = trans.R1msgK
+			p.temp.R1msgK = trans.R1msgK
 			p.temp.ChiShareAlphas = trans.ChiShareAlphas
 			p.temp.ChiShareBetas = trans.ChiShareBetas
-			p.temp.r2msgChiD = trans.R2msgChiD
+			p.temp.R2msgChiD = trans.R2msgChiD
 
 			p.temp.ChiMtAFs = trans.ChiMtAFs
 			p.temp.ChiMtADs = trans.ChiMtADs
@@ -257,23 +257,23 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	switch msg.Content().(type) {
 	case *SignRound1Message:
 		r4msg := msg.Content().(*SignRound1Message)
-		p.temp.r4msgSigmaShare[fromPIdx] = r4msg.UnmarshalSigmaShare()
+		p.temp.R4msgSigmaShare[fromPIdx] = r4msg.UnmarshalSigmaShare()
 	case *IdentificationRound1Message:
 		r5msg := msg.Content().(*IdentificationRound1Message)
-		p.temp.r5msgH[fromPIdx] = r5msg.UnmarshalH()
+		p.temp.R5msgH[fromPIdx] = r5msg.UnmarshalH()
 		//p.temp.r5msgSigmaShareEnc[fromPIdx] = r5msg.UnmarshalSigmaShareEnc()
 		proofMulstar, err := r5msg.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r5msgProofMulstar[fromPIdx] = proofMulstar
+		p.temp.R5msgProofMulstar[fromPIdx] = proofMulstar
 		proofDec, err := r5msg.UnmarshalProofDec()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
-		p.temp.r5msgProofDec[fromPIdx] = proofDec
-		p.temp.r5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
-		p.temp.r5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
+		p.temp.R5msgProofDec[fromPIdx] = proofDec
+		p.temp.R5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
+		p.temp.R5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
 	default: // unrecognised message, just ignore!
 		common.Logger.Warningf("unrecognised message ignored: %v", msg)
 		return false, nil
