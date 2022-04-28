@@ -59,7 +59,7 @@ func (round *round2) Start() *tss.Error {
 	// compute ntilde, h1, h2 (uses safe primes)
 	// use the pre-params if they were provided to the LocalParty constructor
 	var preParams *keygen.LocalPreParams
-	if round.save.LocalPreParams.Validate() {
+	if round.save.LocalPreParams.ValidateWithProof() {
 		preParams = &round.save.LocalPreParams
 	} else {
 		var err error
