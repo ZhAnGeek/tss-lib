@@ -14,6 +14,8 @@ option go_package = "ecdsa/signing";
  */
 message SignRound1Message {
     bytes SigmaShare = 1;
+    bytes Rx = 2;
+    bytes Ry = 3;
 }
 
 message IdentificationRound1Message {
