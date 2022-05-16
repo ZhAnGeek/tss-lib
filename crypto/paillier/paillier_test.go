@@ -13,10 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
 	. "github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/tss"
 )
 
 // Using a modulus length of 2048 is recommended in the GG18 spec
@@ -121,30 +118,6 @@ func TestHomoAdd(t *testing.T) {
 	assert.Equal(t, new(big.Int).Add(num1, num2), plain)
 }
 
-func TestProofVerify(t *testing.T) {
-	setUp(t)
-	ki := common.MustGetRandomInt(256)                     // index
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N) // ECDSA private
-	yX, yY := tss.EC().ScalarBaseMult(ui.Bytes())          // ECDSA public
-	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
-	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
-	assert.NoError(t, err)
-	assert.True(t, res, "proof verify result must be true")
-}
-
-func TestProofVerifyFail(t *testing.T) {
-	setUp(t)
-	ki := common.MustGetRandomInt(256)                     // index
-	ui := common.GetRandomPositiveInt(tss.EC().Params().N) // ECDSA private
-	yX, yY := tss.EC().ScalarBaseMult(ui.Bytes())          // ECDSA public
-	proof := privateKey.Proof(ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
-	last := proof[len(proof)-1]
-	last.Sub(last, big.NewInt(1))
-	res, err := proof.Verify(publicKey.N, ki, crypto.NewECPointNoCurveCheck(tss.EC(), yX, yY))
-	assert.NoError(t, err)
-	assert.False(t, res, "proof verify result must be true")
-}
-
 func TestComputeL(t *testing.T) {
 	u := big.NewInt(21)
 	n := big.NewInt(3)
@@ -153,17 +126,4 @@ func TestComputeL(t *testing.T) {
 	actual := L(u, n)
 
 	assert.Equal(t, 0, expected.Cmp(actual))
-}
-
-func TestGenerateXs(t *testing.T) {
-	k := common.MustGetRandomInt(256)
-	sX := common.MustGetRandomInt(256)
-	sY := common.MustGetRandomInt(256)
-	N := common.GetRandomPrimeInt(2048)
-
-	xs := GenerateXs(13, k, N, crypto.NewECPointNoCurveCheck(tss.EC(), sX, sY))
-	assert.Equal(t, 13, len(xs))
-	for _, xi := range xs {
-		assert.True(t, common.IsNumberInMultiplicativeGroup(N, xi))
-	}
 }
