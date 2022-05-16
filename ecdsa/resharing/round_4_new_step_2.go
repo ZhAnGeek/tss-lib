@@ -55,7 +55,7 @@ func (round *round4) Start() *tss.Error {
 		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
 		if ok := proofPrm.Verify(ContextJ, H1, H2, Nj); !ok {
 			culprits = append(culprits, Pj)
-			common.Logger.Warningf("proofPrm verify failed for party %s", Pj)
+			common.Logger.Warnf("proofPrm verify failed for party %s", Pj)
 			continue
 		}
 		proofFac, err := r2msg1.UnmarshalProofFac()
@@ -64,7 +64,7 @@ func (round *round4) Start() *tss.Error {
 		}
 		if ok := proofFac.Verify(ContextJ, round.EC(), Nj, Nj, H1, H2); !ok {
 			culprits = append(culprits, Pj)
-			common.Logger.Warningf("proofFac verify failed for party %s", Pj)
+			common.Logger.Warnf("proofFac verify failed for party %s", Pj)
 			continue
 
 		}
@@ -92,7 +92,7 @@ func (round *round4) Start() *tss.Error {
 
 		// 6. unpack flat "v" commitment content
 		vCmtDeCmt := commitments.HashCommitDecommit{C: vCj, D: vDj}
-		ok, flatVs := vCmtDeCmt.DeCommit()
+		ok, flatVs := vCmtDeCmt.DeCommit((round.NewThreshold() + 1) * 2)
 		if !ok || len(flatVs) != (round.NewThreshold()+1)*2 { // they're points so * 2
 			// TODO collect culprits and return a list of them as per convention
 			return round.WrapError(errors.New("de-commitment of v_j0..v_jt failed"), round.Parties().IDs()[j])

@@ -30,7 +30,7 @@ func TestDeCommit(t *testing.T) {
 	zero := big.NewInt(0)
 
 	commitment := NewHashCommitment(zero, one)
-	pass, secrets := commitment.DeCommit()
+	pass, secrets := commitment.DeCommit(2)
 
 	assert.True(t, pass, "must pass")
 
