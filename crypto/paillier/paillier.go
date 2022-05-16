@@ -111,8 +111,8 @@ func GenerateKeyPair(modulusBitLen int, timeout time.Duration, optionalConcurren
 // ----- //
 
 func (publicKey *PublicKey) EncryptAndReturnRandomness(m *big.Int) (c *big.Int, x *big.Int, err error) {
-	if m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
-		return nil, nil, ErrMessageTooLong
+	if m == nil || m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
+		return nil, nil, ErrMessageMalFormed
 	}
 	x = common.GetRandomPositiveRelativelyPrimeInt(publicKey.N)
 	N2 := publicKey.NSquare()
@@ -131,8 +131,8 @@ func (publicKey *PublicKey) Encrypt(m *big.Int) (c *big.Int, err error) {
 }
 
 func (publicKey *PublicKey) EncryptWithRandomness(m, x *big.Int) (c *big.Int, err error) {
-	if m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
-		return nil, ErrMessageTooLong
+	if m == nil || m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
+		return nil, ErrMessageMalFormed
 	}
 	if x == nil || x.Cmp(publicKey.N) == 1 || x.Cmp(zero) == -1 {
 		return nil, ErrWrongRandomness
@@ -152,8 +152,8 @@ func (publicKey *PublicKey) EncryptWithRandomness(m, x *big.Int) (c *big.Int, er
 }
 
 func (publicKey *PublicKey) HomoMult(m, c1 *big.Int) (*big.Int, error) {
-	if m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
-		return nil, ErrMessageTooLong
+	if m == nil || m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
+		return nil, ErrMessageMalFormed
 	}
 	N2 := publicKey.NSquare()
 	if c1.Cmp(zero) == -1 || c1.Cmp(N2) != -1 { // c1 < 0 || c1 >= N2 ?
@@ -164,8 +164,8 @@ func (publicKey *PublicKey) HomoMult(m, c1 *big.Int) (*big.Int, error) {
 }
 
 func (publicKey *PublicKey) HomoMultObfuscate(m, c1 *big.Int) (*big.Int, *big.Int, error) {
-	if m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
-		return nil, nil, ErrMessageTooLong
+	if m == nil || m.Cmp(zero) == -1 || m.Cmp(publicKey.N) != -1 { // m < 0 || m >= N ?
+		return nil, nil, ErrMessageMalFormed
 	}
 	N2 := publicKey.NSquare()
 	if c1.Cmp(zero) == -1 || c1.Cmp(N2) != -1 { // c1 < 0 || c1 >= N2 ?
@@ -181,11 +181,11 @@ func (publicKey *PublicKey) HomoMultObfuscate(m, c1 *big.Int) (*big.Int, *big.In
 
 func (publicKey *PublicKey) HomoAdd(c1, c2 *big.Int) (*big.Int, error) {
 	N2 := publicKey.NSquare()
-	if c1.Cmp(zero) == -1 || c1.Cmp(N2) != -1 { // c1 < 0 || c1 >= N2 ?
-		return nil, ErrMessageTooLong
+	if c1 == nil || c1.Cmp(zero) == -1 || c1.Cmp(N2) != -1 { // c1 < 0 || c1 >= N2 ?
+		return nil, ErrMessageMalFormed
 	}
-	if c2.Cmp(zero) == -1 || c2.Cmp(N2) != -1 { // c2 < 0 || c2 >= N2 ?
-		return nil, ErrMessageTooLong
+	if c2 == nil || c2.Cmp(zero) == -1 || c2.Cmp(N2) != -1 { // c2 < 0 || c2 >= N2 ?
+		return nil, ErrMessageMalFormed
 	}
 	// c1 * c2 mod N2
 	return common.ModInt(N2).Mul(c1, c2), nil
@@ -209,8 +209,8 @@ func (publicKey *PublicKey) Gamma() *big.Int {
 
 func (privateKey *PrivateKey) Decrypt(c *big.Int) (m *big.Int, err error) {
 	N2 := privateKey.NSquare()
-	if c.Cmp(zero) == -1 || c.Cmp(N2) != -1 { // c < 0 || c >= N2 ?
-		return nil, ErrMessageTooLong
+	if c == nil || c.Cmp(zero) == -1 || c.Cmp(N2) != -1 { // c < 0 || c >= N2 ?
+		return nil, ErrMessageMalFormed
 	}
 	cg := new(big.Int).GCD(nil, nil, c, N2)
 	if cg.Cmp(one) == 1 {
