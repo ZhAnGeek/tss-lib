@@ -18,7 +18,7 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	presigning "github.com/binance-chain/tss-lib/ecdsa/presigning"
+	"github.com/binance-chain/tss-lib/ecdsa/presigning"
 	. "github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/binance-chain/tss-lib/test"
 	"github.com/binance-chain/tss-lib/tss"
@@ -284,7 +284,7 @@ signing:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-sdumpCh:
-			//i := du.Index
+			// i := du.Index
 			i := du.UnmarshalIndex()
 			signDumps[i] = du
 			atomic.AddInt32(&signended, 1)
@@ -320,28 +320,27 @@ signing:
 	}
 
 identification:
-	identification_parties := make([]*LocalParty, len(signPIDs))
+	identificationParties := make([]*LocalParty, len(signPIDs))
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d sign identification]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
 
-		keyDerivationDelta := big.NewInt(0)
-		P, err := RestoreLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, signDumps[i], outCh, sigCh, sdumpCh)
+		P, err := RestoreLocalParty(preSigDatas[i], params, keys[i], signDumps[i], outCh, sigCh, sdumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		identification_parties[i] = P.(*LocalParty)
+		identificationParties[i] = P.(*LocalParty)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(identification_parties[i])
+		}(identificationParties[i])
 		fmt.Printf("Party%2d sign identification]: running...\n", i)
 	}
 
-	var identification_ended int32
+	var identificationEnded int32
 	for {
-		//fmt.Printf("Sign identification selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		// fmt.Printf("Sign identification selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
 			common.Logger.Errorf("Error: %s", err)
@@ -351,7 +350,7 @@ identification:
 		case msg := <-outCh:
 			dest := msg.GetTo()
 			if dest == nil {
-				for _, P := range identification_parties {
+				for _, P := range identificationParties {
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
@@ -361,13 +360,13 @@ identification:
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(identification_parties[dest[0].Index], msg, errCh)
+				go updater(identificationParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-sdumpCh:
-			atomic.AddInt32(&identification_ended, 1)
-			if atomic.LoadInt32(&identification_ended) == int32(len(signPIDs)) {
-				t.Logf("Identification Done. Received from %d participants", identification_ended)
+			atomic.AddInt32(&identificationEnded, 1)
+			if atomic.LoadInt32(&identificationEnded) == int32(len(signPIDs)) {
+				t.Logf("Identification Done. Received from %d participants", identificationEnded)
 
 				return
 			}
