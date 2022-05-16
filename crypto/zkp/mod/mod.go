@@ -86,7 +86,7 @@ func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 	A := new(big.Int).SetBytes(Abz)
 	B := new(big.Int).SetBytes(Bbz)
 
-	return &ProofMod{W: W, X: [Iterations]*big.Int(X), A: A, B: B, Z: Z}, nil
+	return &ProofMod{W: W, X: X, A: A, B: B, Z: Z}, nil
 }
 
 func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
@@ -117,6 +117,23 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
+	// TODO: add basic properties checker
+	if isQuandraticResidue(pf.W, N) {
+		return false
+	}
+	if pf.W.Sign() != 1 || pf.W.Cmp(N) != -1 {
+		return false
+	}
+	for i := range pf.Z {
+		if pf.Z[i].Sign() != 1 || pf.Z[i].Cmp(N) != -1 {
+			return false
+		}
+	}
+	for i := range pf.X {
+		if pf.X[i].Sign() != 1 || pf.X[i].Cmp(N) != -1 {
+			return false
+		}
+	}
 	modN := common.ModInt(N)
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
@@ -126,7 +143,7 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 
 	// Fig 16. Verification
 	{
-		if N.Bit(0) == 0 || N.ProbablyPrime(16) {
+		if N.Bit(0) == 0 || N.ProbablyPrime(30) {
 			return false
 		}
 	}
@@ -144,6 +161,14 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 		go func(i int) {
 			a := int(pf.A.Bytes()[i+1]) // sentinel at 0
 			b := int(pf.B.Bytes()[i+1])
+			if a != 0 && a != 1 {
+				chs <- false
+				return
+			}
+			if b != 0 && b != 1 {
+				chs <- false
+				return
+			}
 			left := modN.Exp(pf.X[i], big.NewInt(4))
 			right := Y[i]
 			if a > 0 {
