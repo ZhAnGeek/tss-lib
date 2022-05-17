@@ -76,6 +76,9 @@ func (pf *ProofPrm) Verify(Session []byte, s, t, N *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
+	if N.Sign() != 1 {
+		return false
+	}
 	modN := common.ModInt(N)
 	e := common.SHA512_256i_TAGGED(Session, append([]*big.Int{s, t, N}, pf.A[:]...)...)
 	s_ := new(big.Int).Mod(s, N)

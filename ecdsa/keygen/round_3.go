@@ -42,6 +42,9 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			contextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			if round.save.NTildej[j].BitLen() != SafeBitLen*2 {
+				errChs <- round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
+			}
 			if ok := round.temp.r2msgpfprm[j].Verify(contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
 				errChs <- round.WrapError(errors.New("proofPrm verify failed"), Pj)
 			}
@@ -51,9 +54,6 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			if round.save.NTildej[j].BitLen() != SafeBitLen*2 {
-				errChs <- round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
-			}
 			proofPrmList := append(round.temp.r2msgpfprm[j].A[:], round.temp.r2msgpfprm[j].Z[:]...)
 			listToHash, err := crypto.FlattenECPoints(round.temp.r2msgVss[j])
 			if err != nil {
