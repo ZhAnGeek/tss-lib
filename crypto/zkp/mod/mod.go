@@ -134,6 +134,13 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 			return false
 		}
 	}
+	if len(pf.A.Bytes()) != Iterations+1 {
+		return false
+	}
+	if len(pf.B.Bytes()) != Iterations+1 {
+		return false
+	}
+
 	modN := common.ModInt(N)
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
