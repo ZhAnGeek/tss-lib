@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	Iterations         = 64
+	Iterations         = 80
 	ProofPrmBytesParts = Iterations * 2
 )
 
