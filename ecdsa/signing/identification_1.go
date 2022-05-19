@@ -105,6 +105,8 @@ func (round *identification1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 
+	round.temp.ChiMtADs[i] = round.temp.ChiMtADs[1-i]
+	round.temp.ChiMtAFs[i] = round.temp.ChiMtAFs[1-i]
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -115,7 +117,7 @@ func (round *identification1) Start() *tss.Error {
 			return round.WrapError(err, Pi)
 		}
 
-		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.ChiMtADs, round.temp.ChiMtAFs, round.temp.ChiMtADProofs, proofDec, Q3Enc)
+		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.ChiMtADs, round.temp.ChiMtAFs, proofDec, Q3Enc)
 		round.out <- r6msg
 	}
 

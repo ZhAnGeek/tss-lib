@@ -72,7 +72,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	preSigDatas := make([]*presigning.PreSignatureData, len(signPIDs))
 
-	var presignended int32
+	var presignEnded int32
 presigning:
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
@@ -101,11 +101,11 @@ presigning:
 			}
 
 		case predata := <-endCh:
-			atomic.AddInt32(&presignended, 1)
+			atomic.AddInt32(&presignEnded, 1)
 			preSigDatas[predata.UnmarshalIndex()] = predata
 			t.Logf("%d ssid: %d", predata.UnmarshalIndex(), new(big.Int).SetBytes(predata.UnmarshalSsid()).Int64())
-			if atomic.LoadInt32(&presignended) == int32(len(signPIDs)) {
-				t.Logf("Done. Received presignature data from %d participants", presignended)
+			if atomic.LoadInt32(&presignEnded) == int32(len(signPIDs)) {
+				t.Logf("Done. Received presignature data from %d participants", presignEnded)
 
 				goto signing
 			}
@@ -138,7 +138,7 @@ signing:
 		}(P)
 	}
 
-	var signended int32
+	var signEnded int32
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
@@ -164,9 +164,9 @@ signing:
 			}
 
 		case <-sigCh:
-			atomic.AddInt32(&signended, 1)
-			if atomic.LoadInt32(&signended) == int32(len(signPIDs)) {
-				t.Logf("Done. Received signature data from %d participants", signended)
+			atomic.AddInt32(&signEnded, 1)
+			if atomic.LoadInt32(&signEnded) == int32(len(signPIDs)) {
+				t.Logf("Done. Received signature data from %d participants", signEnded)
 
 				return
 			}
@@ -211,7 +211,7 @@ func TestE2EConcurrentWithIdentification(t *testing.T) {
 
 	preSigDatas := make([]*presigning.PreSignatureData, len(signPIDs))
 
-	var presignended int32
+	var presignEnded int32
 presigning:
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
@@ -240,11 +240,11 @@ presigning:
 			}
 
 		case predata := <-endCh:
-			atomic.AddInt32(&presignended, 1)
+			atomic.AddInt32(&presignEnded, 1)
 			preSigDatas[predata.UnmarshalIndex()] = predata
 			t.Logf("%d ssid: %d", predata.UnmarshalIndex(), new(big.Int).SetBytes(predata.UnmarshalSsid()).Int64())
-			if atomic.LoadInt32(&presignended) == int32(len(signPIDs)) {
-				t.Logf("Done. Received presignature data from %d participants", presignended)
+			if atomic.LoadInt32(&presignEnded) == int32(len(signPIDs)) {
+				t.Logf("Done. Received presignature data from %d participants", presignEnded)
 
 				goto signing
 			}
@@ -279,7 +279,7 @@ signing:
 
 	signDumps := make([]*LocalDumpPB, len(signPIDs))
 
-	var signended int32
+	var signEnded int32
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
@@ -287,9 +287,9 @@ signing:
 			// i := du.Index
 			i := du.UnmarshalIndex()
 			signDumps[i] = du
-			atomic.AddInt32(&signended, 1)
-			if atomic.LoadInt32(&signended) == int32(len(signPIDs)) {
-				t.Logf("Done. Received signature data from %d participants", signended)
+			atomic.AddInt32(&signEnded, 1)
+			if atomic.LoadInt32(&signEnded) == int32(len(signPIDs)) {
+				t.Logf("Done. Received signature data from %d participants", signEnded)
 
 				goto identification
 			}

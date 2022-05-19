@@ -102,6 +102,7 @@ func NewKGRound2Message(
 
 func (m *KGRound2Message) ValidateBasic() bool {
 	return m != nil &&
+		common.NonEmptyMultiBytes(m.GetVs()) &&
 		common.NonEmptyBytes(m.GetPaillierN()) &&
 		common.NonEmptyBytes(m.GetNTilde()) &&
 		common.NonEmptyBytes(m.GetH1()) &&
