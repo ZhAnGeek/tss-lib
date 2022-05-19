@@ -110,6 +110,10 @@ func (pf *ProofMulstar) Verify(Session []byte, ec elliptic.Curve, pk *paillier.P
 		e = common.RejectionSample(q, eHash)
 	}
 
+	if pf.Z1.Sign() == -1 || pf.Z1.Cmp(q3) != -1 {
+		return false
+	}
+
 	// Fig 31. Equality Check
 	{
 		modN2 := common.ModInt(pk.NSquare())
