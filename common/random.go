@@ -25,7 +25,7 @@ func MustGetRandomInt(bits int) *big.Int {
 	}
 	// Max random value e.g. 2^256 - 1
 	max := new(big.Int)
-	max = max.Exp(two, big.NewInt(int64(bits)), nil).Sub(max, one)
+	max = max.Exp(two, big.NewInt(int64(bits)), nil)
 
 	// Generate cryptographically strong pseudo-random int between 0 - max
 	n, err := rand.Int(rand.Reader, max)
@@ -52,7 +52,7 @@ func GetRandomPositiveInt(lessThan *big.Int) *big.Int {
 
 // GetRandomPrimeInt returns a prime with specified bits length
 func GetRandomPrimeInt(bits int) *big.Int {
-	if bits <= 0 {
+	if bits <= 1 {
 		return nil
 	}
 	try, err := rand.Prime(rand.Reader, bits)
