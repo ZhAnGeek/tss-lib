@@ -43,7 +43,8 @@ func NewProof(Session []byte, X *crypto.ECPoint, x *big.Int) (*ProofSch, error) 
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
+		eHash := common.SHA512_256i_TAGGED(Session, ec.Params().B, ec.Params().N, ec.Params().P,
+			X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -77,7 +78,8 @@ func NewProofWithAlpha(Session []byte, X, A *crypto.ECPoint, alpha, x *big.Int) 
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
+		eHash := common.SHA512_256i_TAGGED(Session, ec.Params().B, ec.Params().N, ec.Params().P,
+			X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -114,7 +116,8 @@ func (pf *ProofSch) Verify(Session []byte, X *crypto.ECPoint) bool {
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y())
+		eHash := common.SHA512_256i_TAGGED(Session, ec.Params().B, ec.Params().N, ec.Params().P,
+			X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y())
 		e = common.RejectionSample(q, eHash)
 	}
 

@@ -61,7 +61,8 @@ func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C, x, N
 	// Fig 29.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), C, x, NCap, s, t, S, T, A, gamma)...)
+		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
+			C, x, NCap, s, t, S, T, A, gamma)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -105,7 +106,8 @@ func (pf *ProofDec) Verify(Session []byte, ec elliptic.Curve, pk *paillier.Publi
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), C, x, NCap, s, t, pf.S, pf.T, pf.A, pf.Gamma)...)
+		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
+			C, x, NCap, s, t, pf.S, pf.T, pf.A, pf.Gamma)...)
 		e = common.RejectionSample(q, eHash)
 	}
 

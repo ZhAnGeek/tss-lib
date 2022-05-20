@@ -79,7 +79,8 @@ func NewProof(Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *p
 	// Fig 15.2
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append([]*big.Int{}, pk0.N, pk1.N, NCap, s, t, C, D, Y, X.X(), X.Y(), S, T, A, Bx.X(), Bx.Y(), By, E, F)...)
+		eHash := common.SHA512_256i_TAGGED(Session, append([]*big.Int{}, ec.Params().B, ec.Params().N, ec.Params().P,
+			pk0.N, pk1.N, NCap, s, t, C, D, Y, X.X(), X.Y(), S, T, A, Bx.X(), Bx.Y(), By, E, F)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -154,7 +155,8 @@ func (pf *ProofAffg) Verify(Session []byte, ec elliptic.Curve, pk0 *paillier.Pub
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append([]*big.Int{}, pk0.N, pk1.N, NCap, s, t, C, D, Y, X.X(), X.Y(), pf.S, pf.T, pf.A, pf.Bx.X(), pf.Bx.Y(), pf.By, pf.E, pf.F)...)
+		eHash := common.SHA512_256i_TAGGED(Session, append([]*big.Int{}, ec.Params().B, ec.Params().N, ec.Params().P,
+			pk0.N, pk1.N, NCap, s, t, C, D, Y, X.X(), X.Y(), pf.S, pf.T, pf.A, pf.Bx.X(), pf.Bx.Y(), pf.By, pf.E, pf.F)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
