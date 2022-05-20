@@ -23,6 +23,10 @@ import (
 var _ tss.Party = (*LocalParty)(nil)
 var _ fmt.Stringer = (*LocalParty)(nil)
 
+const (
+	paillierBitsLen = 2048
+)
+
 type (
 	LocalParty struct {
 		*tss.BaseParty
@@ -161,7 +165,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	case *DGRound4Message:
 		p.temp.dgRound4Messages[fromPIdx] = msg
 	default: // unrecognised message, just ignore!
-		common.Logger.Warningf("unrecognised message ignored: %v", msg)
+		common.Logger.Warnf("unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

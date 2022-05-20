@@ -40,6 +40,12 @@ func (round *round5) Start() *tss.Error {
 			}
 			r2msg1 := msg.Content().(*DGRound2Message1)
 			round.save.PaillierPKs[j] = r2msg1.UnmarshalPaillierPK()
+			if round.save.PaillierPKs[j].N.BitLen() != paillierBitsLen {
+				return round.WrapError(errors.New("got Paillier modulus with not enough bits"), msg.GetFrom())
+			}
+			if round.save.NTildej[j].Cmp(round.save.PaillierPKs[j].N) != 0 {
+				return round.WrapError(errors.New("got NTildej not equal to Paillier modulus"), msg.GetFrom())
+			}
 		}
 	} else if round.IsOldCommittee() {
 		round.input.Xi.SetInt64(0)
@@ -49,7 +55,7 @@ func (round *round5) Start() *tss.Error {
 	return nil
 }
 
-func (round *round5) CanAccept(msg tss.ParsedMessage) bool {
+func (round *round5) CanAccept(_ tss.ParsedMessage) bool {
 	return false
 }
 
