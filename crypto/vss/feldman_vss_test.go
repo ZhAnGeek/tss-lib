@@ -20,7 +20,7 @@ import (
 func TestCheckIndexesDup(t *testing.T) {
 	indexes := make([]*big.Int, 0)
 	for i := 0; i < 1000; i++ {
-		indexes = append(indexes, common.GetRandomPositiveInt(tss.EC().Params().N))
+		indexes = append(indexes, big.NewInt(int64(i+7)))
 	}
 	_, e := CheckIndexes(tss.EC(), indexes)
 	assert.NoError(t, e)
@@ -33,12 +33,16 @@ func TestCheckIndexesDup(t *testing.T) {
 func TestCheckIndexesZero(t *testing.T) {
 	indexes := make([]*big.Int, 0)
 	for i := 0; i < 1000; i++ {
-		indexes = append(indexes, common.GetRandomPositiveInt(tss.EC().Params().N))
+		indexes = append(indexes, big.NewInt(int64(i+7)))
 	}
 	_, e := CheckIndexes(tss.EC(), indexes)
 	assert.NoError(t, e)
 
 	indexes = append(indexes, tss.EC().Params().N)
+	_, e = CheckIndexes(tss.EC(), indexes)
+	assert.Error(t, e)
+
+	indexes[len(indexes)-1] = big.NewInt(0)
 	_, e = CheckIndexes(tss.EC(), indexes)
 	assert.Error(t, e)
 }

@@ -32,6 +32,8 @@ func TestDeCommit(t *testing.T) {
 	commitment := NewHashCommitment(zero, one)
 	pass, secrets := commitment.DeCommit(2)
 
+	assert.True(t, zero.Cmp(secrets[0]) == 0, "must pass")
+	assert.True(t, one.Cmp(secrets[1]) == 0, "must pass")
 	assert.True(t, pass, "must pass")
 
 	assert.NotZero(t, len(secrets), "len(secrets) must be non-zero")
