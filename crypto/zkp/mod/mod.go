@@ -32,8 +32,8 @@ type (
 	}
 )
 
-// isQuandraticResidue checks Euler criterion
-func isQuandraticResidue(X, N *big.Int) bool {
+// isQuadraticResidue checks Euler criterion
+func isQuadraticResidue(X, N *big.Int) bool {
 	modN := common.ModInt(N)
 	XEXP := modN.Exp(X, new(big.Int).Rsh(N, 1))
 	ok := XEXP.Cmp(big.NewInt(1)) == 0
@@ -71,7 +71,7 @@ func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 			if b > 0 {
 				Yi = modN.Mul(W, Yi)
 			}
-			if isQuandraticResidue(Yi, P) && isQuandraticResidue(Yi, Q) {
+			if isQuadraticResidue(Yi, P) && isQuadraticResidue(Yi, Q) {
 				e := new(big.Int).Add(Phi, big.NewInt(4))
 				e = new(big.Int).Rsh(e, 3)
 				e = modPhi.Mul(e, e)
@@ -80,6 +80,7 @@ func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 				X[i], Z[i] = Xi, Zi
 				Abz = append(Abz, byte(a))
 				Bbz = append(Bbz, byte(b))
+				break
 			}
 		}
 	}
@@ -118,7 +119,7 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 		return false
 	}
 	// TODO: add basic properties checker
-	if isQuandraticResidue(pf.W, N) {
+	if isQuadraticResidue(pf.W, N) {
 		return false
 	}
 	if pf.W.Sign() != 1 || pf.W.Cmp(N) != -1 {
