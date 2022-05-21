@@ -39,6 +39,7 @@ type (
 		PublicKey
 		LambdaN, // lcm(p-1, q-1)
 		PhiN *big.Int // (p-1) * (q-1)
+		LgInv *big.Int // cache
 	}
 
 	// Proof uses the new GenerateXs method in GG18Spec (6)
@@ -207,11 +208,14 @@ func (privateKey *PrivateKey) Decrypt(c *big.Int) (m *big.Int, err error) {
 	}
 	// 1. L(u) = (c^LambdaN-1 mod N2) / N
 	Lc := L(new(big.Int).Exp(c, privateKey.LambdaN, N2), privateKey.N)
-	// 2. L(u) = (Gamma^LambdaN-1 mod N2) / N
-	Lg := L(new(big.Int).Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
-	// 3. (1) * modInv(2) mod N
-	inv := new(big.Int).ModInverse(Lg, privateKey.N)
-	m = common.ModInt(privateKey.N).Mul(Lc, inv)
+	if privateKey.LgInv == nil {
+		// 2. L(u) = (Gamma^LambdaN-1 mod N2) / N
+		Lg := L(new(big.Int).Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
+		// 3. (1) * modInv(2) mod N
+		inv := new(big.Int).ModInverse(Lg, privateKey.N)
+		privateKey.LgInv = inv
+	}
+	m = common.ModInt(privateKey.N).Mul(Lc, privateKey.LgInv)
 	return
 }
 
