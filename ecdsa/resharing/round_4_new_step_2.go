@@ -64,6 +64,16 @@ func (round *round4) Start() *tss.Error {
 		round.save.H1j[j] = H1
 		round.save.H2j[j] = H2
 		common.Logger.Debugf("paillier verify passed for party %s", Pj)
+
+		proofMod, err := r2msg1.UnmarshalProofMod()
+		if err != nil {
+			return round.WrapError(errors.New("proofMod failed"), Pj)
+		}
+		if ok := proofMod.Verify(ContextJ, round.save.NTildej[j]); !ok {
+			culprits = append(culprits, Pj)
+			common.Logger.Warnf("proofMod verify failed for party %s", Pj)
+			continue
+		}
 	}
 	if len(culprits) > 0 {
 		return round.WrapError(errors.New("paillier verify failed"), culprits...)

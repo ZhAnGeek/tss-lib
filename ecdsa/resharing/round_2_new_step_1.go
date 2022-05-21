@@ -11,6 +11,7 @@ import (
 	"errors"
 	"math/big"
 
+	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
@@ -72,17 +73,25 @@ func (round *round2) Start() *tss.Error {
 	round.save.H1j[i], round.save.H2j[i] = preParams.H1i, preParams.H2i
 	round.save.PaillierPKs[i] = &preParams.PaillierSK.PublicKey
 
+	// ProofPrm
 	ContextI := append(SSID, big.NewInt(int64(i)).Bytes()...)
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(preParams.P, 1), new(big.Int).Lsh(preParams.Q, 1))
 	proofPrm, err := zkpprm.NewProof(ContextI, preParams.H1i, preParams.H2i, preParams.NTildei, Phi, preParams.Beta)
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
 	}
-	// TODO proofMod?
+
+	// ProofMod
+	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
+	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
+	proofMod, err := zkpmod.NewProof(ContextI, round.save.NTildei, SP, SQ)
+	if err != nil {
+		return round.WrapError(errors.New("create proofMod failed"), Pi)
+	}
 
 	r2msg1 := NewDGRound2Message1(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		&preParams.PaillierSK.PublicKey, proofPrm, preParams.NTildei, preParams.H1i, preParams.H2i)
+		&preParams.PaillierSK.PublicKey, proofPrm, preParams.NTildei, preParams.H1i, preParams.H2i, proofMod)
 	round.temp.dgRound2Message1s[i] = r2msg1
 	round.out <- r2msg1
 

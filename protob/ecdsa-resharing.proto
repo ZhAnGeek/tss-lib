@@ -27,6 +27,7 @@ message DGRound2Message1 {
     bytes n_tilde = 3;
     bytes h1 = 4;
     bytes h2 = 5;
+    repeated bytes mod_proof = 6;
 }
 
 /*

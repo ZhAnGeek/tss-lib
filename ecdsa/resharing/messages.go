@@ -16,6 +16,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
+	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -30,6 +31,8 @@ var (
 		(*DGRound2Message2)(nil),
 		(*DGRound3Message1)(nil),
 		(*DGRound3Message2)(nil),
+		(*DGRound4Message1)(nil),
+		(*DGRound4Message2)(nil),
 	}
 )
 
@@ -91,6 +94,7 @@ func NewDGRound2Message1(
 	NTildei,
 	H1i,
 	H2i *big.Int,
+	proofMod *zkpmod.ProofMod,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:             from,
@@ -99,12 +103,14 @@ func NewDGRound2Message1(
 		IsToOldCommittee: false,
 	}
 	proofPrmBzs := proofPrm.Bytes()
+	proofModBzs := proofMod.Bytes()
 	content := &DGRound2Message1{
 		PaillierN: paillierPK.N.Bytes(),
 		PrmProof:  proofPrmBzs[:],
 		NTilde:    NTildei.Bytes(),
 		H1:        H1i.Bytes(),
 		H2:        H2i.Bytes(),
+		ModProof:  proofModBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -139,6 +145,10 @@ func (m *DGRound2Message1) UnmarshalH1() *big.Int {
 
 func (m *DGRound2Message1) UnmarshalH2() *big.Int {
 	return new(big.Int).SetBytes(m.GetH2())
+}
+
+func (m *DGRound2Message1) UnmarshalProofMod() (*zkpmod.ProofMod, error) {
+	return zkpmod.NewProofFromBytes(m.GetModProof())
 }
 
 // ----- //

@@ -27,6 +27,10 @@ const (
 	paillierBitsLen = 2048
 )
 
+var (
+	one = big.NewInt(1)
+)
+
 type (
 	LocalParty struct {
 		*tss.BaseParty
