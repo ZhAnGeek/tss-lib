@@ -11,7 +11,6 @@ import (
 	"errors"
 	"math/big"
 
-	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	"github.com/binance-chain/tss-lib/tss"
@@ -79,17 +78,11 @@ func (round *round2) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
 	}
-	SP := new(big.Int).Add(new(big.Int).Lsh(preParams.P, 1), big.NewInt(1))
-	SQ := new(big.Int).Add(new(big.Int).Lsh(preParams.Q, 1), big.NewInt(1))
-	proofFac, err := zkpfac.NewProof(ContextI, round.EC(), preParams.NTildei, preParams.NTildei, preParams.H1i, preParams.H2i, SP, SQ)
-	if err != nil {
-		return round.WrapError(errors.New("create proofFac failed"), Pi)
-	}
 	// TODO proofMod?
 
 	r2msg1 := NewDGRound2Message1(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		&preParams.PaillierSK.PublicKey, proofPrm, preParams.NTildei, preParams.H1i, preParams.H2i, proofFac)
+		&preParams.PaillierSK.PublicKey, proofPrm, preParams.NTildei, preParams.H1i, preParams.H2i)
 	round.temp.dgRound2Message1s[i] = r2msg1
 	round.out <- r2msg1
 
