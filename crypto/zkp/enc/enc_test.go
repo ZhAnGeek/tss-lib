@@ -49,3 +49,28 @@ func TestEnc(test *testing.T) {
 	ok := proof.Verify(Session, ec, pk, NCap, s, t, K)
 	assert.True(test, ok, "proof must verify")
 }
+
+func TestEncPoc(test *testing.T) {
+	ec := tss.EC()
+	q := ec.Params().N
+	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
+	assert.NoError(test, err)
+	k := common.GetRandomPositiveInt(q)
+	K, _, err := sk.EncryptAndReturnRandomness(k)
+	assert.NoError(test, err)
+	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits),
+		common.GetRandomPrimeInt(testSafePrimeBits)}
+	NCap, s, t, err := crypto.GenerateNTildei(primes)
+	assert.NoError(test, err)
+	one := big.NewInt(1)
+	zero := big.NewInt(0)
+	proof := ProofEnc{}
+	proof.S = one
+	proof.A = zero
+	proof.C = one
+	proof.Z1 = zero
+	proof.Z2 = zero
+	proof.Z3 = zero
+	ok := proof.Verify(Session, ec, pk, NCap, s, t, K)
+	assert.False(test, ok, "proof must verify")
+}

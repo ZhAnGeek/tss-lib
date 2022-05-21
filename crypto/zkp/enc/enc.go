@@ -26,6 +26,10 @@ type (
 	}
 )
 
+var (
+	one = big.NewInt(1)
+)
+
 // NewProof implements proofenc
 func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *big.Int) (*ProofEnc, error) {
 	if ec == nil || pk == nil || K == nil || NCap == nil || s == nil || t == nil || k == nil || rho == nil {
@@ -100,6 +104,31 @@ func (pf *ProofEnc) Verify(Session []byte, ec elliptic.Curve, pk *paillier.Publi
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
+
+	if pf.S.Sign() == -1 || pf.S.Cmp(NCap) != -1 {
+		return false
+	}
+	if pf.A.Sign() == -1 || pf.A.Cmp(pk.NSquare()) != -1 {
+		return false
+	}
+	if pf.C.Sign() == -1 || pf.C.Cmp(NCap) != -1 {
+		return false
+	}
+	if pf.Z2.Sign() == -1 || pf.Z2.Cmp(pk.N) != -1 {
+		return false
+	}
+	if new(big.Int).GCD(nil, nil, pf.S, NCap).Cmp(one) != 0 {
+		return false
+	}
+	if new(big.Int).GCD(nil, nil, pf.C, NCap).Cmp(one) != 0 {
+		return false
+	}
+	if new(big.Int).GCD(nil, nil, pf.Z2, pk.N).Cmp(one) != 0 {
+		return false
+	}
+	if new(big.Int).GCD(nil, nil, pf.A, pk.NSquare()).Cmp(one) != 0 {
+		return false
+	}
 
 	// Fig 14. Range Check
 	if pf.Z1.Cmp(q3) == 1 {
