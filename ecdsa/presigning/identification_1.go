@@ -63,9 +63,6 @@ func (round *identification1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	if err != nil {
-		return round.WrapError(err, Pi)
-	}
 	for k := range round.Parties().IDs() {
 		if k == i {
 			continue
