@@ -43,7 +43,7 @@ func isQuandraticResidue(X, N *big.Int) bool {
 func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
 	// Fig 16.1
-	W := common.GetRandomQuandraticNonResidue(N)
+	W := common.GetRandomQuadraticNonResidue(N)
 
 	// Fig 16.2
 	Y := [Iterations]*big.Int{}
