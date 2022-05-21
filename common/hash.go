@@ -158,20 +158,3 @@ func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
 	}
 	return new(big.Int).SetBytes(state.Sum(nil))
 }
-
-// SHA512_256iOne hash for one big.Int, returns a big.Int
-func SHA512_256iOne(in *big.Int) *big.Int {
-	var data []byte
-	state := crypto.SHA512_256.New()
-	if in == nil {
-		return nil
-	}
-	data = in.Bytes()
-	// n < len(data) or an error will never happen.
-	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
-	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256iOne Write() failed: %v", err)
-		return nil
-	}
-	return new(big.Int).SetBytes(state.Sum(nil))
-}
