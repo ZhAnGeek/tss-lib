@@ -137,7 +137,11 @@ func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
 	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
 	ptrs := make([][]byte, inLen)
 	for i, n := range in {
-		ptrs[i] = n.Bytes()
+		if n == nil {
+			ptrs[i] = zero.Bytes()
+		} else {
+			ptrs[i] = n.Bytes()
+		}
 		bzSize += len(ptrs[i])
 	}
 	data = make([]byte, 0, len(inLenBz)+bzSize+inLen)
