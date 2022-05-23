@@ -7,7 +7,6 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/hmac"
-	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/binary"
@@ -52,11 +51,11 @@ const (
 
 	// MinSeedBytes is the minimum number of bytes allowed for a seed to
 	// a master node.
-	MinSeedBytes = 16 // 128 bits
+	// MinSeedBytes = 16 // 128 bits
 
 	// MaxSeedBytes is the maximum number of bytes allowed for a seed to
 	// a master node.
-	MaxSeedBytes = 64 // 512 bits
+	// MaxSeedBytes = 64 // 512 bits
 )
 
 // Extended public key serialization, defined in BIP32
@@ -116,6 +115,9 @@ func NewExtendedKeyFromString(key string, curve elliptic.Curve) (*ExtendedKey, e
 		pubKey = ecdsa.PublicKey(*pk)
 	} else {
 		px, py := elliptic.Unmarshal(curve, keyData)
+		if px == nil {
+			return nil, errors.New("unmarshal public key error")
+		}
 		pubKey = ecdsa.PublicKey{
 			Curve: curve,
 			X:     px,
@@ -255,19 +257,4 @@ func DeriveChildKey(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.I
 		Version:    pk.Version,
 	}
 	return ilNum, childPk, nil
-}
-
-func GenerateSeed(length uint8) ([]byte, error) {
-	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
-	if length < MinSeedBytes || length > MaxSeedBytes {
-		return nil, errors.New("invalid seed length")
-	}
-
-	buf := make([]byte, length)
-	_, err := rand.Read(buf)
-	if err != nil {
-		return nil, err
-	}
-
-	return buf, nil
 }

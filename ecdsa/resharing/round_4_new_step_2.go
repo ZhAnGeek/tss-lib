@@ -10,6 +10,7 @@ import (
 	"errors"
 	"math/big"
 
+	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
 	errors2 "github.com/pkg/errors"
 
 	"github.com/binance-chain/tss-lib/common"
@@ -37,6 +38,7 @@ func (round *round4) Start() *tss.Error {
 
 	Pi := round.PartyID()
 	i := Pi.Index
+	round.newOK[i] = true
 
 	// 1-3. verify paillier key proofs
 	culprits := make([]*tss.PartyID, 0, len(round.NewParties().IDs())) // who caused the error(s)
@@ -55,26 +57,44 @@ func (round *round4) Start() *tss.Error {
 		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
 		if ok := proofPrm.Verify(ContextJ, H1, H2, Nj); !ok {
 			culprits = append(culprits, Pj)
-			common.Logger.Warningf("proofPrm verify failed for party %s", Pj)
+			common.Logger.Warnf("proofPrm verify failed for party %s", Pj)
 			continue
-		}
-		proofFac, err := r2msg1.UnmarshalProofFac()
-		if err != nil {
-			return round.WrapError(errors.New("proofFac failed"), Pj)
-		}
-		if ok := proofFac.Verify(ContextJ, round.EC(), Nj, Nj, H1, H2); !ok {
-			culprits = append(culprits, Pj)
-			common.Logger.Warningf("proofFac verify failed for party %s", Pj)
-			continue
-
 		}
 		round.save.NTildej[j] = Nj
 		round.save.H1j[j] = H1
 		round.save.H2j[j] = H2
 		common.Logger.Debugf("paillier verify passed for party %s", Pj)
+
+		proofMod, err := r2msg1.UnmarshalProofMod()
+		if err != nil {
+			return round.WrapError(errors.New("proofMod failed"), Pj)
+		}
+		if ok := proofMod.Verify(ContextJ, round.save.NTildej[j]); !ok {
+			culprits = append(culprits, Pj)
+			common.Logger.Warnf("proofMod verify failed for party %s", Pj)
+			continue
+		}
 	}
 	if len(culprits) > 0 {
 		return round.WrapError(errors.New("paillier verify failed"), culprits...)
+	}
+
+	// ProofFac
+	for j, Pj := range round.NewParties().IDs() {
+		if j == i {
+			continue
+		}
+
+		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
+		SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
+		SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
+		proofFac, err := zkpfac.NewProof(ContextJ, round.EC(), round.save.LocalPreParams.NTildei,
+			round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+		if err != nil {
+			return round.WrapError(errors.New("create proofFac failed"), Pi)
+		}
+		r4msg1 := NewDGRound4Message1(Pj, Pi, proofFac)
+		round.out <- r4msg1
 	}
 
 	// 4.
@@ -92,7 +112,7 @@ func (round *round4) Start() *tss.Error {
 
 		// 6. unpack flat "v" commitment content
 		vCmtDeCmt := commitments.HashCommitDecommit{C: vCj, D: vDj}
-		ok, flatVs := vCmtDeCmt.DeCommit()
+		ok, flatVs := vCmtDeCmt.DeCommit((round.NewThreshold() + 1) * 2)
 		if !ok || len(flatVs) != (round.NewThreshold()+1)*2 { // they're points so * 2
 			// TODO collect culprits and return a list of them as per convention
 			return round.WrapError(errors.New("de-commitment of v_j0..v_jt failed"), round.Parties().IDs()[j])
@@ -165,15 +185,18 @@ func (round *round4) Start() *tss.Error {
 	round.temp.newBigXjs = newBigXjs
 
 	// Send an "ACK" message to both committees to signal that we're ready to save our data
-	r4msg := NewDGRound4Message(round.OldAndNewParties(), Pi)
-	round.temp.dgRound4Messages[i] = r4msg
-	round.out <- r4msg
+	r4msg2 := NewDGRound4Message2(round.OldAndNewParties(), Pi)
+	round.temp.dgRound4Message2s[i] = r4msg2
+	round.out <- r4msg2
 
 	return nil
 }
 
 func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*DGRound4Message); ok {
+	if _, ok := msg.Content().(*DGRound4Message1); ok {
+		return !msg.IsBroadcast()
+	}
+	if _, ok := msg.Content().(*DGRound4Message2); ok {
 		return msg.IsBroadcast()
 	}
 	return false
@@ -181,12 +204,18 @@ func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *round4) Update() (bool, *tss.Error) {
 	// accept messages from new -> old&new committees
-	for j, msg := range round.temp.dgRound4Messages {
+	for j, msg2 := range round.temp.dgRound4Message2s {
 		if round.newOK[j] {
 			continue
 		}
-		if msg == nil || !round.CanAccept(msg) {
+		if msg2 == nil || !round.CanAccept(msg2) {
 			return false, nil
+		}
+		if round.IsNewCommittee() {
+			msg1 := round.temp.dgRound4Message1s[j]
+			if msg1 == nil || !round.CanAccept(msg1) {
+				return false, nil
+			}
 		}
 		round.newOK[j] = true
 	}

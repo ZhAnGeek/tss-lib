@@ -137,7 +137,11 @@ func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
 	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
 	ptrs := make([][]byte, inLen)
 	for i, n := range in {
-		ptrs[i] = n.Bytes()
+		if n == nil {
+			ptrs[i] = zero.Bytes()
+		} else {
+			ptrs[i] = n.Bytes()
+		}
 		bzSize += len(ptrs[i])
 	}
 	data = make([]byte, 0, len(inLenBz)+bzSize+inLen)
@@ -150,23 +154,6 @@ func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
 		Logger.Errorf("SHA512_256i Write() failed: %v", err)
-		return nil
-	}
-	return new(big.Int).SetBytes(state.Sum(nil))
-}
-
-// SHA512_256iOne hash for one big.Int, returns a big.Int
-func SHA512_256iOne(in *big.Int) *big.Int {
-	var data []byte
-	state := crypto.SHA512_256.New()
-	if in == nil {
-		return nil
-	}
-	data = in.Bytes()
-	// n < len(data) or an error will never happen.
-	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
-	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256iOne Write() failed: %v", err)
 		return nil
 	}
 	return new(big.Int).SetBytes(state.Sum(nil))

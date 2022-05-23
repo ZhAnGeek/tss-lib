@@ -73,13 +73,13 @@ func (round *round3) Start() *tss.Error {
 			r2msg2 := round.temp.kgRound2Message2s[j].Content().(*KGRound2Message2)
 			KGDj := r2msg2.UnmarshalDeCommitment()
 			cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
-			ok, flatPolyGs := cmtDeCmt.DeCommit()
+			ok, flatPolyGs := cmtDeCmt.DeCommit((round.Threshold() + 1) * 2)
 			if !ok || flatPolyGs == nil {
 				ch <- vssOut{errors.New("de-commitment verify failed"), nil}
 				return
 			}
 			PjVs, err := crypto.UnFlattenECPoints(round.Params().EC(), flatPolyGs)
-			if err != nil {
+			if err != nil || len(PjVs) != round.Threshold()+1 {
 				ch <- vssOut{err, nil}
 				return
 			}
@@ -88,12 +88,12 @@ func (round *round3) Start() *tss.Error {
 			}
 			proof, err := r2msg2.UnmarshalZKProof(round.Params().EC())
 			if err != nil {
-				ch <- vssOut{errors.New("failed to unmarshal schnorr proof"), nil}
+				ch <- vssOut{errors.New("failed to unmarshal Schnorr proof"), nil}
 				return
 			}
 			ok = proof.Verify(ContextJ, PjVs[0])
 			if !ok {
-				ch <- vssOut{errors.New("failed to prove schnorr proof"), nil}
+				ch <- vssOut{errors.New("failed to prove Schnorr proof"), nil}
 				return
 			}
 			r2msg1 := round.temp.kgRound2Message1s[j].Content().(*KGRound2Message1)
@@ -146,7 +146,7 @@ func (round *round3) Start() *tss.Error {
 			// 11-12.
 			PjVs := vssResults[j].pjVs
 			for c := 0; c <= round.Threshold(); c++ {
-				//Vc[c], err = Vc[c].Add(PjVs[c])
+				// Vc[c], err = Vc[c].Add(PjVs[c])
 				Vc[c], err = Vc[c].Add(PjVs[c])
 				if err != nil {
 					culprits = append(culprits, Pj)
@@ -198,7 +198,7 @@ func (round *round3) Start() *tss.Error {
 	return nil
 }
 
-func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
+func (round *round3) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }

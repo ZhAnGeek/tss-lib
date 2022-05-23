@@ -14,7 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/binance-chain/tss-lib/crypto/zkp/prm"
-	keygen "github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 )
 
 var (
@@ -38,4 +38,28 @@ func TestPrm(test *testing.T) {
 
 	ok := proof.Verify(Session, s, t, N)
 	assert.True(test, ok, "proof must verify")
+}
+
+// TOB-BIN-8
+func TestPrmForgery(test *testing.T) {
+	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
+	assert.NoError(test, err)
+	s, _, _, _, _, N := preParams.H1i, preParams.H2i, preParams.Beta, preParams.P,
+		preParams.Q, preParams.NTildei
+	assert.NoError(test, err)
+	proofBzs := [ProofPrmBytesParts][]byte{}
+	for i := 0; i < Iterations; i++ {
+		buf := make([]byte, 1)
+		buf[0] = 0
+		proofBzs[i] = buf
+	}
+	for i := 0; i < Iterations; i++ {
+		buf := make([]byte, 1)
+		buf[0] = 1
+		proofBzs[i+Iterations] = buf
+	}
+	proof, err := NewProofFromBytes(proofBzs[:])
+	assert.NoError(test, err)
+	ok := proof.Verify(Session, s, big.NewInt(0), N)
+	assert.False(test, ok, "proof must verify")
 }

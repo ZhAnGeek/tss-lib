@@ -46,7 +46,7 @@ func NewSignRound1Message(
 }
 
 func (m *SignRound1Message) ValidateBasic() bool {
-	return m.Commitment != nil &&
+	return m != nil && m.Commitment != nil &&
 		common.NonEmptyBytes(m.GetCommitment())
 }
 

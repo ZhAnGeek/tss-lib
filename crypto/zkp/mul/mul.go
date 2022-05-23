@@ -26,6 +26,10 @@ type (
 	}
 )
 
+var (
+	one = big.NewInt(1)
+)
+
 // NewProof implements proofmul
 func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rho, rhox *big.Int) (*ProofMul, error) {
 	if pk == nil || X == nil || Y == nil || C == nil || rho == nil || rhox == nil {
@@ -85,6 +89,34 @@ func (pf *ProofMul) Verify(Session []byte, ec elliptic.Curve, pk *paillier.Publi
 	}
 
 	q := ec.Params().N
+
+	if pf.A.Sign() == -1 || pf.A.Cmp(pk.NSquare()) != -1 {
+		return false
+	}
+	if pf.B.Sign() == -1 || pf.B.Cmp(pk.NSquare()) != -1 {
+		return false
+	}
+	if pf.U.Sign() == -1 || pf.U.Cmp(pk.N) != -1 {
+		return false
+	}
+	if pf.V.Sign() == -1 || pf.V.Cmp(pk.N) != -1 {
+		return false
+	}
+	if pf.Z.Sign() != 1 {
+		return false
+	}
+	if new(big.Int).GCD(nil, nil, pf.A, pk.NSquare()).Cmp(one) != 0 {
+		return false
+	}
+	if new(big.Int).GCD(nil, nil, pf.B, pk.NSquare()).Cmp(one) != 0 {
+		return false
+	}
+	if new(big.Int).GCD(nil, nil, pf.U, pk.N).Cmp(one) != 0 {
+		return false
+	}
+	if new(big.Int).GCD(nil, nil, pf.V, pk.N).Cmp(one) != 0 {
+		return false
+	}
 
 	var e *big.Int
 	{

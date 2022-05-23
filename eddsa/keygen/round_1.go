@@ -8,17 +8,12 @@ package keygen
 
 import (
 	"errors"
-	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	cmts "github.com/binance-chain/tss-lib/crypto/commitments"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	"github.com/binance-chain/tss-lib/tss"
-)
-
-var (
-	zero = big.NewInt(0)
 )
 
 // round 1 represents round 1 of the keygen part of the EDDSA TSS spec
@@ -55,10 +50,6 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 	round.save.Ks = ids
-
-	// security: the original u_i may be discarded
-	ui = zero // clears the secret data from memory
-	_ = ui    // silences a linter warning
 
 	// 3. make commitment -> (C, D)
 	pGFlat, err := crypto.FlattenECPoints(vs)

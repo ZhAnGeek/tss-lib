@@ -135,17 +135,18 @@ func NewLocalParty(
 
 	if p.params.NeedsIdentifaction() {
 		trans, err := predata.UnmarshalTrans(p.params.EC())
-		if err == nil {
-			p.temp.K = trans.K
-			p.temp.R1msgK = trans.R1msgK
-			p.temp.ChiShareAlphas = trans.ChiShareAlphas
-			p.temp.ChiShareBetas = trans.ChiShareBetas
-			p.temp.R2msgChiD = trans.R2msgChiD
-
-			p.temp.ChiMtAFs = trans.ChiMtAFs
-			p.temp.ChiMtADs = trans.ChiMtADs
-			p.temp.ChiMtADProofs = trans.ChiMtADProofs
+		if err != nil {
+			return nil
 		}
+		p.temp.K = trans.K
+		p.temp.R1msgK = trans.R1msgK
+		p.temp.ChiShareAlphas = trans.ChiShareAlphas
+		p.temp.ChiShareBetas = trans.ChiShareBetas
+		p.temp.R2msgChiD = trans.R2msgChiD
+
+		p.temp.ChiMtAFs = trans.ChiMtAFs
+		p.temp.ChiMtADs = trans.ChiMtADs
+		p.temp.ChiMtADProofs = trans.ChiMtADProofs
 	}
 
 	return p
@@ -153,10 +154,8 @@ func NewLocalParty(
 
 func RestoreLocalParty(
 	predata *presigning.PreSignatureData,
-	msg *big.Int,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
-	keyDerivationDelta *big.Int,
 	du *LocalDumpPB,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
@@ -180,17 +179,18 @@ func RestoreLocalParty(
 
 	if params.NeedsIdentifaction() {
 		trans, err := predata.UnmarshalTrans(p.params.EC())
-		if err == nil {
-			p.temp.K = trans.K
-			p.temp.R1msgK = trans.R1msgK
-			p.temp.ChiShareAlphas = trans.ChiShareAlphas
-			p.temp.ChiShareBetas = trans.ChiShareBetas
-			p.temp.R2msgChiD = trans.R2msgChiD
-
-			p.temp.ChiMtAFs = trans.ChiMtAFs
-			p.temp.ChiMtADs = trans.ChiMtADs
-			p.temp.ChiMtADProofs = trans.ChiMtADProofs
+		if err != nil {
+			return nil, tss.NewError(err, TaskName, p.startRndNum, p.PartyID())
 		}
+		p.temp.K = trans.K
+		p.temp.R1msgK = trans.R1msgK
+		p.temp.ChiShareAlphas = trans.ChiShareAlphas
+		p.temp.ChiShareBetas = trans.ChiShareBetas
+		p.temp.R2msgChiD = trans.R2msgChiD
+
+		p.temp.ChiMtAFs = trans.ChiMtAFs
+		p.temp.ChiMtADs = trans.ChiMtADs
+		p.temp.ChiMtADProofs = trans.ChiMtADProofs
 	}
 
 	errb := tss.BaseRestore(p, TaskName)
@@ -261,7 +261,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	case *IdentificationRound1Message:
 		r5msg := msg.Content().(*IdentificationRound1Message)
 		p.temp.R5msgH[fromPIdx] = r5msg.UnmarshalH()
-		//p.temp.r5msgSigmaShareEnc[fromPIdx] = r5msg.UnmarshalSigmaShareEnc()
+		// p.temp.r5msgSigmaShareEnc[fromPIdx] = r5msg.UnmarshalSigmaShareEnc()
 		proofMulstar, err := r5msg.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
@@ -275,7 +275,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		p.temp.R5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
 		p.temp.R5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
 	default: // unrecognised message, just ignore!
-		common.Logger.Warningf("unrecognised message ignored: %v", msg)
+		common.Logger.Warnf("unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

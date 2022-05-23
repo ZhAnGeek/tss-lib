@@ -21,7 +21,10 @@ const (
 
 func TestGetRandomInt(t *testing.T) {
 	rnd := common.MustGetRandomInt(randomIntBitLen)
-	assert.NotZero(t, rnd, "rand int should not be zero")
+	assert.True(t, rnd.Sign() != -1, -1, "rand int should not be negative")
+	max := new(big.Int)
+	max = max.Exp(big.NewInt(2), big.NewInt(int64(randomIntBitLen)), nil)
+	assert.True(t, rnd.Cmp(max) == -1, -1, "rand int should not be negative")
 }
 
 func TestGetRandomPositiveInt(t *testing.T) {
@@ -46,6 +49,11 @@ func TestGetRandomPrimeInt(t *testing.T) {
 	assert.True(t, prime.ProbablyPrime(50), "rand prime should be prime")
 }
 
+func TestRandomPrime(t *testing.T) {
+	rnd := common.GetRandomPrimeInt(1)
+	assert.True(t, rnd == nil, "rand prime should not be 1 bit")
+}
+
 func TestGetRandomQuandraticNonResidue(t *testing.T) {
 	rnd := common.MustGetRandomInt(randomIntBitLen)
 	N := common.GetRandomPositiveRelativelyPrimeInt(rnd)
@@ -55,6 +63,6 @@ func TestGetRandomQuandraticNonResidue(t *testing.T) {
 		}
 		N = common.GetRandomPositiveRelativelyPrimeInt(rnd)
 	}
-	w := common.GetRandomQuandraticNonResidue(N)
+	w := common.GetRandomQuadraticNonResidue(N)
 	assert.Equal(t, big.Jacobi(w, N), -1, "must get quandratic non residue")
 }

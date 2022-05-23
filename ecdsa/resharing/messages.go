@@ -16,6 +16,7 @@ import (
 	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/crypto/vss"
 	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
+	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
 	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -30,6 +31,8 @@ var (
 		(*DGRound2Message2)(nil),
 		(*DGRound3Message1)(nil),
 		(*DGRound3Message2)(nil),
+		(*DGRound4Message1)(nil),
+		(*DGRound4Message2)(nil),
 	}
 )
 
@@ -91,7 +94,7 @@ func NewDGRound2Message1(
 	NTildei,
 	H1i,
 	H2i *big.Int,
-	proofFac *zkpfac.ProofFac,
+	proofMod *zkpmod.ProofMod,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:             from,
@@ -100,14 +103,14 @@ func NewDGRound2Message1(
 		IsToOldCommittee: false,
 	}
 	proofPrmBzs := proofPrm.Bytes()
-	proofFacBzs := proofFac.Bytes()
+	proofModBzs := proofMod.Bytes()
 	content := &DGRound2Message1{
 		PaillierN: paillierPK.N.Bytes(),
 		PrmProof:  proofPrmBzs[:],
 		NTilde:    NTildei.Bytes(),
 		H1:        H1i.Bytes(),
 		H2:        H2i.Bytes(),
-		FacProof:  proofFacBzs[:],
+		ModProof:  proofModBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -119,8 +122,7 @@ func (m *DGRound2Message1) ValidateBasic() bool {
 		common.NonEmptyMultiBytes(m.PrmProof, zkpprm.ProofPrmBytesParts) &&
 		common.NonEmptyBytes(m.NTilde) &&
 		common.NonEmptyBytes(m.H1) &&
-		common.NonEmptyBytes(m.H2) &&
-		common.NonEmptyMultiBytes(m.FacProof, zkpfac.ProofFacBytesParts)
+		common.NonEmptyBytes(m.H2)
 }
 
 func (m *DGRound2Message1) UnmarshalPaillierPK() *paillier.PublicKey {
@@ -145,8 +147,8 @@ func (m *DGRound2Message1) UnmarshalH2() *big.Int {
 	return new(big.Int).SetBytes(m.GetH2())
 }
 
-func (m *DGRound2Message1) UnmarshalProofFac() (*zkpfac.ProofFac, error) {
-	return zkpfac.NewProofFromBytes(m.GetFacProof())
+func (m *DGRound2Message1) UnmarshalProofMod() (*zkpmod.ProofMod, error) {
+	return zkpmod.NewProofFromBytes(m.GetModProof())
 }
 
 // ----- //
@@ -228,7 +230,37 @@ func (m *DGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
 
 // ----- //
 
-func NewDGRound4Message(
+func NewDGRound4Message1(
+	to *tss.PartyID,
+	from *tss.PartyID,
+	proofFac *zkpfac.ProofFac,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:             from,
+		To:               []*tss.PartyID{to},
+		IsBroadcast:      false,
+		IsToOldCommittee: false,
+	}
+	proofFacBzs := proofFac.Bytes()
+	content := &DGRound4Message1{
+		FacProof: proofFacBzs[:],
+	}
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+
+}
+
+func (m *DGRound4Message1) ValidateBasic() bool {
+	return m != nil && common.NonEmptyMultiBytes(m.FacProof, zkpfac.ProofFacBytesParts)
+}
+
+func (m *DGRound4Message1) UnmarshalProofFac() (*zkpfac.ProofFac, error) {
+	return zkpfac.NewProofFromBytes(m.GetFacProof())
+}
+
+// ----- //
+
+func NewDGRound4Message2(
 	to []*tss.PartyID,
 	from *tss.PartyID,
 ) tss.ParsedMessage {
@@ -238,11 +270,11 @@ func NewDGRound4Message(
 		IsBroadcast:             true,
 		IsToOldAndNewCommittees: true,
 	}
-	content := &DGRound4Message{}
+	content := &DGRound4Message2{}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound4Message) ValidateBasic() bool {
+func (m *DGRound4Message2) ValidateBasic() bool {
 	return true
 }

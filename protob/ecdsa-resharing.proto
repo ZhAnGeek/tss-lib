@@ -27,7 +27,7 @@ message DGRound2Message1 {
     bytes n_tilde = 3;
     bytes h1 = 4;
     bytes h2 = 5;
-    repeated bytes fac_proof = 6;
+    repeated bytes mod_proof = 6;
 }
 
 /*
@@ -51,7 +51,14 @@ message DGRound3Message2 {
 }
 
 /*
+ * The Round 4 "FacProof" is p2p to peers of the New Committees from the New Committee in this message.
+ */
+message DGRound4Message1 {
+    repeated bytes fac_proof = 1;
+}
+
+/*
  * The Round 4 "ACK" is broadcast to peers of the Old and New Committees from the New Committee in this message.
  */
-message DGRound4Message {
+message DGRound4Message2 {
 }

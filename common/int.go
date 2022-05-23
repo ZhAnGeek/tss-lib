@@ -36,6 +36,9 @@ func (mi *modInt) Sub(x, y *big.Int) *big.Int {
 	return i.Mod(i, mi.i())
 }
 
+// Div sets z to the quotient x/y for y != 0 and returns z.
+// If y == 0, a division-by-zero run-time panic occurs.
+// Div implements Euclidean division (unlike Go);
 func (mi *modInt) Div(x, y *big.Int) *big.Int {
 	i := new(big.Int)
 	i.Div(x, y)

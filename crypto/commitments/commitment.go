@@ -61,8 +61,8 @@ func (cmt *HashCommitDecommit) Verify() bool {
 	return hash.Cmp(C) == 0
 }
 
-func (cmt *HashCommitDecommit) DeCommit() (bool, HashDeCommitment) {
-	if cmt.Verify() {
+func (cmt *HashCommitDecommit) DeCommit(expectedLen int) (bool, HashDeCommitment) {
+	if cmt.Verify() && expectedLen == len(cmt.D)-1 {
 		// [1:] skips random element r in D
 		return true, cmt.D[1:]
 	} else {

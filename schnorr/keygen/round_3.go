@@ -25,7 +25,7 @@ func (round *round3) Start() *tss.Error {
 	round.started = true
 	round.resetOK()
 
-	Ps := round.Parties().IDs() //TODO
+	Ps := round.Parties().IDs()
 	i := round.PartyID().Index
 	round.ok[i] = true
 
@@ -52,12 +52,12 @@ func (round *round3) Start() *tss.Error {
 		KGCj := round.temp.KGCs[j]
 		KGDj := round.temp.r2msg2Decommit[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
-		ok, flatPolyGs := cmtDeCmt.DeCommit()
+		ok, flatPolyGs := cmtDeCmt.DeCommit((round.Threshold() + 1) * 2)
 		if !ok || flatPolyGs == nil {
 			return round.WrapError(errors.New("de-commitment failed"), Pj)
 		}
 		PjVs, err := crypto.UnFlattenECPoints(round.Params().EC(), flatPolyGs)
-		if err != nil {
+		if err != nil || len(PjVs) != round.Threshold()+1 {
 			return round.WrapError(errors.New("de-commitment failed"), Pj)
 		}
 		for c := 0; c <= round.Threshold(); c++ {
@@ -140,7 +140,7 @@ func (round *round3) Start() *tss.Error {
 	return nil
 }
 
-func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
+func (round *round3) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }

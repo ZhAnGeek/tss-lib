@@ -14,7 +14,6 @@ import (
 	"github.com/binance-chain/tss-lib/crypto"
 	zkpaffg "github.com/binance-chain/tss-lib/crypto/zkp/affg"
 	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
-	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
 	zkpmulstar "github.com/binance-chain/tss-lib/crypto/zkp/mulstar"
 	"github.com/binance-chain/tss-lib/tss"
 )
@@ -69,16 +68,15 @@ func (m *SignRound1Message) UnmarshalRy() *big.Int {
 }
 
 // ----- //
+
 func NewIdentificationRound1Message(
 	to, from *tss.PartyID,
 	H *big.Int,
 	MulProof *zkpmulstar.ProofMulstar,
 	Djis []*big.Int,
 	Fjis []*big.Int,
-	DjiProofs []*zkpaffg.ProofAffg,
 	DecProof *zkpdec.ProofDec,
 	Q3Enc *big.Int,
-	//SigmaShareEnc *big.Int,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
@@ -98,25 +96,24 @@ func NewIdentificationRound1Message(
 			FjisBzs[i] = Fjis[i].Bytes()
 		}
 	}
-	DjiProofsBzs := make([][]byte, len(DjiProofs)*zkpaffg.ProofAffgBytesParts)
 	DecProofBzs := DecProof.Bytes()
-	for i, item := range DjiProofs {
-		if item != nil {
-			itemBzs := item.Bytes()
-			for j := 0; j < zkpaffg.ProofAffgBytesParts; j++ {
-				DjiProofsBzs[i*zkpenc.ProofEncBytesParts+j] = itemBzs[j]
-			}
-		}
-	}
+	// DjiProofsBzs := make([][]byte, len(DjiProofs)*zkpaffg.ProofAffgBytesParts)
+	// for i, item := range DjiProofs {
+	// 	if item != nil {
+	// 		itemBzs := item.Bytes()
+	// 		for j := 0; j < zkpaffg.ProofAffgBytesParts; j++ {
+	// 			DjiProofsBzs[i*zkpenc.ProofEncBytesParts+j] = itemBzs[j]
+	// 		}
+	// 	}
+	// }
 	content := &IdentificationRound1Message{
-		H:         H.Bytes(),
-		MulProof:  MulProofBzs[:],
-		Djis:      DjisBzs,
-		Fjis:      FjisBzs,
-		DjiProofs: DjiProofsBzs,
-		DecProof:  DecProofBzs[:],
-		Q3Enc:     Q3Enc.Bytes(),
-		//SigmaShareEnc: SigmaShareEnc.Bytes(),
+		H:        H.Bytes(),
+		MulProof: MulProofBzs[:],
+		Djis:     DjisBzs,
+		Fjis:     FjisBzs,
+		// DjiProofs: DjiProofsBzs,
+		DecProof: DecProofBzs[:],
+		Q3Enc:    Q3Enc.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -126,10 +123,9 @@ func (m *IdentificationRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.H) &&
 		common.NonEmptyMultiBytes(m.MulProof, zkpmulstar.ProofMulstarBytesParts) &&
-		// TOCO check excluding index
-		// common.NonEmptyMultiBytes(m.Djis) &&
-		// common.NonEmptyMultiBytes(m.Fjis) &&
-		// common.NonEmptyMultiBytes(m.DjiProofs) &&
+		common.NonEmptyMultiBytes(m.Djis) &&
+		common.NonEmptyMultiBytes(m.Fjis) &&
+		common.NonEmptyBytes(m.Q3Enc) &&
 		common.NonEmptyMultiBytes(m.DecProof, zkpdec.ProofDecBytesParts)
 }
 
@@ -165,27 +161,23 @@ func (m *IdentificationRound1Message) UnmarshalFjis() []*big.Int {
 	return Fjis
 }
 
-func (m *IdentificationRound1Message) UnmarshalDjiProofs(ec elliptic.Curve) []*zkpaffg.ProofAffg {
-	DjiProofsBzs := m.GetDjiProofs()
-	DjiProofs := make([]*zkpaffg.ProofAffg, len(DjiProofsBzs)/zkpaffg.ProofAffgBytesParts)
-	for i := range DjiProofs {
-		if DjiProofsBzs[i*zkpaffg.ProofAffgBytesParts] != nil {
-			item, err := zkpaffg.NewProofFromBytes(ec, DjiProofsBzs[(i*zkpaffg.ProofAffgBytesParts):(i*zkpaffg.ProofAffgBytesParts+zkpaffg.ProofAffgBytesParts)])
-			if err == nil { // continue if error occurs
-				DjiProofs[i] = item
-			}
-		}
-	}
-	return DjiProofs
-}
+// func (m *IdentificationRound1Message) UnmarshalDjiProofs(ec elliptic.Curve) []*zkpaffg.ProofAffg {
+// 	DjiProofsBzs := m.GetDjiProofs()
+// 	DjiProofs := make([]*zkpaffg.ProofAffg, len(DjiProofsBzs)/zkpaffg.ProofAffgBytesParts)
+// 	for i := range DjiProofs {
+// 		if DjiProofsBzs[i*zkpaffg.ProofAffgBytesParts] != nil {
+// 			item, err := zkpaffg.NewProofFromBytes(ec, DjiProofsBzs[(i*zkpaffg.ProofAffgBytesParts):(i*zkpaffg.ProofAffgBytesParts+zkpaffg.ProofAffgBytesParts)])
+// 			if err == nil { // continue if error occurs
+// 				DjiProofs[i] = item
+// 			}
+// 		}
+// 	}
+// 	return DjiProofs
+// }
 
 func (m *IdentificationRound1Message) UnmarshalProofDec() (*zkpdec.ProofDec, error) {
 	return zkpdec.NewProofFromBytes(m.GetDecProof())
 }
-
-//func (m *IdentificationRound1Message) UnmarshalSigmaShareEnc() *big.Int {
-//	return new(big.Int).SetBytes(m.GetSigmaShareEnc())
-//}
 
 func (m *IdentificationRound1Message) UnmarshalQ3Enc() *big.Int {
 	return new(big.Int).SetBytes(m.GetQ3Enc())
@@ -310,12 +302,6 @@ func NewLocalDumpPB(
 			}
 		}
 	}
-	//r5msgSigmaShareEncBzs := make([][]byte, len(LocalTemp.r5msgSigmaShareEnc))
-	//for i, item := range LocalTemp.r5msgDeltaShareEnc {
-	//	if item != nil {
-	//		r5msgSigmaShareEncBzs[i] = item.Bytes()
-	//	}
-	//}
 	r5msgProofDecBzs := make([][]byte, len(LocalTemp.R5msgProofDec)*zkpdec.ProofDecBytesParts)
 	for i, item := range LocalTemp.R5msgProofDec {
 		if item != nil {
@@ -343,12 +329,6 @@ func NewLocalDumpPB(
 			}
 		}
 	}
-	//r5msgQ3EncBzs := make([][]byte, len(LocalTemp.r5msgQ3Enc))
-	//for i, item := range LocalTemp.r5msgQ3Enc {
-	//	if item != nil {
-	//		r5msgQ3EncBzs[i] = item.Bytes()
-	//	}
-	//}
 
 	content := &LocalDumpPB{
 		Index:    int32(Index),
@@ -380,12 +360,9 @@ func NewLocalDumpPB(
 
 		LTr5MsgH:            r5msgHBzs,
 		LTr5MsgProofMulstar: r5msgProofMulstarBzs,
-		//LTr5MsgSigmaShareEnc: r5msgSigmaShareBzs,
-		LTr5MsgProofDec: r5msgProofDecBzs,
-		LTr5MsgDjis:     r5msgDjisBzs,
-		LTr5MsgFjis:     r5msgFjisBzs,
-		//LTr5MsgQ3Enc: r5msgQ3EncBzs,
-
+		LTr5MsgProofDec:     r5msgProofDecBzs,
+		LTr5MsgDjis:         r5msgDjisBzs,
+		LTr5MsgFjis:         r5msgFjisBzs,
 	}
 	return content
 }
@@ -480,14 +457,14 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 			r5msgProofMulstar[i] = item
 		}
 	}
-	//r5msgSigmaShareEncBzs := m.GetLTr5MsgSigmaShareEnc()
-	//r5msgSigmaShareEnc := make([]*big.Int, len(r5msgSigmaShareEncBzs))
-	//for i := range r5msgSigmaShareEnc {
+	// r5msgSigmaShareEncBzs := m.GetLTr5MsgSigmaShareEnc()
+	// r5msgSigmaShareEnc := make([]*big.Int, len(r5msgSigmaShareEncBzs))
+	// for i := range r5msgSigmaShareEnc {
 	//	Bzs := r5msgSigmaShareEncBzs[i]
 	//	if Bzs != nil {
 	//		r5msgSigmaShareEnc[i] = new(big.Int).SetBytes(Bzs)
 	//	}
-	//}
+	// }
 	r5msgProofDecBzs := m.GetLTr5MsgProofDec()
 	r5msgProofDec := make([]*zkpdec.ProofDec, len(r5msgProofDecBzs)/zkpdec.ProofDecBytesParts)
 	for i := range r5msgProofDec {
@@ -526,14 +503,6 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 			}
 		}
 	}
-	//r5msgQ3EncBzs := m.GetLTr5MsgQ3Enc()
-	//r5msgQ3Enc := make([]*big.Int, len(r5msgQ3EncBzs))
-	//for i := range r5msgQ3Enc {
-	//	Bzs := r5msgQ3EncBzs[i]
-	//	if Bzs != nil {
-	//		r5msgQ3Enc[i] = new(big.Int).SetBytes(Bzs)
-	//	}
-	//}
 
 	LocalTemp := &localTempData{
 		w:                  w,
@@ -554,7 +523,6 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 		R5msgProofDec:     r5msgProofDec,
 		R5msgDjis:         r5msgDjis,
 		R5msgFjis:         r5msgFjis,
-		//r5msgQ3Enc: r5msgQ3Enc,
 	}
 
 	return LocalTemp, nil
