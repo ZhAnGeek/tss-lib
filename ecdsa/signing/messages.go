@@ -32,7 +32,7 @@ var (
 func NewSignRound1Message(
 	from *tss.PartyID,
 	SigmaShare *big.Int,
-	Rx *big.Int,
+	Rx []byte,
 	Ry *big.Int,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
@@ -41,7 +41,7 @@ func NewSignRound1Message(
 	}
 	content := &SignRound1Message{
 		SigmaShare: SigmaShare.Bytes(),
-		Rx:         Rx.Bytes(),
+		Rx:         Rx,
 		Ry:         Ry.Bytes(),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
@@ -59,8 +59,8 @@ func (m *SignRound1Message) UnmarshalSigmaShare() *big.Int {
 	return new(big.Int).SetBytes(m.GetSigmaShare())
 }
 
-func (m *SignRound1Message) UnmarshalRx() *big.Int {
-	return new(big.Int).SetBytes(m.GetRx())
+func (m *SignRound1Message) UnmarshalRx() []byte {
+	return m.GetRx()
 }
 
 func (m *SignRound1Message) UnmarshalRy() *big.Int {
