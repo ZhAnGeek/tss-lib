@@ -136,7 +136,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// check that the message's "from index" will fit into the array
 	var maxFromIdx int
 	switch msg.Content().(type) {
-	case *DGRound2Message1, *DGRound2Message2, *DGRound4Message2:
+	case *DGRound2Message1, *DGRound2Message2, *DGRound4Message1, *DGRound4Message2:
 		maxFromIdx = len(p.params.NewParties().IDs()) - 1
 	default:
 		maxFromIdx = len(p.params.OldParties().IDs()) - 1
