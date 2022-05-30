@@ -7,10 +7,14 @@
 package ckd_test
 
 import (
+	"math/big"
 	"testing"
 
+	"github.com/binance-chain/tss-lib/crypto"
 	. "github.com/binance-chain/tss-lib/crypto/ckd"
+	"github.com/binance-chain/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPublicDerivation(t *testing.T) {
@@ -129,4 +133,19 @@ tests:
 			continue
 		}
 	}
+}
+
+func TestEdwards(t *testing.T) {
+	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+	pkExt, err := NewExtendedKeyFromString(testVec1MasterPubKey, tss.S256())
+	assert.NoError(t, err)
+	ec := tss.Edwards()
+	pkNew, err := crypto.NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
+	pkNew = pkNew.ScalarMult(big.NewInt(667))
+	pkExt.PublicKey = *pkNew
+
+	path := []uint32{0, 1, 2, 2}
+	delta, _, err := DeriveChildKeyFromHierarchy(path, pkExt, ec.Params().N, ec)
+	assert.NoError(t, err)
+	assert.False(t, delta.Uint64() == 0, "delta is not zero")
 }
