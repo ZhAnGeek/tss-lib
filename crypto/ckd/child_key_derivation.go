@@ -4,7 +4,6 @@ package ckd
 
 import (
 	"bytes"
-	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -16,13 +15,14 @@ import (
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
+	"github.com/binance-chain/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 )
 
 type ExtendedKey struct {
-	ecdsa.PublicKey
+	PublicKey  crypto.ECPoint
 	Depth      uint8
 	ChildIndex uint32
 	ChainCode  []byte // 32 bytes
@@ -34,6 +34,9 @@ type ExtendedKey struct {
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki .
 // The functions below do not implement the full BIP-32 specification. As mentioned in the Jira ticket above,
 // we only use non-hardened derived keys.
+
+// For more information about child key derivation on Ed25519, see
+// https://ieeexplore.ieee.org/document/7966967
 
 const (
 
@@ -70,7 +73,7 @@ func (k *ExtendedKey) String() string {
 	serializedBytes = append(serializedBytes, k.ParentFP...)
 	serializedBytes = append(serializedBytes, childNumBytes[:]...)
 	serializedBytes = append(serializedBytes, k.ChainCode...)
-	pubKeyBytes := serializeCompressed(k.PublicKey.X, k.PublicKey.Y)
+	pubKeyBytes := serializeCompressed(k.PublicKey.X(), k.PublicKey.Y())
 	serializedBytes = append(serializedBytes, pubKeyBytes...)
 
 	checkSum := doubleHashB(serializedBytes)[:4]
@@ -103,30 +106,32 @@ func NewExtendedKeyFromString(key string, curve elliptic.Curve) (*ExtendedKey, e
 	chainCode := payload[13:45]
 	keyData := payload[45:78]
 
-	var pubKey ecdsa.PublicKey
-
+	var pubKeyPoint crypto.ECPoint
 	if c, ok := curve.(*btcec.KoblitzCurve); ok {
-		// Ensure the public key parses correctly and is actually on the
-		// secp256k1 curve.
+		// Ensure the public key parses correctly and is actually on the secp256k1 curve.
 		pk, err := btcec.ParsePubKey(keyData, c)
 		if err != nil {
 			return nil, err
 		}
-		pubKey = ecdsa.PublicKey(*pk)
+		pubKey, err := crypto.NewECPoint(curve, pk.X, pk.Y)
+		if err != nil {
+			return nil, err
+		}
+		pubKeyPoint = *pubKey
 	} else {
 		px, py := elliptic.Unmarshal(curve, keyData)
 		if px == nil {
 			return nil, errors.New("unmarshal public key error")
 		}
-		pubKey = ecdsa.PublicKey{
-			Curve: curve,
-			X:     px,
-			Y:     py,
+		pubKey, err := crypto.NewECPoint(curve, px, py)
+		if err != nil {
+			return nil, errors.New("unmarshal public key error")
 		}
+		pubKeyPoint = *pubKey
 	}
 
 	return &ExtendedKey{
-		PublicKey:  pubKey,
+		PublicKey:  pubKeyPoint,
 		Depth:      depth,
 		ChildIndex: childNum,
 		ChainCode:  chainCode,
@@ -209,17 +214,19 @@ func DeriveChildKey(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.I
 		return nil, nil, errors.New("cannot derive key beyond max depth")
 	}
 
-	cryptoPk, err := crypto.NewECPoint(curve, pk.X, pk.Y)
-	if err != nil {
-		common.Logger.Error("error getting pubkey from extendedkey")
-		return nil, nil, err
+	cname, ok := tss.GetCurveName(curve)
+	if !ok {
+		return nil, nil, errors.New("get curve name failed")
 	}
 
-	pkPublicKeyBytes := serializeCompressed(pk.X, pk.Y)
+	pkPublicKeyBytes := serializeCompressed(pk.PublicKey.X(), pk.PublicKey.Y())
 
 	data := make([]byte, 37)
 	copy(data, pkPublicKeyBytes)
 	binary.BigEndian.PutUint32(data[33:], index)
+	if cname == tss.Ed25519 {
+		data = append([]byte{2}, data...)
+	}
 
 	// I = HMAC-SHA512(Key = chainCode, Data=data)
 	hmac512 := hmac.New(sha512.New, pk.ChainCode)
@@ -227,29 +234,44 @@ func DeriveChildKey(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.I
 	ilr := hmac512.Sum(nil)
 	il := ilr[:32]
 	childChainCode := ilr[32:]
+	if cname == tss.Ed25519 {
+		data[0] = byte(3)
+		hmac512 := hmac.New(sha512.New, pk.ChainCode)
+		hmac512.Write(data)
+		ci := hmac512.Sum(nil)
+		childChainCode = ci[32:]
+	}
 	ilNum := new(big.Int).SetBytes(il)
+	ilNum = new(big.Int).Mod(ilNum, curve.Params().N)
 
 	if ilNum.Cmp(curve.Params().N) >= 0 || ilNum.Sign() == 0 {
-		// falling outside of the valid range for curve private keys
-		err = errors.New("invalid derived key")
+		// falling outside the valid range for curve private keys
+		err := errors.New("invalid derived key")
 		common.Logger.Error("error deriving child key")
 		return nil, nil, err
 	}
 
 	deltaG := crypto.ScalarBaseMult(curve, ilNum)
 	if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 {
-		err = errors.New("invalid child")
+		err := errors.New("invalid child")
 		common.Logger.Error("error invalid child")
 		return nil, nil, err
 	}
-	childCryptoPk, err := cryptoPk.Add(deltaG)
+	if cname == tss.Ed25519 {
+		deltaG = deltaG.EightInvEight()
+	}
+
+	childCryptoPk, err := pk.PublicKey.Add(deltaG)
 	if err != nil {
 		common.Logger.Error("error adding delta G to parent key")
 		return nil, nil, err
 	}
+	if cname == tss.Ed25519 {
+		childCryptoPk = childCryptoPk.EightInvEight()
+	}
 
 	childPk := &ExtendedKey{
-		PublicKey:  *childCryptoPk.ToECDSAPubKey(),
+		PublicKey:  *childCryptoPk,
 		Depth:      pk.Depth + 1,
 		ChildIndex: index,
 		ChainCode:  childChainCode,
