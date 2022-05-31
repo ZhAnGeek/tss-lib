@@ -4,6 +4,7 @@ package ckd
 
 import (
 	"bytes"
+	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"
@@ -11,6 +12,7 @@ import (
 	"crypto/sha512"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"hash"
 	"math/big"
 
@@ -19,6 +21,8 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
+	"golang.org/x/crypto/ed25519"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -282,6 +286,148 @@ func DeriveChildKey(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.I
 	return ilNum, childPk, nil
 }
 
+func DeriveChildPubKeyOfEddsa(index uint32, pk *ExtendedKey) (*big.Int, *ExtendedKey, error) {
+	if index >= HardenedKeyStart {
+		return nil, nil, errors.New("the index must be non-hardened")
+	}
+	if pk.Depth == maxDepth {
+		return nil, nil, errors.New("cannot derive key beyond max depth")
+	}
+	curve := edwards.Edwards()
+
+	cryptoPk, err := crypto.NewECPoint(curve, pk.PublicKey.X(), pk.PublicKey.Y())
+	if err != nil {
+		common.Logger.Error("error getting pubkey from extendedkey")
+		return nil, nil, err
+	}
+
+	pubKeyBytes := edwards.PublicKey{
+		Curve: edwards.Edwards(),
+		X:     pk.PublicKey.X(),
+		Y:     pk.PublicKey.Y(),
+	}.Serialize()
+
+	data := make([]byte, 37)
+	data[0] = 0x2
+	copy(data[1:33], pubKeyBytes)
+	binary.LittleEndian.PutUint32(data[33:], index)
+
+	// I = HMAC-SHA512(Key = chainCode, Data=data)
+	hmac512 := hmac.New(sha512.New, pk.ChainCode)
+	hmac512.Write(data)
+	ilr := hmac512.Sum(nil)
+
+	il28 := new(big.Int).SetBytes(reverseBytes(ilr[:28])) // little endian to big endian
+	ilNum := new(big.Int).Mul(il28, big.NewInt(8))
+
+	modInt := common.ModInt(curve.Params().N)
+	ilNum = modInt.Add(big.NewInt(0), ilNum)
+
+	deltaG := crypto.ScalarBaseMult(curve, ilNum)
+	if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 {
+		err = errors.New("invalid child")
+		common.Logger.Error("error invalid child")
+		return nil, nil, err
+	}
+	childCryptoPk, err := cryptoPk.Add(deltaG)
+	if err != nil {
+		common.Logger.Error("error adding delta G to parent key")
+		return nil, nil, err
+	}
+
+	// derive child chain code
+	data[0] = 0x3
+	hmac512 = hmac.New(sha512.New, pk.ChainCode)
+	hmac512.Write(data)
+	ilr = hmac512.Sum(nil)
+	childChainCode := ilr[32:]
+
+	childPk := &ExtendedKey{
+		PublicKey:  *childCryptoPk,
+		Depth:      pk.Depth + 1,
+		ChildIndex: index,
+		ChainCode:  childChainCode,
+		Version:    pk.Version,
+	}
+	return ilNum, childPk, nil
+}
+
+func DeriveChildPrivateKeyOfEddsa(index uint32, chainCode []byte, privKey *edwards.PrivateKey) ([]byte, *ecdsa.PublicKey, []byte, error) {
+	if index >= HardenedKeyStart {
+		return nil, nil, nil, errors.New("the index must be non-hardened")
+	}
+	curve := edwards.Edwards()
+
+	// extended private key of 32+32 bytes
+	kl := privKey.Serialize()[:]
+	kr := privKey.PubKey().Serialize()[:]
+
+	// serialize as little-endian 32-byte string
+	pkPublicKeyBytes := make([]byte, 1, PubKeyBytesLenCompressed)
+	pkPublicKeyBytes[0] = 0x2
+	pubKeyBytes := edwards.PublicKey{
+		Curve: curve,
+		X:     privKey.PubKey().X,
+		Y:     privKey.PubKey().Y,
+	}.Serialize()
+	pkPublicKeyBytes = paddedAppend(pkPublicKeyBytes, 32, pubKeyBytes)
+
+	data := make([]byte, 37)
+	copy(data, pkPublicKeyBytes)
+	binary.LittleEndian.PutUint32(data[33:], index)
+
+	// I = HMAC-SHA512(Key = chainCode, Data=data)
+	hmac512 := hmac.New(sha512.New, chainCode)
+	hmac512.Write(data)
+	ilr := hmac512.Sum(nil)
+
+	// left
+	childKl := add28Mul8(kl, ilr[:32])
+	delta := new(big.Int).SetBytes(reverseBytes(childKl[:32]))
+
+	modInt := common.ModInt(curve.Params().N)
+	delta = modInt.Add(big.NewInt(0), delta)
+
+	cPrivKey, cPubKey, err := edwards.PrivKeyFromScalar(delta.Bytes())
+	if err != nil {
+		fmt.Printf("err:%+v", err)
+		return nil, nil, nil, err
+	}
+	fmt.Printf("cPrivKey:     %x\n", cPrivKey.Serialize())
+	fmt.Printf("cPubKey:      %x\n", cPubKey.Serialize())
+	sig, _ := cPrivKey.Sign([]byte("message"))
+	verified := ed25519.Verify(cPubKey.Serialize(), []byte("message"), sig.Serialize())
+	fmt.Printf("verified:%+v\n", verified)
+
+	// right
+	childKr := add256Bits(kr, ilr[32:])
+
+	// derive child chain code
+	data[0] = 0x3
+	hmac512 = hmac.New(sha512.New, chainCode)
+	hmac512.Write(data)
+	ilr = hmac512.Sum(nil)
+	childChainCode := ilr[32:]
+
+	// child public key
+	deltaG := crypto.ScalarBaseMult(curve, delta)
+
+	extPrivKey := make([]byte, 64)
+	copy(extPrivKey[:32], childKl[:])
+	copy(extPrivKey[32:], childKr[:])
+	return extPrivKey, deltaG.ToECDSAPubKey(), childChainCode, nil
+}
+
+func AddPrivKeyScalar(privKeyScalar, delta *big.Int, curve elliptic.Curve) *big.Int {
+	if delta == nil {
+		return privKeyScalar
+	}
+	newPrivKeyScalar := big.NewInt(0).Add(privKeyScalar, delta)
+	newPrivKeyScalar = new(big.Int).Mod(newPrivKeyScalar, curve.Params().N)
+
+	return newPrivKeyScalar
+}
+
 func GenerateSeed(length uint8) ([]byte, error) {
 	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
 	if length < MinSeedBytes || length > MaxSeedBytes {
@@ -295,4 +441,47 @@ func GenerateSeed(length uint8) ([]byte, error) {
 	}
 
 	return buf, nil
+}
+
+func add28Mul8(kl, zl []byte) *[32]byte {
+	var carry uint16 = 0
+	var out [32]byte
+
+	for i := 0; i < 28; i++ {
+		r := uint16(kl[i]) + uint16(zl[i])<<3 + carry
+		out[i] = byte(r & 0xff)
+		carry = r >> 8
+	}
+
+	for i := 28; i < 32; i++ {
+		r := uint16(kl[i]) + carry
+		out[i] = byte(r & 0xff)
+		carry = r >> 8
+	}
+
+	return &out
+}
+
+// reverseBytes switch between big endian & little endian
+func reverseBytes(input []byte) []byte {
+	out := make([]byte, len(input))
+	l := len(input)
+	for i := range input {
+		out[l-i-1] = input[i]
+	}
+	return out
+}
+
+// add256Bits add bytes of little endian
+func add256Bits(kr, zr []byte) *[32]byte {
+	var carry uint16 = 0
+	var out [32]byte
+
+	for i := 0; i < 32; i++ {
+		r := uint16(kr[i]) + uint16(zr[i]) + carry
+		out[i] = byte(r)
+		carry = r >> 8
+	}
+
+	return &out
 }
