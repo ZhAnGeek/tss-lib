@@ -12,9 +12,12 @@ import (
 
 	"github.com/binance-chain/tss-lib/crypto"
 	. "github.com/binance-chain/tss-lib/crypto/ckd"
+	"github.com/binance-chain/tss-lib/eddsa/signing"
 	"github.com/binance-chain/tss-lib/tss"
 	"github.com/btcsuite/btcd/btcec"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
+	"golang.org/x/crypto/ed25519"
 )
 
 func TestPublicDerivation(t *testing.T) {
@@ -137,15 +140,30 @@ tests:
 
 func TestEdwards(t *testing.T) {
 	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+	privKeyScaler := big.NewInt(667)
+
 	pkExt, err := NewExtendedKeyFromString(testVec1MasterPubKey, tss.S256())
 	assert.NoError(t, err)
+
 	ec := tss.Edwards()
 	pkNew, err := crypto.NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
-	pkNew = pkNew.ScalarMult(big.NewInt(667))
+	pkNew = pkNew.ScalarMult(privKeyScaler)
 	pkExt.PublicKey = *pkNew
 
 	path := []uint32{0, 1, 2, 2}
-	delta, _, err := DeriveChildKeyFromHierarchy(path, pkExt, ec.Params().N, ec)
+	delta, childExtKey, err := DeriveChildKeyFromHierarchy(path, pkExt, ec.Params().N, ec)
 	assert.NoError(t, err)
 	assert.False(t, delta.Uint64() == 0, "delta is not zero")
+	assert.True(t, childExtKey.PublicKey.IsOnCurve())
+
+	childExtPubKey := edwards.NewPublicKey(childExtKey.PublicKey.X(), childExtKey.PublicKey.Y())
+
+	// checking child key: parent private key + delta -> child private key
+	childPrivKeyScaler := new(big.Int).Add(privKeyScaler, delta)
+	childPrivKey, childPubKey, err := edwards.PrivKeyFromScalar(signing.CopyBytes(childPrivKeyScaler.Bytes())[:])
+	assert.Equal(t, childPubKey.Serialize(), childExtPubKey.Serialize())
+
+	sig, _ := childPrivKey.Sign([]byte("hashedData"))
+	verified := ed25519.Verify(childExtPubKey.Serialize(), []byte("hashedData"), sig.Serialize())
+	assert.True(t, verified)
 }
