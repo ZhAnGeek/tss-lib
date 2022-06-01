@@ -36,7 +36,7 @@ func bigIntToEncodedBytes(a *big.Int) *[32]byte {
 	}
 
 	// Caveat: a can be longer than 32 bytes.
-	s = copyBytes(a.Bytes())
+	s = CopyBytes(a.Bytes())
 
 	// Reverse the byte string --> little endian after
 	// encoding.
@@ -45,7 +45,7 @@ func bigIntToEncodedBytes(a *big.Int) *[32]byte {
 	return s
 }
 
-func copyBytes(aB []byte) *[32]byte {
+func CopyBytes(aB []byte) *[32]byte {
 	if aB == nil {
 		return nil
 	}
