@@ -125,7 +125,7 @@ tests:
 
 		for _, childNum := range test.path {
 			var err error
-			_, extKey, err = DeriveChildKey(childNum, extKey, btcec.S256())
+			_, extKey, err = DeriveChildKeyOfEcdsa(childNum, extKey, btcec.S256())
 			if err != nil {
 				t.Errorf("err: %v", err)
 				continue tests
@@ -176,9 +176,10 @@ func Test_DeriveChildPubKeyOfEddsa(t *testing.T) {
 	// ** Note **
 	// the lowest 3 bits of the first byte of seed should be cleared
 	// the highest bit of the last byte of seed should be cleared
-	pubBytes, _ := hex.DecodeString("5e6f105657c7e35e2110fbfd9c2c2a48fb5ea3ff8e0d7672323754960400c4ef")
-	masterPrivKey, masterPubKey := edwards.PrivKeyFromBytes(append([]byte("helloworldhelloworldhelloworldab"), pubBytes...))
 
+	masterPrivKeyScalar := big.NewInt(3214213216876)
+	masterPrivKey, masterPubKey, err := edwards.PrivKeyFromScalar(signing.CopyBytes(masterPrivKeyScalar.Bytes())[:])
+	assert.NoError(t, err)
 	message := "secret message"
 	sig, _ := masterPrivKey.Sign([]byte(message))
 	verified := ed25519.Verify(masterPubKey.Serialize(), []byte(message), sig.Serialize())
@@ -204,7 +205,7 @@ func Test_DeriveChildPubKeyOfEddsa(t *testing.T) {
 	for _, childNum := range []uint32{0, 4, 51, 37} {
 		var err error
 		deltaTmp := delta
-		delta, extKey, err = DeriveChildPubKeyOfEddsa(childNum, k)
+		delta, extKey, err = DeriveChildKeyOfEddsa(childNum, k, edwards.Edwards())
 		if err != nil {
 			t.Errorf("err: %v", err)
 			continue
@@ -239,7 +240,8 @@ func EddsaAddPrivKeyScalar(privKey []byte, delta *big.Int) ([]byte, error) {
 	if delta == nil {
 		return privKey, nil
 	}
-	newPrivKey := big.NewInt(0).Add(big.NewInt(0).SetBytes(ReverseBytes(privKey)), delta)
+
+	newPrivKey := big.NewInt(0).Add(big.NewInt(0).SetBytes(privKey), delta)
 	newPrivKey = new(big.Int).Mod(newPrivKey, edwards.Edwards().N)
 
 	return newPrivKey.Bytes(), nil
