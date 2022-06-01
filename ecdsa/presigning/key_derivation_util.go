@@ -20,7 +20,7 @@ func UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta *big.Int, keys []keygen.Lo
 	gDelta := crypto.ScalarBaseMult(ec, keyDerivationDelta)
 	for k := range keys {
 		keys[k].ECDSAPub, err = crypto.NewECPoint(ec, extendedChildPk.X, extendedChildPk.Y)
-		//keys[k].ECDSAPub, err = keys[k].ECDSAPub.Add(gDelta)
+		// keys[k].ECDSAPub, err = keys[k].ECDSAPub.Add(gDelta)
 		if err != nil {
 			common.Logger.Errorf("error creating new extended child public key")
 			return err
@@ -45,7 +45,7 @@ func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, e
 	for k := range keys {
 		keys[k].Xi = modN.Add(keys[k].Xi, keyDerivationDelta)
 		keys[k].ECDSAPub, err = crypto.NewECPoint(ec, extendedChildPk.X, extendedChildPk.Y)
-		//keys[k].ECDSAPub, err = keys[k].ECDSAPub.Add(gDelta)
+		// keys[k].ECDSAPub, err = keys[k].ECDSAPub.Add(gDelta)
 		if err != nil {
 			common.Logger.Errorf("error creating new extended child public key")
 			return err
@@ -65,15 +65,14 @@ func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, e
 
 func DerivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []uint32, ec elliptic.Curve) (*big.Int, *ckd.ExtendedKey, error) {
 	// build ecdsa key pair
-	pk := ecdsa.PublicKey{
-		Curve: ec,
-		X:     masterPub.X(),
-		Y:     masterPub.Y(),
+	pk, err := crypto.NewECPoint(ec, masterPub.X(), masterPub.Y())
+	if err != nil {
+		return nil, nil, err
 	}
 
 	net := &chaincfg.MainNetParams
 	extendedParentPk := &ckd.ExtendedKey{
-		PublicKey:  pk,
+		PublicKey:  *pk,
 		Depth:      0,
 		ChildIndex: 0,
 		ChainCode:  chainCode[:],
