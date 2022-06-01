@@ -7,13 +7,13 @@
 package ckd_test
 
 import (
-	"crypto/ecdsa"
 	"encoding/hex"
 	"fmt"
 	"log"
 	"math/big"
 	"testing"
 
+	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	. "github.com/binance-chain/tss-lib/crypto/ckd"
 	"github.com/binance-chain/tss-lib/eddsa/signing"
@@ -172,77 +172,75 @@ func TestEdwards(t *testing.T) {
 	assert.True(t, verified)
 }
 
-func TestEdwardsDeriveChildPrivateKey(t *testing.T) {
-
+func Test_DeriveChildPubKeyOfEddsa(t *testing.T) {
+	// ** Note **
+	// the lowest 3 bits of the first byte of seed should be cleared
+	// the highest bit of the last byte of seed should be cleared
 	pubBytes, _ := hex.DecodeString("5e6f105657c7e35e2110fbfd9c2c2a48fb5ea3ff8e0d7672323754960400c4ef")
-	privKey, pubKey := edwards.PrivKeyFromBytes(append([]byte("helloworldhelloworldhelloworldab"), pubBytes...))
+	masterPrivKey, masterPubKey := edwards.PrivKeyFromBytes(append([]byte("helloworldhelloworldhelloworldab"), pubBytes...))
 
 	message := "secret message"
-	sig, _ := privKey.Sign([]byte(message))
-	verified := ed25519.Verify(pubKey.Serialize(), []byte(message), sig.Serialize())
+	sig, _ := masterPrivKey.Sign([]byte(message))
+	verified := ed25519.Verify(masterPubKey.Serialize(), []byte(message), sig.Serialize())
 	assert.True(t, verified)
 
-	assert.NotNil(t, privKey)
-	assert.NotNil(t, pubKey)
-	fmt.Printf("privKey(%d bytes): %s\n", len(privKey.Serialize()), hex.EncodeToString(privKey.Serialize()))
-	fmt.Printf("pubKey(%d bytes):  %s\n", len(pubKey.Serialize()), hex.EncodeToString(pubKey.Serialize()))
-	// message := "secret message"
+	// refer to ** note **
+	// privKey.Serialize()[0]  -> xxxx_x000
+	// privKey.Serialize()[31] -> 0xxx_xxxx
+	fmt.Printf("privKey(%d bytes big endian):    %s\n", len(masterPrivKey.Serialize()), hex.EncodeToString(masterPrivKey.Serialize()))
+	fmt.Printf("pubKey(%d bytes little endian):  %s\n", len(masterPubKey.Serialize()), hex.EncodeToString(masterPubKey.Serialize()))
 
 	hx, _ := hex.DecodeString("025939244ddb392ecf98c16439e47ba2de2e3cc7642b628f99dd2998f5c596cf")
-	pkEcPoint, err := crypto.NewECPoint(edwards.Edwards(), pubKey.X, pubKey.Y)
+	pkEcPoint, err := crypto.NewECPoint(edwards.Edwards(), masterPubKey.X, masterPubKey.Y)
 	assert.NoError(t, err)
 	extKey := &ExtendedKey{
 		PublicKey: *pkEcPoint,
 		ChainCode: hx,
 	}
 
-	var delta *big.Int
-	var childPrivKey []byte
-	var extPubKey *ExtendedKey
-	var childPubKey *ecdsa.PublicKey
-	for _, childNum := range []uint32{0} {
+	delta := big.NewInt(0)
+	mod_ := common.ModInt(edwards.Edwards().N)
+	var k = extKey
+	for _, childNum := range []uint32{0, 4, 51, 37} {
 		var err error
-		delta, extPubKey, err = DeriveChildPubKeyOfEddsa(childNum, extKey)
+		deltaTmp := delta
+		delta, extKey, err = DeriveChildPubKeyOfEddsa(childNum, k)
 		if err != nil {
 			t.Errorf("err: %v", err)
 			continue
 		}
-		childPrivKey, childPubKey, _, err = DeriveChildPrivateKeyOfEddsa(childNum, extKey.ChainCode, privKey)
-		if err != nil {
-			t.Errorf("err: %v", err)
-			continue
-		}
+		k = extKey
+		delta = mod_.Add(deltaTmp, delta)
 	}
 
 	log.Printf("delta:%s\n", delta.String())
-	log.Printf("extKeyPriv: %x %x\n", childPrivKey[:32], childPrivKey[32:])
 
 	childPubKeyFromPubBytes := edwards.PublicKey{
 		Curve: edwards.Edwards(),
-		X:     extPubKey.PublicKey.X(),
-		Y:     extPubKey.PublicKey.Y(),
-	}.Serialize()
-
-	childPubKeyFromPrivBytes := edwards.PublicKey{
-		Curve: edwards.Edwards(),
-		X:     childPubKey.X,
-		Y:     childPubKey.Y,
+		X:     extKey.PublicKey.X(),
+		Y:     extKey.PublicKey.Y(),
 	}.Serialize()
 
 	log.Printf("childPubKeyFromPubBytes:   %x\n", childPubKeyFromPubBytes)
-	log.Printf("childPubKeyFromPrivBytes:  %x\n", childPubKeyFromPrivBytes)
 
-	childPrivKeyDelta := AddPrivKeyScalar(privKey.GetD(), delta, edwards.Edwards())
-	fmt.Printf("deltaChildPrivKey: %x\n", childPrivKeyDelta)
-
-	childPrivKeyFromDelta, _, err := edwards.PrivKeyFromScalar(childPrivKeyDelta.Bytes())
+	// #1 child private key = parent private key + delta
+	childPrivKeyScalar, _ := EddsaAddPrivKeyScalar(masterPrivKey.Serialize(), delta)
+	childPrivKeyFromDelta, _, err := edwards.PrivKeyFromScalar(signing.CopyBytes(childPrivKeyScalar)[:32])
 	assert.NoError(t, err)
-	// log.Printf("childPrivKey:   %x\n", childPrivKey.Serialize())
-	// log.Printf("childPubKey:    %x\n", childPubKey.Serialize())
+	log.Printf("childPrivKeyFromDelta:     %x\n", childPrivKeyFromDelta.Serialize())
 
-	sig, _ = childPrivKeyFromDelta.Sign([]byte(message))
-	verified = ed25519.Verify(childPubKeyFromPrivBytes, []byte(message), sig.Serialize())
-
+	hashed := []byte("hashedData")
+	sig, _ = childPrivKeyFromDelta.Sign(hashed)
+	verified = ed25519.Verify(childPubKeyFromPubBytes, hashed, sig.Serialize())
 	assert.True(t, verified)
+}
 
+func EddsaAddPrivKeyScalar(privKey []byte, delta *big.Int) ([]byte, error) {
+	if delta == nil {
+		return privKey, nil
+	}
+	newPrivKey := big.NewInt(0).Add(big.NewInt(0).SetBytes(ReverseBytes(privKey)), delta)
+	newPrivKey = new(big.Int).Mod(newPrivKey, edwards.Edwards().N)
+
+	return newPrivKey.Bytes(), nil
 }
