@@ -125,10 +125,11 @@ func (round *base) getSSID() ([]byte, error) {
 	if err != nil {
 		return nil, round.WrapError(errors.New("read BigXj failed"), round.PartyID())
 	}
-	ssidList = append(ssidList, BigXjList...)         // BigXj
-	ssidList = append(ssidList, round.key.NTildej...) // NTilde
-	ssidList = append(ssidList, round.key.H1j...)     // h1
-	ssidList = append(ssidList, round.key.H2j...)     // h2
+	ssidList = append(ssidList, BigXjList...)                    // BigXj
+	ssidList = append(ssidList, round.key.NTildej...)            // NTilde
+	ssidList = append(ssidList, round.key.H1j...)                // h1
+	ssidList = append(ssidList, round.key.H2j...)                // h2
+	ssidList = append(ssidList, big.NewInt(int64(round.number))) // round number
 	ssid := common.SHA512_256i(ssidList...).Bytes()
 
 	return ssid, nil

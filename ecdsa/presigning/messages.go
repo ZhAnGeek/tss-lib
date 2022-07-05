@@ -224,14 +224,14 @@ func NewPreSignRound1Message(
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
-		To:          []*tss.PartyID{to},
-		IsBroadcast: false,
+		IsBroadcast: true,
 	}
 	pfBz := EncProof.Bytes()
 	content := &PreSignRound1Message{
-		K:        K.Bytes(),
-		G:        G.Bytes(),
-		EncProof: pfBz[:],
+		K:           K.Bytes(),
+		G:           G.Bytes(),
+		EncProof:    pfBz[:],
+		BelongIndex: int32(to.Index),
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -391,8 +391,7 @@ func NewIdentificationRound1Message(
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
-		To:          []*tss.PartyID{to},
-		IsBroadcast: false,
+		IsBroadcast: true,
 	}
 	MulProofBzs := MulProof.Bytes()
 	DjisBzs := make([][]byte, len(Djis))

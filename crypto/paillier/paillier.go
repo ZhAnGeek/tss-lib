@@ -32,7 +32,9 @@ const (
 
 type (
 	PublicKey struct {
-		N *big.Int
+		N  *big.Int
+		NS *big.Int
+		Ga *big.Int
 	}
 
 	PrivateKey struct {
@@ -182,7 +184,10 @@ func (publicKey *PublicKey) HomoAdd(c1, c2 *big.Int) (*big.Int, error) {
 }
 
 func (publicKey *PublicKey) NSquare() *big.Int {
-	return new(big.Int).Mul(publicKey.N, publicKey.N)
+	if publicKey.NS == nil {
+		publicKey.NS = new(big.Int).Mul(publicKey.N, publicKey.N)
+	}
+	return publicKey.NS
 }
 
 // AsInts returns the PublicKey serialised to a slice of *big.Int for hashing
@@ -192,7 +197,10 @@ func (publicKey *PublicKey) AsInts() []*big.Int {
 
 // Gamma returns N+1
 func (publicKey *PublicKey) Gamma() *big.Int {
-	return new(big.Int).Add(publicKey.N, one)
+	if publicKey.Ga == nil {
+		publicKey.Ga = new(big.Int).Add(publicKey.N, one)
+	}
+	return publicKey.Ga
 }
 
 // ----- //
@@ -232,6 +240,10 @@ func (privateKey *PrivateKey) GetRandomness(c *big.Int) (r *big.Int, err error) 
 
 	modPhiN := common.ModInt(privateKey.PhiN)
 	niv := modPhiN.ModInverse(privateKey.N)
+	err = common.CheckBigIntNotNil(niv)
+	if err != nil {
+		return nil, err
+	}
 
 	modN := common.ModInt(privateKey.N)
 	r = modN.Exp(c0, niv)

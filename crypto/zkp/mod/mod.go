@@ -34,10 +34,7 @@ type (
 
 // isQuadraticResidue checks Euler criterion
 func isQuadraticResidue(X, N *big.Int) bool {
-	modN := common.ModInt(N)
-	XEXP := modN.Exp(X, new(big.Int).Rsh(N, 1))
-	ok := XEXP.Cmp(big.NewInt(1)) == 0
-	return ok
+	return big.Jacobi(X, N) == 1
 }
 
 func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {

@@ -103,6 +103,16 @@ func (pf *ProofDec) Verify(Session []byte, ec elliptic.Curve, pk *paillier.Publi
 	q := ec.Params().N
 	// q3 := new(big.Int).Mul(q, q)
 	// q3 = new(big.Int).Mul(q, q3)
+	// check validity and invertible of Modulo
+	err := common.CheckModuloN(NCap, pf.S, pf.T)
+	if err != nil {
+		return false
+	}
+
+	err = common.CheckInvertibleModuloN(pk.NSquare(), C, pf.A, pf.W)
+	if err != nil {
+		return false
+	}
 
 	var e *big.Int
 	{

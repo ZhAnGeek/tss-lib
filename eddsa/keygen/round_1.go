@@ -32,6 +32,7 @@ func (round *round1) Start() *tss.Error {
 
 	Pi := round.PartyID()
 	i := Pi.Index
+	round.ok[i] = true
 
 	ssid, err := round.getSSID()
 	if err != nil {

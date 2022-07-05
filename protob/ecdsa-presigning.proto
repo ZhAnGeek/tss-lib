@@ -15,6 +15,7 @@ message PreSignRound1Message {
     bytes K = 1;
     bytes G = 2;
     repeated bytes EncProof = 3;
+    int32 BelongIndex = 4;
 }
 
 /*

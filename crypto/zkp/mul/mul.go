@@ -90,16 +90,18 @@ func (pf *ProofMul) Verify(Session []byte, ec elliptic.Curve, pk *paillier.Publi
 
 	q := ec.Params().N
 
-	if pf.A.Sign() == -1 || pf.A.Cmp(pk.NSquare()) != -1 {
+	if pf.A.Sign() == -1 || !common.IsInInterval(pf.A, pk.NSquare()) {
 		return false
 	}
-	if pf.B.Sign() == -1 || pf.B.Cmp(pk.NSquare()) != -1 {
+	if pf.B.Sign() == -1 || !common.IsInInterval(pf.B, pk.NSquare()) {
 		return false
 	}
-	if pf.U.Sign() == -1 || pf.U.Cmp(pk.N) != -1 {
+
+	if pf.U.Sign() == -1 || !common.IsInInterval(pf.U, pk.N) {
 		return false
 	}
-	if pf.V.Sign() == -1 || pf.V.Cmp(pk.N) != -1 {
+
+	if pf.V.Sign() == -1 || !common.IsInInterval(pf.V, pk.N) {
 		return false
 	}
 	if pf.Z.Sign() != 1 {

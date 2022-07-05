@@ -78,10 +78,11 @@ func (round *identification1) Start() *tss.Error {
 			return round.WrapError(err, Pi)
 		}
 		FinvEnc := modN2.ModInverse(round.temp.ChiMtAFs[k])
-		BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
+		err = common.CheckBigIntNotNil(FinvEnc)
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
+		BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
 		ChiShareEnc, err = round.key.PaillierSK.HomoAdd(ChiShareEnc, BetaEnc)
 		if err != nil {
 			return round.WrapError(err, Pi)
@@ -140,7 +141,7 @@ func (round *identification1) Update() (bool, *tss.Error) {
 
 func (round *identification1) CanAccept(msg tss.ParsedMessage) bool {
 	if _, ok := msg.Content().(*IdentificationRound1Message); ok {
-		return !msg.IsBroadcast()
+		return msg.IsBroadcast()
 	}
 	return false
 }

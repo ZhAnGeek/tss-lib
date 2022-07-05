@@ -9,8 +9,8 @@ package keygen
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -25,7 +25,7 @@ const (
 	// To change these parameters, you must first delete the text fixture files in test/_fixtures/ and then run the keygen test alone.
 	// Then the signing and resharing tests will work with the new n, t configuration using the newly written fixture files.
 	TestParticipants = test.TestParticipants
-	TestThreshold    = test.TestThreshold //test.TestParticipants / 2
+	TestThreshold    = test.TestThreshold // test.TestParticipants / 2
 )
 const (
 	testFixtureDirFormat  = "%s/../../test/_eddsa_fixtures_%d_%d"
@@ -40,7 +40,7 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 	}
 	for i := start; i < qty; i++ {
 		fixtureFilePath := makeTestFixtureFilePath(i)
-		bz, err := ioutil.ReadFile(fixtureFilePath)
+		bz, err := os.ReadFile(fixtureFilePath)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err,
 				"could not open the test fixture for party %d in the expected location: %s. run keygen tests first.",
@@ -78,7 +78,7 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 	}
 	for i := range plucked {
 		fixtureFilePath := makeTestFixtureFilePath(i)
-		bz, err := ioutil.ReadFile(fixtureFilePath)
+		bz, err := os.ReadFile(fixtureFilePath)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err,
 				"could not open the test fixture for party %d in the expected location: %s. run keygen tests first.",

@@ -33,7 +33,7 @@ type (
 // NewProof implements proofaff-g
 func NewProof(Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint, x, y, rho, rhoy *big.Int) (*ProofAffg, error) {
 	if ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil || x == nil || y == nil || rho == nil || rhoy == nil {
-		return nil, errors.New("ProveBob() received a nil argument")
+		return nil, errors.New("NewProof() received a nil argument")
 	}
 
 	NSquared := pk0.NSquare()
@@ -42,20 +42,24 @@ func NewProof(Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *p
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	q6 := new(big.Int).Mul(q3, q3)
+	q7 := new(big.Int).Mul(q6, q)
 	qNCap := new(big.Int).Mul(q, NCap)
 	q3NCap := new(big.Int).Mul(q3, NCap)
 
 	// Fig 15.1 sample
 	alpha := common.GetRandomPositiveInt(q3)
 	// beta := common.GetRandomPositiveRelativelyPrimeInt(pk0.N)
-	beta := common.GetRandomPositiveRelativelyPrimeInt(q6)
+	beta := common.GetRandomPositiveInt(q7)
 	r := common.GetRandomPositiveRelativelyPrimeInt(pk0.N)
 	ry := common.GetRandomPositiveRelativelyPrimeInt(pk1.N)
 	gamma := common.GetRandomPositiveInt(q3NCap)
 	m := common.GetRandomPositiveInt(qNCap)
 	delta := common.GetRandomPositiveInt(q3NCap)
 	mu := common.GetRandomPositiveInt(qNCap)
-
+	err := common.CheckBigIntNotNil(alpha, beta, r, ry, gamma, m, delta, mu)
+	if err != nil {
+		return nil, err
+	}
 	// Fig 15.1 compute
 	modNSquared := common.ModInt(NSquared)
 	A := modNSquared.Exp(C, alpha)
@@ -143,13 +147,14 @@ func (pf *ProofAffg) Verify(Session []byte, ec elliptic.Curve, pk0 *paillier.Pub
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
 	q6 := new(big.Int).Mul(q3, q3)
+	q7 := new(big.Int).Mul(q, q6)
 
 	// Fig 15. Range Check
-	if pf.Z1.Cmp(q3) > 0 {
+	if !common.IsInInterval(pf.Z1, q3) {
 		return false
 	}
 
-	if pf.Z2.Cmp(q6) > 0 {
+	if !common.IsInInterval(pf.Z2, q7) {
 		return false
 	}
 

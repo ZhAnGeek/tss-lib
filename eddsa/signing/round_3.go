@@ -34,6 +34,8 @@ func (round *round3) Start() *tss.Error {
 
 	// 2-6. compute R
 	i := round.PartyID().Index
+	round.ok[i] = true
+
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue

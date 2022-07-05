@@ -263,6 +263,9 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	switch msg.Content().(type) {
 	case *PreSignRound1Message:
 		r1msg := msg.Content().(*PreSignRound1Message)
+		if int(r1msg.BelongIndex) != p.PartyID().Index {
+			return true, nil
+		}
 		p.temp.R1msgG[fromPIdx] = r1msg.UnmarshalG()
 		p.temp.R1msgK[fromPIdx] = r1msg.UnmarshalK()
 		Proof, err := r1msg.UnmarshalEncProof()

@@ -29,6 +29,10 @@ type (
 	}
 )
 
+var (
+	zero = new(big.Int).SetInt64(0)
+)
+
 // NewProof implements prooflogstar
 func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t, x, rho *big.Int) (*ProofLogstar, error) {
 	if ec == nil || pk == nil || C == nil || X == nil || g == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
@@ -114,7 +118,20 @@ func (pf *ProofLogstar) Verify(Session []byte, ec elliptic.Curve, pk *paillier.P
 	q3 = new(big.Int).Mul(q, q3)
 
 	// Fig 25. range check
-	if pf.Z1.Cmp(q3) == 1 {
+	if !common.IsInInterval(pf.Z1, q3) {
+		return false
+	}
+
+	err := common.CheckInvertibleAndValidityModuloN(ec.Params().N, pf.S, pf.A, pf.D, pf.Z2)
+	if err != nil {
+		return false
+	}
+
+	if !pf.Y.IsOnCurve() {
+		return false
+	}
+
+	if pf.Z1.Cmp(zero) <= 0 || pf.Z3.Cmp(zero) <= 0 {
 		return false
 	}
 

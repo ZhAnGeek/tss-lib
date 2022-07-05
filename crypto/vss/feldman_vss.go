@@ -54,7 +54,7 @@ func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
 		visited[vModStr] = struct{}{}
 		indexes[i] = vMod
 	}
-	return indexes, nil //TODO no change indexes
+	return indexes, nil // TODO no change indexes
 }
 
 // Returns a new array of secret shares created by Shamir's Secret Sharing Algorithm,
@@ -79,7 +79,6 @@ func Create(ec elliptic.Curve, threshold int, secret *big.Int, indexes []*big.In
 	}
 
 	poly := samplePolynomial(ec, threshold, secret)
-	poly[0] = secret // becomes sigma*G in v
 	v := make(Vs, len(poly))
 	for i, ai := range poly {
 		v[i] = crypto.ScalarBaseMult(ec, ai)
@@ -135,6 +134,10 @@ func (shares Shares) ReConstruct(ec elliptic.Curve) (secret *big.Int, err error)
 			}
 			sub := modN.Sub(xs[j], share.ID)
 			subInv := modN.ModInverse(sub)
+			err := common.CheckBigIntNotNil(subInv)
+			if err != nil {
+				return nil, err
+			}
 			div := modN.Mul(xs[j], subInv)
 			times = modN.Mul(times, div)
 		}
