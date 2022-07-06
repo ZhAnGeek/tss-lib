@@ -53,6 +53,8 @@ func (round *presign1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
+	kgMsg := NewPreSignRound1BroadcastMessage(round.PartyID(), K, G)
+	round.out <- kgMsg
 
 	// Fig 7. Round 1. create proof enc
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
@@ -72,7 +74,7 @@ func (round *presign1) Start() *tss.Error {
 				return
 			}
 
-			r1msg := NewPreSignRound1Message(Pj, round.PartyID(), K, G, proof)
+			r1msg := NewPreSignRound1NonBroadcastMessage(Pj, round.PartyID(), proof)
 			round.out <- r1msg
 		}(j, Pj)
 	}
@@ -117,8 +119,11 @@ func (round *presign1) Update() (bool, *tss.Error) {
 }
 
 func (round *presign1) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*PreSignRound1Message); ok {
+	if _, ok := msg.Content().(*PreSignRound1BroadcastMessage); ok {
 		return msg.IsBroadcast()
+	}
+	if _, ok := msg.Content().(*PreSignRound1NonBroadcastMessage); ok {
+		return !msg.IsBroadcast()
 	}
 	return false
 }

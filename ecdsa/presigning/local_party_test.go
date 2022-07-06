@@ -63,6 +63,7 @@ func updatePartiesByMessages(parties []*LocalParty,
 func fetchingMessages(dumpCh chan *LocalDumpPB,
 	dumps []*LocalDumpPB,
 	N int,
+	MessageCount int,
 	errCh chan *tss.Error,
 	outCh chan tss.Message,
 	msgs *[]tss.Message,
@@ -91,7 +92,7 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 			i := duRestored.UnmarshalIndex()
 			dumps[i] = &duRestored
 			atomic.AddInt32(&ended1, 1)
-			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(N*(N-1)) {
+			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(MessageCount) {
 				return nil
 			}
 
@@ -102,7 +103,7 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 		case msg := <-outCh:
 			*msgs = append(*msgs, msg)
 			atomic.AddInt32(&ended2, 1)
-			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(N*(N-1)) {
+			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(MessageCount) {
 				return nil
 			}
 
@@ -465,7 +466,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Fetching messages produced by Presign 1
-	if err := fetchingMessages(preDumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r1dumps, N, N+N*(N-1), errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 1 all done. Received dump data from %d participants\n", N)
@@ -490,7 +491,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Fetching messages produced by Presign 2
-	if err := fetchingMessages(preDumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r2dumps, N, N*(N-1), errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 2 all done. Received dump data from %d participants\n", N)
@@ -515,7 +516,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Fetching messages produced by Presign 3
-	if err := fetchingMessages(preDumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r3dumps, N, N*(N-1), errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 3 all done. Received dump data from %d participants\n", N)
@@ -539,7 +540,7 @@ func TestR2RConcurrent(t *testing.T) {
 		t.Error(err)
 	}
 	// Fetching messages produced by PresignOut
-	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, preSigCh, preSigs, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(nil, nil, N, N*(N-1), errCh, nil, nil, preSigCh, preSigs, nil, nil, nil, nil); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("PresignOut all done. Received preSig data from %d participants\n", N)
@@ -561,7 +562,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Processing messages produced by signing
-	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, nil, nil, sigCh, outCh, signParties, updater); err != nil {
+	if err := fetchingMessages(nil, nil, N, N*(N-1), errCh, nil, nil, nil, nil, sigCh, outCh, signParties, updater); err != nil {
 		t.Error(err)
 	}
 }

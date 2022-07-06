@@ -26,7 +26,8 @@ import (
 var (
 	// Ensure that signing messages implement ValidateBasic
 	_ = []tss.MessageContent{
-		(*PreSignRound1Message)(nil),
+		(*PreSignRound1BroadcastMessage)(nil),
+		(*PreSignRound1NonBroadcastMessage)(nil),
 		(*PreSignRound2Message)(nil),
 		(*PreSignRound3Message)(nil),
 		(*IdentificationRound1Message)(nil),
@@ -216,43 +217,60 @@ func (m *PreSignatureData) UnmarshalTrans(ec elliptic.Curve) (*Transcript, error
 	return trans, nil
 }
 
-func NewPreSignRound1Message(
+func NewPreSignRound1NonBroadcastMessage(
 	to, from *tss.PartyID,
-	K *big.Int,
-	G *big.Int,
 	EncProof *zkpenc.ProofEnc,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
-		IsBroadcast: true,
+		To:          []*tss.PartyID{to},
+		IsBroadcast: false,
 	}
 	pfBz := EncProof.Bytes()
-	content := &PreSignRound1Message{
-		K:           K.Bytes(),
-		G:           G.Bytes(),
-		EncProof:    pfBz[:],
-		BelongIndex: int32(to.Index),
+	content := &PreSignRound1NonBroadcastMessage{
+		EncProof: pfBz[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *PreSignRound1Message) ValidateBasic() bool {
+func NewPreSignRound1BroadcastMessage(
+	from *tss.PartyID,
+	K *big.Int,
+	G *big.Int,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:        from,
+		IsBroadcast: true,
+	}
+	content := &PreSignRound1BroadcastMessage{
+		K: K.Bytes(),
+		G: G.Bytes(),
+	}
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+}
+
+func (m *PreSignRound1BroadcastMessage) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.K) &&
-		common.NonEmptyBytes(m.G) &&
+		common.NonEmptyBytes(m.G)
+}
+
+func (m *PreSignRound1NonBroadcastMessage) ValidateBasic() bool {
+	return m != nil &&
 		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts)
 }
 
-func (m *PreSignRound1Message) UnmarshalK() *big.Int {
+func (m *PreSignRound1BroadcastMessage) UnmarshalK() *big.Int {
 	return new(big.Int).SetBytes(m.GetK())
 }
 
-func (m *PreSignRound1Message) UnmarshalG() *big.Int {
+func (m *PreSignRound1BroadcastMessage) UnmarshalG() *big.Int {
 	return new(big.Int).SetBytes(m.GetG())
 }
 
-func (m *PreSignRound1Message) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
+func (m *PreSignRound1NonBroadcastMessage) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
 	return zkpenc.NewProofFromBytes(m.GetEncProof())
 }
 

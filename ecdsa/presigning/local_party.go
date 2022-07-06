@@ -261,14 +261,13 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// switch/case is necessary to store any messages beyond current round
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
-	case *PreSignRound1Message:
-		r1msg := msg.Content().(*PreSignRound1Message)
-		if int(r1msg.BelongIndex) != p.PartyID().Index {
-			return true, nil
-		}
-		p.temp.R1msgG[fromPIdx] = r1msg.UnmarshalG()
-		p.temp.R1msgK[fromPIdx] = r1msg.UnmarshalK()
-		Proof, err := r1msg.UnmarshalEncProof()
+	case *PreSignRound1BroadcastMessage:
+		r1msgBroadcast := msg.Content().(*PreSignRound1BroadcastMessage)
+		p.temp.R1msgG[fromPIdx] = r1msgBroadcast.UnmarshalG()
+		p.temp.R1msgK[fromPIdx] = r1msgBroadcast.UnmarshalK()
+	case *PreSignRound1NonBroadcastMessage:
+		r1msgNonBroadcast := msg.Content().(*PreSignRound1NonBroadcastMessage)
+		Proof, err := r1msgNonBroadcast.UnmarshalEncProof()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
