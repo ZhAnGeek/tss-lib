@@ -37,6 +37,7 @@ func (round *presign1) Start() *tss.Error {
 	round.ok[i] = true
 
 	// Fig 7. Round 1. generate ssid #TODO missing run_id & pre_data idx as input
+	round.temp.SsidNonce = new(big.Int).SetInt64(int64(round.Params().Nonce()))
 	ssid, err := round.getSSID()
 	if err != nil {
 		return round.WrapError(err, Pi)

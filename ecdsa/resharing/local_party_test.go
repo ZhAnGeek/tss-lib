@@ -73,13 +73,13 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 	// init the new parties
 	for j, pID := range newPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
 		if j < len(fixtures) && len(newPIDs) <= len(fixtures) {
 			save.LocalPreParams = fixtures[j].LocalPreParams
@@ -173,7 +173,7 @@ presigning:
 
 	// PHASE: presigning
 	for j, signPID := range presignPIDs {
-		params := tss.NewParameters(tss.S256(), presignP2pCtx, signPID, len(presignPIDs), newThreshold, false)
+		params := tss.NewParameters(tss.S256(), presignP2pCtx, signPID, len(presignPIDs), newThreshold, false, 0)
 		P := presigning.NewLocalParty(params, presignKeys[j], presignOutCh, presignEndCh, presignDumpCh).(*presigning.LocalParty)
 		presignParties = append(presignParties, P)
 		go func(P *presigning.LocalParty) {
@@ -235,7 +235,7 @@ signing:
 	signDumpCh := make(chan *signing.LocalDumpPB, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false)
+		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
 		P := signing.NewLocalParty(preSigDatas[j], big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh, signDumpCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {

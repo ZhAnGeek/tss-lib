@@ -51,6 +51,7 @@ type (
 		BigWs              []*crypto.ECPoint
 		m                  *big.Int
 		KeyDerivationDelta *big.Int
+		SsidNonce          *big.Int
 
 		// preSig
 		ssid     []byte

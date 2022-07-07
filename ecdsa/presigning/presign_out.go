@@ -110,7 +110,7 @@ func (round *presignout) Start() *tss.Error {
 		}
 	}
 
-	preSignData := NewPreSignData(i, round.temp.Ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript)
+	preSignData := NewPreSignData(i, round.temp.Ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript, round.temp.SsidNonce)
 	round.end <- preSignData
 
 	if round.NeedsIdentifaction() && round.dump != nil {

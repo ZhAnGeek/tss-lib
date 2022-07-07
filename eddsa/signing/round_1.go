@@ -9,6 +9,7 @@ package signing
 import (
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
@@ -32,6 +33,7 @@ func (round *round1) Start() *tss.Error {
 	round.started = true
 	round.resetOK()
 
+	round.temp.ssidNonce = new(big.Int).SetInt64(int64(0))
 	ssid, err := round.getSSID()
 	if err != nil {
 		return round.WrapError(err, round.PartyID())

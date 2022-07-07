@@ -43,6 +43,7 @@ func NewPreSignData(
 	kShare *big.Int,
 	chiShare *big.Int,
 	trans *Transcript,
+	ssidNonce *big.Int,
 ) *PreSignatureData {
 	bigRBzs := bigR.Bytes()
 
@@ -112,6 +113,7 @@ func NewPreSignData(
 		LRChiMtAFs:      ChiMtAFsBzs,
 		LRChiMtADs:      ChiMtADsBzs,
 		LRChiMtADProofs: ChiMtaDProofsBzs,
+		SsidNonce:       ssidNonce.Bytes(),
 	}
 	return content
 }
@@ -122,6 +124,10 @@ func (m *PreSignatureData) UnmarshalIndex() int {
 
 func (m *PreSignatureData) UnmarshalSsid() []byte {
 	return m.GetSsid()
+}
+
+func (m *PreSignatureData) UnmarshalSsidNonce() *big.Int {
+	return new(big.Int).SetBytes(m.GetSsidNonce())
 }
 
 func (m *PreSignatureData) UnmarshalBigR(ec elliptic.Curve) (*crypto.ECPoint, error) {
@@ -814,10 +820,11 @@ func NewLocalDumpPB(
 		Index:    int32(Index),
 		RoundNum: int32(RoundNum),
 
-		LTssid:   LocalTemp.Ssid,
-		LTw:      WBzs,
-		LTBigWs:  BigWsBzs,
-		LTKShare: KShareBzs,
+		LTssid:      LocalTemp.Ssid,
+		LTssidNonce: LocalTemp.SsidNonce.Bytes(),
+		LTw:         WBzs,
+		LTBigWs:     BigWsBzs,
+		LTKShare:    KShareBzs,
 
 		LTBigGammaShare: BigGammaShareBzs,
 		LTK:             KBzs,
@@ -882,6 +889,7 @@ func (m *LocalDumpPB) UnmarshalRoundNum() int {
 
 func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, error) {
 	Ssid := m.GetLTssid()
+	SsidNonce := new(big.Int).SetBytes(m.GetLTssidNonce())
 	WBzs := m.GetLTw()
 	var W *big.Int
 	if len(WBzs) > 0 {
@@ -1271,10 +1279,11 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 	}
 
 	LocalTemp := &localTempData{
-		Ssid:   Ssid,
-		W:      W,
-		BigWs:  BigWs,
-		KShare: KShare,
+		Ssid:      Ssid,
+		SsidNonce: SsidNonce,
+		W:         W,
+		BigWs:     BigWs,
+		KShare:    KShare,
 
 		BigGammaShare: BigGammaShare,
 		K:             K,

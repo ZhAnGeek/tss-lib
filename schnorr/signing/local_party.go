@@ -47,15 +47,16 @@ type (
 		localMessageStore
 
 		// temp data (thrown away after sign) / round 1
-		ssid     []byte
-		wi       *big.Int
-		bigWs    []*crypto.ECPoint
-		di       *big.Int
-		ei       *big.Int
-		m        []byte
-		pointDi  *crypto.ECPoint
-		pointEi  *crypto.ECPoint
-		deCommit cmt.HashDeCommitment
+		ssid      []byte
+		ssidNonce *big.Int
+		wi        *big.Int
+		bigWs     []*crypto.ECPoint
+		di        *big.Int
+		ei        *big.Int
+		m         []byte
+		pointDi   *crypto.ECPoint
+		pointEi   *crypto.ECPoint
+		deCommit  cmt.HashDeCommitment
 
 		// round 2
 		cjs  []*big.Int

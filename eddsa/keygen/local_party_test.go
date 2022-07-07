@@ -62,7 +62,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold, false)
+		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		} else {
@@ -172,7 +172,7 @@ keygen:
 				}
 				println("u len: ", len(u.Bytes()))
 				sk, _, err := edwards.PrivKeyFromScalar(u.Bytes())
-				//fmt.Println("err: ", err.Error())
+				// fmt.Println("err: ", err.Error())
 				assert.NoError(t, err)
 
 				// test pub key, should be on curve and match pkX, pkY

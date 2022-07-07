@@ -65,4 +65,5 @@ message LocalDumpPB {
     repeated bytes LTr5msgProofDec = 25;
     repeated bytes LTr5msgDjis = 26;
     repeated bytes LTr5msgFjis = 27;
+    bytes LTssidNonce = 28;
 }

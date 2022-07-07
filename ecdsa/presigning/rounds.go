@@ -130,6 +130,7 @@ func (round *base) getSSID() ([]byte, error) {
 	ssidList = append(ssidList, round.key.H1j...)                // h1
 	ssidList = append(ssidList, round.key.H2j...)                // h2
 	ssidList = append(ssidList, big.NewInt(int64(round.number))) // round number
+	ssidList = append(ssidList, round.temp.SsidNonce)
 	ssid := common.SHA512_256i(ssidList...).Bytes()
 
 	return ssid, nil

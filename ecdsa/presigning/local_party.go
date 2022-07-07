@@ -44,10 +44,11 @@ type (
 
 	localTempData struct {
 		// temp data (thrown away after sign) / round 1
-		Ssid   []byte
-		W      *big.Int
-		BigWs  []*crypto.ECPoint
-		KShare *big.Int
+		Ssid      []byte
+		W         *big.Int
+		BigWs     []*crypto.ECPoint
+		KShare    *big.Int
+		SsidNonce *big.Int
 
 		BigGammaShare *crypto.ECPoint
 		K             *big.Int

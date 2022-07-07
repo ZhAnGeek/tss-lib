@@ -48,6 +48,7 @@ type (
 
 		// temp data (thrown away after sign) / round 1
 		ssid               []byte
+		ssidNonce          *big.Int
 		wi                 *big.Int
 		ri                 *big.Int
 		m                  []byte

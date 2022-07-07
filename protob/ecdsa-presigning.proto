@@ -75,6 +75,7 @@ message IdentificationRound1Message {
     repeated bytes LRChiMtAFs = 11;
     repeated bytes LRChiMtADs = 12;
     repeated bytes LRChiMtADProofs = 13;
+    bytes SsidNonce = 14;
 }
 
 
@@ -140,4 +141,5 @@ message IdentificationRound1Message {
     repeated bytes LTr5msgProofDec = 48;
     repeated bytes LTr5msgDjis = 49;
     repeated bytes LTr5msgFjis = 50;
+    bytes LTssidNonce = 51;
 }

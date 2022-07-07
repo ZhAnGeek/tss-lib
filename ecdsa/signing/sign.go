@@ -38,6 +38,7 @@ func (round *sign1) Start() *tss.Error {
 	Pi := round.PartyID()
 	round.ok[i] = true
 
+	round.temp.SsidNonce = round.predata.UnmarshalSsidNonce()
 	ssid, err := round.getSSID()
 	if err != nil {
 		return round.WrapError(err, Pi)
