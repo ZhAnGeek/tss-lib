@@ -158,6 +158,16 @@ func (pf *ProofAffg) Verify(Session []byte, ec elliptic.Curve, pk0 *paillier.Pub
 		return false
 	}
 
+	err := common.CheckInvertibleAndValidityModuloN(ec.Params().N, pf.A, pf.By, pf.E, pf.S, pf.T, pf.W, pf.Wy)
+	if err != nil {
+		return false
+	}
+
+	zero := new(big.Int).SetInt64(0)
+	if pf.Z1.Cmp(zero) <= 0 || pf.Z2.Cmp(zero) <= 0 || pf.Z3.Cmp(zero) <= 0 || pf.Z4.Cmp(zero) <= 0 {
+		return false
+	}
+
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i_TAGGED(Session, append([]*big.Int{}, ec.Params().B, ec.Params().N, ec.Params().P,
