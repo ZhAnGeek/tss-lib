@@ -7,6 +7,8 @@
 package common
 
 import (
+	"errors"
+	"fmt"
 	"math/big"
 )
 
@@ -61,4 +63,67 @@ func (mi *modInt) ModInverse(g *big.Int) *big.Int {
 
 func (mi *modInt) i() *big.Int {
 	return (*big.Int)(mi)
+}
+
+func IsInInterval(b *big.Int, bound *big.Int) bool {
+	return b.Cmp(bound) == -1 && b.Cmp(zero) >= 0
+}
+
+func CheckBigIntNotNil(is ...*big.Int) error {
+	for _, i := range is {
+		if i == nil {
+			return errors.New("checked *big.Int got nil")
+		}
+	}
+	return nil
+}
+
+// CheckModuloN check one number is a valid modulo of N
+func CheckModuloN(N *big.Int, is ...*big.Int) error {
+	err := CheckBigIntNotNil(is...)
+	if err != nil {
+		return err
+	}
+	for _, i := range is {
+		if i == nil {
+			if !IsInInterval(i, N) {
+				return errors.New(fmt.Sprintf("%s not in bound of %s", i.String(), N.String()))
+			}
+		}
+	}
+	return nil
+}
+
+// CheckInvertibleModuloN check one number is a invertible modulo of N
+func CheckInvertibleModuloN(N *big.Int, is ...*big.Int) error {
+	err := CheckBigIntNotNil(is...)
+	if err != nil {
+		return err
+	}
+	gcd := big.NewInt(0)
+	for _, i := range is {
+		if i == nil {
+			if gcd.GCD(nil, nil, i, N).Cmp(one) == 0 {
+				return errors.New(fmt.Sprintf("%s is not relatively prime of %s", i.String(), N.String()))
+			}
+		}
+	}
+	return nil
+}
+
+// CheckInvertibleAndValidityModuloN check one number is a invertible and validity modulo of N
+func CheckInvertibleAndValidityModuloN(N *big.Int, is ...*big.Int) error {
+	err := CheckBigIntNotNil(is...)
+	if err != nil {
+		return err
+	}
+	err = CheckModuloN(N, is...)
+	if err != nil {
+		return err
+	}
+	err = CheckInvertibleModuloN(N, is...)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -21,6 +21,7 @@ type (
 		threshold           int
 		safePrimeGenTimeout time.Duration
 		needsIdentifaction  bool
+		nonce               int
 	}
 
 	ReSharingParameters struct {
@@ -28,6 +29,7 @@ type (
 		newParties    *PeerContext
 		newPartyCount int
 		newThreshold  int
+		nonce         int
 	}
 )
 
@@ -36,7 +38,7 @@ const (
 )
 
 // Exported, used in `tss` client
-func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int, needsIdentification bool, optionalSafePrimeGenTimeout ...time.Duration) *Parameters {
+func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int, needsIdentification bool, nonce int, optionalSafePrimeGenTimeout ...time.Duration) *Parameters {
 	var safePrimeGenTimeout time.Duration
 	if 0 < len(optionalSafePrimeGenTimeout) {
 		if 1 < len(optionalSafePrimeGenTimeout) {
@@ -54,6 +56,7 @@ func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyC
 		threshold:           threshold,
 		needsIdentifaction:  needsIdentification,
 		safePrimeGenTimeout: safePrimeGenTimeout,
+		nonce:               nonce,
 	}
 }
 
@@ -85,11 +88,15 @@ func (params *Parameters) NeedsIdentifaction() bool {
 	return params.needsIdentifaction
 }
 
+func (params *Parameters) Nonce() int {
+	return params.nonce
+}
+
 // ----- //
 
 // Exported, used in `tss` client
-func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold int) *ReSharingParameters {
-	params := NewParameters(ec, ctx, partyID, partyCount, threshold, false) // No identification in resharing
+func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold, nonce int) *ReSharingParameters {
+	params := NewParameters(ec, ctx, partyID, partyCount, threshold, false, nonce) // No identification in resharing
 	return &ReSharingParameters{
 		Parameters:    params,
 		newParties:    newCtx,

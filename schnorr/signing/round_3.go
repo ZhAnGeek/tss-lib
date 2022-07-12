@@ -115,7 +115,14 @@ func (round *round3) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(errors.New("failed to flattern Ejs"), round.PartyID())
 	}
-	DEFlat := append(DjFlat, EjFlat...)
+
+	BIndexes := make([]*big.Int, 0)
+	for j, _ := range round.Parties().IDs() {
+		BIndexes = append(BIndexes, big.NewInt(int64(j)))
+	}
+	// <i, Di, Ei>
+	DEFlat := append(BIndexes, DjFlat...) // i, Di
+	DEFlat = append(BIndexes, EjFlat...)  // i, Ei
 
 	for j, Pj := range round.Parties().IDs() {
 		rho := common.SHA512_256i_TAGGED([]byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)

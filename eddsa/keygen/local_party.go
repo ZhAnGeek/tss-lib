@@ -47,6 +47,7 @@ type (
 
 		// temp data (thrown away after keygen)
 		ssid          []byte
+		ssidNonce     *big.Int
 		ui            *big.Int // used for tests
 		KGCs          []cmt.HashCommitment
 		vs            vss.Vs

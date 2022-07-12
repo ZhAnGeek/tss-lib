@@ -128,10 +128,7 @@ func (pf *ProofSch) Verify(Session []byte, X *crypto.ECPoint) bool {
 	if err != nil {
 		return false
 	}
-	if right.X().Cmp(left.X()) != 0 || right.Y().Cmp(left.Y()) != 0 {
-		return false
-	}
-	return true
+	return left.Equals(right)
 }
 
 func (pf *ProofSch) ValidateBasic() bool {

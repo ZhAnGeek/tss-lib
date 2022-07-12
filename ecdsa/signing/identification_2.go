@@ -81,7 +81,12 @@ func (round *identification2) Start() *tss.Error {
 				}
 				Fkj := round.temp.R5msgFjis[j][k]
 				FinvEnc := modN2.ModInverse(Fkj)
-				//BetaEnc := modN2.Mul(round.temp.r5msgQ3Enc[j], FinvEnc)
+				err = common.CheckBigIntNotNil(FinvEnc)
+				if err != nil {
+					errChs <- round.WrapError(err, Pj)
+					return
+				}
+				// BetaEnc := modN2.Mul(round.temp.r5msgQ3Enc[j], FinvEnc)
 				BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
 				if err != nil {
 					errChs <- round.WrapError(err, Pj)

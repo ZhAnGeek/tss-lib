@@ -26,7 +26,8 @@ import (
 var (
 	// Ensure that signing messages implement ValidateBasic
 	_ = []tss.MessageContent{
-		(*PreSignRound1Message)(nil),
+		(*PreSignRound1BroadcastMessage)(nil),
+		(*PreSignRound1NonBroadcastMessage)(nil),
 		(*PreSignRound2Message)(nil),
 		(*PreSignRound3Message)(nil),
 		(*IdentificationRound1Message)(nil),
@@ -42,6 +43,7 @@ func NewPreSignData(
 	kShare *big.Int,
 	chiShare *big.Int,
 	trans *Transcript,
+	ssidNonce *big.Int,
 ) *PreSignatureData {
 	bigRBzs := bigR.Bytes()
 
@@ -111,6 +113,7 @@ func NewPreSignData(
 		LRChiMtAFs:      ChiMtAFsBzs,
 		LRChiMtADs:      ChiMtADsBzs,
 		LRChiMtADProofs: ChiMtaDProofsBzs,
+		SsidNonce:       ssidNonce.Bytes(),
 	}
 	return content
 }
@@ -121,6 +124,10 @@ func (m *PreSignatureData) UnmarshalIndex() int {
 
 func (m *PreSignatureData) UnmarshalSsid() []byte {
 	return m.GetSsid()
+}
+
+func (m *PreSignatureData) UnmarshalSsidNonce() *big.Int {
+	return new(big.Int).SetBytes(m.GetSsidNonce())
 }
 
 func (m *PreSignatureData) UnmarshalBigR(ec elliptic.Curve) (*crypto.ECPoint, error) {
@@ -216,10 +223,8 @@ func (m *PreSignatureData) UnmarshalTrans(ec elliptic.Curve) (*Transcript, error
 	return trans, nil
 }
 
-func NewPreSignRound1Message(
+func NewPreSignRound1NonBroadcastMessage(
 	to, from *tss.PartyID,
-	K *big.Int,
-	G *big.Int,
 	EncProof *zkpenc.ProofEnc,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
@@ -228,31 +233,50 @@ func NewPreSignRound1Message(
 		IsBroadcast: false,
 	}
 	pfBz := EncProof.Bytes()
-	content := &PreSignRound1Message{
-		K:        K.Bytes(),
-		G:        G.Bytes(),
+	content := &PreSignRound1NonBroadcastMessage{
 		EncProof: pfBz[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *PreSignRound1Message) ValidateBasic() bool {
+func NewPreSignRound1BroadcastMessage(
+	from *tss.PartyID,
+	K *big.Int,
+	G *big.Int,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:        from,
+		IsBroadcast: true,
+	}
+	content := &PreSignRound1BroadcastMessage{
+		K: K.Bytes(),
+		G: G.Bytes(),
+	}
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+}
+
+func (m *PreSignRound1BroadcastMessage) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.K) &&
-		common.NonEmptyBytes(m.G) &&
+		common.NonEmptyBytes(m.G)
+}
+
+func (m *PreSignRound1NonBroadcastMessage) ValidateBasic() bool {
+	return m != nil &&
 		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts)
 }
 
-func (m *PreSignRound1Message) UnmarshalK() *big.Int {
+func (m *PreSignRound1BroadcastMessage) UnmarshalK() *big.Int {
 	return new(big.Int).SetBytes(m.GetK())
 }
 
-func (m *PreSignRound1Message) UnmarshalG() *big.Int {
+func (m *PreSignRound1BroadcastMessage) UnmarshalG() *big.Int {
 	return new(big.Int).SetBytes(m.GetG())
 }
 
-func (m *PreSignRound1Message) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
+func (m *PreSignRound1NonBroadcastMessage) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
 	return zkpenc.NewProofFromBytes(m.GetEncProof())
 }
 
@@ -391,8 +415,7 @@ func NewIdentificationRound1Message(
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
-		To:          []*tss.PartyID{to},
-		IsBroadcast: false,
+		IsBroadcast: true,
 	}
 	MulProofBzs := MulProof.Bytes()
 	DjisBzs := make([][]byte, len(Djis))
@@ -797,10 +820,11 @@ func NewLocalDumpPB(
 		Index:    int32(Index),
 		RoundNum: int32(RoundNum),
 
-		LTssid:   LocalTemp.Ssid,
-		LTw:      WBzs,
-		LTBigWs:  BigWsBzs,
-		LTKShare: KShareBzs,
+		LTssid:      LocalTemp.Ssid,
+		LTssidNonce: LocalTemp.SsidNonce.Bytes(),
+		LTw:         WBzs,
+		LTBigWs:     BigWsBzs,
+		LTKShare:    KShareBzs,
 
 		LTBigGammaShare: BigGammaShareBzs,
 		LTK:             KBzs,
@@ -865,6 +889,7 @@ func (m *LocalDumpPB) UnmarshalRoundNum() int {
 
 func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, error) {
 	Ssid := m.GetLTssid()
+	SsidNonce := new(big.Int).SetBytes(m.GetLTssidNonce())
 	WBzs := m.GetLTw()
 	var W *big.Int
 	if len(WBzs) > 0 {
@@ -1254,10 +1279,11 @@ func (m *LocalDumpPB) UnmarshalLocalTemp(ec elliptic.Curve) (*localTempData, err
 	}
 
 	LocalTemp := &localTempData{
-		Ssid:   Ssid,
-		W:      W,
-		BigWs:  BigWs,
-		KShare: KShare,
+		Ssid:      Ssid,
+		SsidNonce: SsidNonce,
+		W:         W,
+		BigWs:     BigWs,
+		KShare:    KShare,
 
 		BigGammaShare: BigGammaShare,
 		K:             K,

@@ -23,10 +23,17 @@ import (
 func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK *crypto.ECPoint) bool {
 	modN := common.ModInt(ec.Params().N)
 	SInv := modN.ModInverse(S)
+	err := common.CheckBigIntNotNil(SInv)
+	if err != nil {
+		return false
+	}
 	mG := crypto.ScalarBaseMult(ec, m)
 	rx := R.X()
 	rxPK := PK.ScalarMult(rx)
-	R2, _ := mG.Add(rxPK)
+	R2, err := mG.Add(rxPK)
+	if err != nil {
+		return false
+	}
 	R2 = R2.ScalarMult(SInv)
 	return R2.Equals(R)
 }
@@ -93,8 +100,8 @@ func (round *signout) Start() *tss.Error {
 
 	pk := ecdsa.PublicKey{
 		Curve: round.Params().EC(),
-		X:     PKDelta.X(), //round.key.ECDSAPub.X(),
-		Y:     PKDelta.Y(), //round.key.ECDSAPub.Y(),
+		X:     PKDelta.X(), // round.key.ECDSAPub.X(),
+		Y:     PKDelta.Y(), // round.key.ECDSAPub.Y(),
 	}
 	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.BigR.X(), Sigma)
 	if !ok {
