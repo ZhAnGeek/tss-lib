@@ -65,14 +65,14 @@ func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, e
 
 func DerivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []uint32, ec elliptic.Curve) (*big.Int, *ckd.ExtendedKey, error) {
 	// build ecdsa key pair
-	pkPoint, err := crypto.NewECPoint(ec, masterPub.X(), masterPub.Y())
+	pk, err := crypto.NewECPoint(ec, masterPub.X(), masterPub.Y())
 	if err != nil {
 		return nil, nil, err
 	}
 
 	net := &chaincfg.MainNetParams
 	extendedParentPk := &ckd.ExtendedKey{
-		PublicKey:  *pkPoint,
+		PublicKey:  *pk,
 		Depth:      0,
 		ChildIndex: 0,
 		ChainCode:  chainCode[:],
