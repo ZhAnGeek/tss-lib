@@ -117,8 +117,18 @@ func (p *LocalParty) Start() *tss.Error {
 	return tss.BaseStart(p, TaskName)
 }
 
+func (p *LocalParty) ExpectMsgRound() int {
+	if p.params.IsOldCommittee() && p.AtRoundNumber() == 1 {
+		return 2
+	}
+	if p.params.IsOldCommittee() && p.AtRoundNumber() == 3 {
+		return 4
+	}
+	return p.AtRoundNumber()
+}
+
 func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(p, msg, TaskName)
+	return tss.BaseUpdatePool(p, msg, TaskName)
 }
 
 func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {

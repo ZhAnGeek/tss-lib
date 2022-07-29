@@ -69,6 +69,10 @@ func (m *DGRound1Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.Ssid)
 }
 
+func (m *DGRound1Message) RoundNumber() int {
+	return 1
+}
+
 func (m *DGRound1Message) UnmarshalECDSAPub(ec elliptic.Curve) (*crypto.ECPoint, error) {
 	return crypto.NewECPoint(
 		ec,
@@ -125,6 +129,10 @@ func (m *DGRound2Message1) ValidateBasic() bool {
 		common.NonEmptyBytes(m.H2)
 }
 
+func (m *DGRound2Message1) RoundNumber() int {
+	return 2
+}
+
 func (m *DGRound2Message1) UnmarshalPaillierPK() *paillier.PublicKey {
 	return &paillier.PublicKey{
 		N: new(big.Int).SetBytes(m.PaillierN),
@@ -172,6 +180,10 @@ func (m *DGRound2Message2) ValidateBasic() bool {
 	return true
 }
 
+func (m *DGRound2Message2) RoundNumber() int {
+	return 2
+}
+
 // ----- //
 
 func NewDGRound3Message1(
@@ -195,6 +207,10 @@ func NewDGRound3Message1(
 func (m *DGRound3Message1) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.Share)
+}
+
+func (m *DGRound3Message1) RoundNumber() int {
+	return 3
 }
 
 // ----- //
@@ -221,6 +237,10 @@ func NewDGRound3Message2(
 func (m *DGRound3Message2) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.VDecommitment)
+}
+
+func (m *DGRound3Message2) RoundNumber() int {
+	return 3
 }
 
 func (m *DGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
@@ -254,6 +274,10 @@ func (m *DGRound4Message1) ValidateBasic() bool {
 	return m != nil && common.NonEmptyMultiBytes(m.FacProof, zkpfac.ProofFacBytesParts)
 }
 
+func (m *DGRound4Message1) RoundNumber() int {
+	return 4
+}
+
 func (m *DGRound4Message1) UnmarshalProofFac() (*zkpfac.ProofFac, error) {
 	return zkpfac.NewProofFromBytes(m.GetFacProof())
 }
@@ -277,4 +301,8 @@ func NewDGRound4Message2(
 
 func (m *DGRound4Message2) ValidateBasic() bool {
 	return true
+}
+
+func (m *DGRound4Message2) RoundNumber() int {
+	return 4
 }

@@ -55,6 +55,10 @@ func (m *SignRound1Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.Ry)
 }
 
+func (m *SignRound1Message) RoundNumber() int {
+	return 1
+}
+
 func (m *SignRound1Message) UnmarshalSigmaShare() *big.Int {
 	return new(big.Int).SetBytes(m.GetSigmaShare())
 }
@@ -126,6 +130,10 @@ func (m *IdentificationRound1Message) ValidateBasic() bool {
 		common.NonEmptyMultiBytes(m.Fjis) &&
 		common.NonEmptyBytes(m.Q3Enc) &&
 		common.NonEmptyMultiBytes(m.DecProof, zkpdec.ProofDecBytesParts)
+}
+
+func (m *IdentificationRound1Message) RoundNumber() int {
+	return 3
 }
 
 func (m *IdentificationRound1Message) UnmarshalH() *big.Int {

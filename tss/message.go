@@ -47,6 +47,7 @@ type (
 	MessageContent interface {
 		proto.Message
 		ValidateBasic() bool
+		RoundNumber() int
 	}
 
 	// MessageRouting holds the full routing information for the message, consumed by the transport
@@ -81,7 +82,7 @@ var (
 // NewMessageWrapper constructs a MessageWrapper from routing metadata and content
 func NewMessageWrapper(routing MessageRouting, content MessageContent) *MessageWrapper {
 	// marshal the content to the ProtoBuf Any type
-	any, _ := anypb.New(content)
+	mAny, _ := anypb.New(content)
 	// convert given PartyIDs to the wire format
 	var to []*MessageWrapper_PartyID
 	if routing.To != nil {
@@ -96,7 +97,7 @@ func NewMessageWrapper(routing MessageRouting, content MessageContent) *MessageW
 		IsToOldAndNewCommittees: routing.IsToOldAndNewCommittees,
 		From:                    routing.From.MessageWrapper_PartyID,
 		To:                      to,
-		Message:                 any,
+		Message:                 mAny,
 	}
 }
 
