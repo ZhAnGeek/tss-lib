@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/binary"
@@ -55,11 +56,11 @@ const (
 
 	// MinSeedBytes is the minimum number of bytes allowed for a seed to
 	// a master node.
-	// MinSeedBytes = 16 // 128 bits
+	MinSeedBytes = 16 // 128 bits
 
 	// MaxSeedBytes is the maximum number of bytes allowed for a seed to
 	// a master node.
-	// MaxSeedBytes = 64 // 512 bits
+	MaxSeedBytes = 64 // 512 bits
 )
 
 // Extended public key serialization, defined in BIP32
@@ -222,7 +223,7 @@ func DeriveChildKeyOfEcdsa(index uint32, pk *ExtendedKey, curve elliptic.Curve) 
 	if index >= HardenedKeyStart {
 		return nil, nil, errors.New("the index must be non-hardened")
 	}
-	if pk.Depth >= maxDepth {
+	if pk.Depth == maxDepth {
 		return nil, nil, errors.New("cannot derive key beyond max depth")
 	}
 
@@ -312,70 +313,6 @@ func DeriveChildKeyOfEddsa(index uint32, pk *ExtendedKey, curve elliptic.Curve) 
 		common.Logger.Error("error invalid child")
 		return nil, nil, err
 	}
-
-	childCryptoPk, err := pk.PublicKey.Add(deltaG)
-	if err != nil {
-		common.Logger.Error("error adding delta G to parent key")
-		return nil, nil, err
-	}
-
-	// derive child chain code
-	data[0] = 0x3
-	hmac512 = hmac.New(sha512.New, pk.ChainCode)
-	hmac512.Write(data)
-	ilr = hmac512.Sum(nil)
-	childChainCode := ilr[32:]
-
-	childPk := &ExtendedKey{
-		PublicKey:  *childCryptoPk,
-		Depth:      pk.Depth + 1,
-		ChildIndex: index,
-		ChainCode:  childChainCode,
-		Version:    pk.Version,
-	}
-	return ilNum, childPk, nil
-}
-
-func DeriveChildKeyOfEddsa(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
-	if index >= HardenedKeyStart {
-		return nil, nil, errors.New("the index must be non-hardened")
-	}
-	if pk.Depth == maxDepth {
-		return nil, nil, errors.New("cannot derive key beyond max depth")
-	}
-
-	cryptoPk, err := crypto.NewECPoint(curve, pk.PublicKey.X(), pk.PublicKey.Y())
-	if err != nil {
-		common.Logger.Error("error getting pubkey from extendedkey")
-		return nil, nil, err
-	}
-
-	pubKeyBytes := edwards.PublicKey{
-		Curve: edwards.Edwards(),
-		X:     pk.PublicKey.X(),
-		Y:     pk.PublicKey.Y(),
-	}.Serialize()
-
-	data := make([]byte, 37)
-	data[0] = 0x2
-	copy(data[1:33], pubKeyBytes)
-	binary.LittleEndian.PutUint32(data[33:], index)
-
-	// I = HMAC-SHA512(Key = chainCode, Data=data)
-	hmac512 := hmac.New(sha512.New, pk.ChainCode)
-	hmac512.Write(data)
-	ilr := hmac512.Sum(nil)
-
-	il28 := new(big.Int).SetBytes(ReverseBytes(ilr[:28])) // little endian to big endian
-	ilNum := new(big.Int).Mul(il28, big.NewInt(8))
-
-	deltaG := crypto.ScalarBaseMult(curve, ilNum)
-
-	if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 || ilNum.Cmp(curve.Params().N) >= 0 {
-		err = errors.New("invalid child")
-		common.Logger.Error("error invalid child")
-		return nil, nil, err
-	}
 	childCryptoPk, err := cryptoPk.Add(deltaG)
 	if err != nil {
 		common.Logger.Error("error adding delta G to parent key")
@@ -399,14 +336,19 @@ func DeriveChildKeyOfEddsa(index uint32, pk *ExtendedKey, curve elliptic.Curve) 
 	return ilNum, childPk, nil
 }
 
-// ReverseBytes switch between big endian & little endian
-func ReverseBytes(input []byte) []byte {
-	out := make([]byte, len(input))
-	l := len(input)
-	for i := range input {
-		out[l-i-1] = input[i]
+func GenerateSeed(length uint8) ([]byte, error) {
+	// Per [BIP32], the seed must be in range [MinSeedBytes, MaxSeedBytes].
+	if length < MinSeedBytes || length > MaxSeedBytes {
+		return nil, errors.New("invalid seed length")
 	}
-	return out
+
+	buf := make([]byte, length)
+	_, err := rand.Read(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }
 
 // ReverseBytes switch between big endian & little endian
