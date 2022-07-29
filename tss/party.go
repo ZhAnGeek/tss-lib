@@ -29,6 +29,11 @@ type Party interface {
 	WrapError(err error, culprits ...*PartyID) *Error
 	PartyID() *PartyID
 	String() string
+	AtRoundNumber() int
+	ExpectMsgRound() int
+	PushMsgToPool(message ParsedMessage) bool
+	PopMsgFromPool() (bool, *ParsedMessage)
+	TopMsgOfPool() (bool, *ParsedMessage)
 
 	// Private lifecycle methods
 	setRound(Round) *Error
@@ -41,6 +46,8 @@ type Party interface {
 type BaseParty struct {
 	mtx        sync.Mutex
 	rnd        Round
+	msgPool    []*ParsedMessage
+	poolMtx    sync.Mutex
 	FirstRound Round
 }
 
@@ -76,6 +83,51 @@ func (p *BaseParty) ValidateMessage(msg ParsedMessage) (bool, *Error) {
 		return false, p.WrapError(fmt.Errorf("message failed ValidateBasic: %s", msg), msg.GetFrom())
 	}
 	return true, nil
+}
+
+func (p *BaseParty) AtRoundNumber() int {
+	if p.rnd == nil {
+		return 0
+	}
+	return p.rnd.RoundNumber()
+}
+
+func (p *BaseParty) ExpectMsgRound() int {
+	return p.AtRoundNumber()
+}
+
+func (p *BaseParty) PushMsgToPool(msg ParsedMessage) bool {
+	p.poolMtx.Lock()
+	defer p.poolMtx.Unlock()
+	p.msgPool = append(p.msgPool, &msg)
+	maxIdx := len(p.msgPool) - 2
+	for i := maxIdx; i >= 0; i-- {
+		if (*p.msgPool[i+1]).Content().RoundNumber() >= (*p.msgPool[i]).Content().RoundNumber() {
+			break
+		}
+		p.msgPool[i], p.msgPool[i+1] = p.msgPool[i+1], p.msgPool[i]
+	}
+
+	return true
+}
+
+func (p *BaseParty) PopMsgFromPool() (ok bool, pMsg *ParsedMessage) {
+	p.poolMtx.Lock()
+	defer p.poolMtx.Unlock()
+	if len(p.msgPool) == 0 {
+		return false, nil
+	}
+	hMsg := p.msgPool[0]
+	p.msgPool = p.msgPool[1:]
+	return true, hMsg
+}
+
+func (p *BaseParty) TopMsgOfPool() (ok bool, pMsg *ParsedMessage) {
+	if len(p.msgPool) == 0 {
+		return false, nil
+	}
+	hMsg := p.msgPool[0]
+	return true, hMsg
 }
 
 func (p *BaseParty) String() string {
@@ -137,9 +189,9 @@ func BaseStart(p Party, task string, prepare ...func(Round) *Error) *Error {
 			return err
 		}
 	}
-	common.Logger.Infof("party %v: %s round %d starting", p.round().Params().PartyID().Index, task, 1)
+	common.Logger.Infof("party %v: %s round %d starting", p.round().Params().PartyID(), task, 1)
 	defer func() {
-		common.Logger.Debugf("party %v: %s round %d finished", p.round().Params().PartyID().Index, task, 1)
+		common.Logger.Debugf("party %v: %s round %d finished", p.round().Params().PartyID(), task, 1)
 	}()
 	return p.round().Start()
 }
@@ -148,7 +200,7 @@ func BaseRestore(p Party, task string) *Error {
 	p.lock()
 	defer p.unlock()
 	if p.PartyID() == nil || !p.PartyID().ValidateBasic() {
-		return p.WrapError(fmt.Errorf("could not restore. this party has an invalid PartyID: %+v", p.PartyID()))
+		return p.WrapError(fmt.Errorf("could not restore %s. this party has an invalid PartyID: %+v", task, p.PartyID()))
 	}
 	if p.round() != nil {
 		return p.WrapError(errors.New("could not restore. this party is in an unexpected state. use the constructor and Start()"))
@@ -198,46 +250,92 @@ func BaseUpdate(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 				common.Logger.Infof("party %s: %s finished!", p.PartyID(), task)
 			}
 			p.unlock()                      // recursive so can't defer after return
-			return BaseUpdate(p, msg, task) // re-run round update or finish)
+			return BaseUpdate(p, msg, task) // re-run round update or finish
 		}
 		return r(true, nil)
 	}
 	return r(true, nil)
 }
 
-// an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)
 // Non-recursive version of BaseUpdate, in order to use it, it should make sure that party is updated by messages in correct round order
-func BaseUpdate_NR(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
+func BaseUpdateNR(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	// fast-fail on an invalid message; do not lock the mutex yet
 	if _, err := p.ValidateMessage(msg); err != nil {
 		return false, err
 	}
 	p.lock() // data is written to P state below
 	defer p.unlock()
-	common.Logger.Debugf("party %v received message: %s", p.PartyID().Index, msg.String())
+	common.Logger.Debugf("party %v received message: %s", p.PartyID(), msg.String())
 	if p.round() != nil {
-		common.Logger.Debugf("party %v round %d update: %s", p.PartyID().Index, p.round().RoundNumber(), msg.String())
+		common.Logger.Debugf("party %v round %d update: %s", p.PartyID(), p.round().RoundNumber(), msg.String())
 	}
 	if ok, err := p.StoreMessage(msg); err != nil || !ok {
 		return false, err
 	}
 	if p.round() != nil {
-		common.Logger.Debugf("party %v: %s round %d update", p.round().Params().PartyID().Index, task, p.round().RoundNumber())
+		common.Logger.Debugf("party %v: %s round %d update", p.round().Params().PartyID(), task, p.round().RoundNumber())
 		if _, err := p.round().Update(); err != nil {
 			return false, err
 		}
 		if p.round().CanProceed() {
 			if p.advance(); p.round() != nil {
 				if err := p.round().Start(); err != nil {
+					rndNum := p.round().RoundNumber()
+					common.Logger.Debugf("party %v: %s round %d started with Err", p.round().Params().PartyID(), task, rndNum)
 					return false, err
 				}
 				rndNum := p.round().RoundNumber()
-				common.Logger.Infof("party %v: %s round %d started", p.round().Params().PartyID().Index, task, rndNum)
+				common.Logger.Infof("party %v: %s round %d started", p.round().Params().PartyID(), task, rndNum)
 			} else {
 				// finished! the round implementation will have sent the data through the `end` channel.
-				common.Logger.Infof("party %v: %s finished!", p.PartyID().Index, task)
+				common.Logger.Infof("party %v: %s finished!", p.PartyID(), task)
 			}
 		}
 	}
+	return true, nil
+}
+
+func BaseUpdatePool(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
+	if _, err := p.ValidateMessage(msg); err != nil {
+		return false, err
+	}
+	if msg.Content().RoundNumber() > p.ExpectMsgRound() {
+		common.Logger.Debugf("party %v: %s will pool msg %d", p.round().Params().PartyID(), task, p.ExpectMsgRound())
+		p.PushMsgToPool(msg)
+		return true, nil
+	}
+	if msg.Content().RoundNumber() < p.ExpectMsgRound() {
+		// drop message
+		common.Logger.Debugf("party %v: %s will drop msg %d", p.round().Params().PartyID(), task, msg.Content().RoundNumber())
+		return true, nil
+	}
+
+	ok, err = BaseUpdateNR(p, msg, task)
+	if !ok {
+		return ok, err
+	}
+	for {
+		ok, hMsg := p.TopMsgOfPool()
+		if !ok {
+			common.Logger.Debugf("party %v: %s accessing empty pool", p.PartyID(), task)
+			break
+		}
+		hRnd := (*hMsg).Content().RoundNumber()
+		if hRnd > p.ExpectMsgRound() {
+			common.Logger.Debugf("party %v: %s message pool not updateable %d", p.PartyID(), task, hRnd)
+			break
+		}
+		ok, hMsg = p.PopMsgFromPool()
+		if !ok {
+			break
+		}
+		if hRnd == p.ExpectMsgRound() {
+			ok, err = BaseUpdateNR(p, *hMsg, task)
+			if !ok {
+				return ok, err
+			}
+		}
+	}
+
 	return true, nil
 }

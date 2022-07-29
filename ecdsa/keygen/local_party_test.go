@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -160,12 +161,18 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		}
 		parties = append(parties, P)
+	}
+	var wg sync.WaitGroup
+	for _, party := range parties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	// PHASE: keygen
 	var ended int32
@@ -250,12 +257,12 @@ keygen:
 						assert.NoError(t, err)
 						assert.NotEqual(t, parties[j].temp.ui, uj)
 						BigXjX, BigXjY := tss.EC().ScalarBaseMult(uj.Bytes())
-						V_0 := Pj.temp.vs[0]
+						// V0 := Pj.temp.vs[0]
 						if Pj.temp.r2msgVss[j] != nil {
-							V_0 = Pj.temp.r2msgVss[j][0]
+							V0 = Pj.temp.r2msgVss[j][0]
 						}
-						assert.NotEqual(t, BigXjX, V_0.X())
-						assert.NotEqual(t, BigXjY, V_0.Y())
+						assert.NotEqual(t, BigXjX, V0.X())
+						assert.NotEqual(t, BigXjY, V0.Y())
 					}
 					u = new(big.Int).Add(u, uj)
 				}
@@ -311,7 +318,8 @@ func tryWriteTestFixtureFile(t *testing.T, index int, data LocalPartySaveData) {
 	fixtureFileName := makeTestFixtureFilePath(index)
 
 	dir := path.Dir(fixtureFileName)
-	os.MkdirAll(dir, 0751)
+	err := os.MkdirAll(dir, 0751)
+	assert.NoError(t, err)
 	// fixture file does not already exist?
 	// if it does, we won't re-create it here
 	fi, err := os.Stat(fixtureFileName)

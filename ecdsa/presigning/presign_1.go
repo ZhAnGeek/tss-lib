@@ -24,6 +24,7 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 }
 
 func (round *presign1) Start() *tss.Error {
+	fmt.Println("################################################################ in Start() pre1")
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -54,13 +55,14 @@ func (round *presign1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
-	kgMsg := NewPreSignRound1BroadcastMessage(round.PartyID(), K, G)
+	kgMsg := NewPreSignRound1Message1(round.PartyID(), K, G)
 	round.out <- kgMsg
 
 	// Fig 7. Round 1. create proof enc
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg := sync.WaitGroup{}
 	ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
+	fmt.Println("################################################################ in L65 pre1")
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -75,7 +77,7 @@ func (round *presign1) Start() *tss.Error {
 				return
 			}
 
-			r1msg := NewPreSignRound1NonBroadcastMessage(Pj, round.PartyID(), proof)
+			r1msg := NewPreSignRound1Message2(Pj, round.PartyID(), proof)
 			round.out <- r1msg
 		}(j, Pj)
 	}
@@ -93,6 +95,7 @@ func (round *presign1) Start() *tss.Error {
 	round.temp.KNonce = KNonce
 	round.temp.GNonce = GNonce
 
+	fmt.Println("################################################## pre1 AA", round.PartyID())
 	if round.dump != nil {
 		du := &LocalDump{
 			Temp:     round.temp,
@@ -102,6 +105,7 @@ func (round *presign1) Start() *tss.Error {
 		duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
 		round.dump <- duPB
 	}
+	fmt.Println("################################################## pre1", round.PartyID())
 
 	return nil
 }
@@ -120,10 +124,10 @@ func (round *presign1) Update() (bool, *tss.Error) {
 }
 
 func (round *presign1) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*PreSignRound1BroadcastMessage); ok {
+	if _, ok := msg.Content().(*PreSignRound1Message1); ok {
 		return msg.IsBroadcast()
 	}
-	if _, ok := msg.Content().(*PreSignRound1NonBroadcastMessage); ok {
+	if _, ok := msg.Content().(*PreSignRound1Message2); ok {
 		return !msg.IsBroadcast()
 	}
 	return false

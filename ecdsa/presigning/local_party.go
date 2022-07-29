@@ -229,7 +229,7 @@ func (p *LocalParty) Start() *tss.Error {
 }
 
 func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(p, msg, TaskName)
+	return tss.BaseUpdatePool(p, msg, TaskName)
 }
 
 func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
@@ -262,12 +262,12 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// switch/case is necessary to store any messages beyond current round
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
-	case *PreSignRound1BroadcastMessage:
-		r1msgBroadcast := msg.Content().(*PreSignRound1BroadcastMessage)
+	case *PreSignRound1Message1:
+		r1msgBroadcast := msg.Content().(*PreSignRound1Message1)
 		p.temp.R1msgG[fromPIdx] = r1msgBroadcast.UnmarshalG()
 		p.temp.R1msgK[fromPIdx] = r1msgBroadcast.UnmarshalK()
-	case *PreSignRound1NonBroadcastMessage:
-		r1msgNonBroadcast := msg.Content().(*PreSignRound1NonBroadcastMessage)
+	case *PreSignRound1Message2:
+		r1msgNonBroadcast := msg.Content().(*PreSignRound1Message2)
 		Proof, err := r1msgNonBroadcast.UnmarshalEncProof()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
@@ -328,7 +328,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		}
 		p.temp.R5msgProofDec[fromPIdx] = proofDec
 	default: // unrecognised message, just ignore!
-		common.Logger.Warningf("unrecognised message ignored: %v", msg)
+		common.Logger.Warnf("unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

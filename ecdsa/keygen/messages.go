@@ -56,6 +56,10 @@ func (m *KGRound1Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.GetVHash())
 }
 
+func (m *KGRound1Message) RoundNumber() int {
+	return 1
+}
+
 func (m *KGRound1Message) UnmarshalVHash() *big.Int {
 	return new(big.Int).SetBytes(m.GetVHash())
 }
@@ -111,6 +115,10 @@ func (m *KGRound2Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.GetRid()) &&
 		common.NonEmptyBytes(m.GetCmtRandomness()) &&
 		common.NonEmptyMultiBytes(m.GetPrmProof(), zkpprm.ProofPrmBytesParts)
+}
+
+func (m *KGRound2Message) RoundNumber() int {
+	return 2
 }
 
 func (m *KGRound2Message) UnmarshalVs(ec elliptic.Curve) ([]*crypto.ECPoint, error) {
@@ -189,6 +197,10 @@ func (m *KGRound3Message) ValidateBasic() bool {
 		common.NonEmptyMultiBytes(m.GetFacProof(), zkpfac.ProofFacBytesParts)
 }
 
+func (m *KGRound3Message) RoundNumber() int {
+	return 3
+}
+
 func (m *KGRound3Message) UnmarshalShare() *big.Int {
 	return new(big.Int).SetBytes(m.Share)
 }
@@ -222,6 +234,10 @@ func NewKGRound4Message(
 func (m *KGRound4Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.GetSchProof(), zkpsch.ProofSchBytesParts)
+}
+
+func (m *KGRound4Message) RoundNumber() int {
+	return 4
 }
 
 func (m *KGRound4Message) UnmarshalProof(ec elliptic.Curve) (*zkpsch.ProofSch, error) {

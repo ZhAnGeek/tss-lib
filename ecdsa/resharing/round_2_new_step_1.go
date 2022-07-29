@@ -24,8 +24,8 @@ func (round *round2) Start() *tss.Error {
 	round.number = 2
 	round.started = true
 	round.resetOK() // resets both round.oldOK and round.newOK
-	round.allOldOK()
 
+	round.allOldOK()
 	if !round.ReSharingParams().IsNewCommittee() {
 		return nil
 	}

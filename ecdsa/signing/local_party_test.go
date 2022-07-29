@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -51,7 +52,7 @@ func TestE2EConcurrent(t *testing.T) {
 	parties := make([]*presigning.LocalParty, 0, len(signPIDs))
 
 	errCh := make(chan *tss.Error, len(signPIDs))
-	outCh := make(chan tss.Message, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs)*2)
 	endCh := make(chan *presigning.PreSignatureData, len(signPIDs))
 	dumpCh := make(chan *presigning.LocalDumpPB, len(signPIDs))
 
@@ -63,12 +64,18 @@ func TestE2EConcurrent(t *testing.T) {
 
 		P := presigning.NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*presigning.LocalParty)
 		parties = append(parties, P)
+	}
+	var wg sync.WaitGroup
+	for _, party := range parties {
+		wg.Add(1)
 		go func(P *presigning.LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	preSigDatas := make([]*presigning.PreSignatureData, len(signPIDs))
 
@@ -131,12 +138,18 @@ signing:
 		keyDerivationDelta := big.NewInt(10)
 		P := NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*LocalParty)
 		signParties = append(signParties, P)
+	}
+	wg = sync.WaitGroup{}
+	for _, party := range signParties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	var signEnded int32
 	for {
@@ -190,7 +203,7 @@ func TestE2EConcurrentWithIdentification(t *testing.T) {
 	parties := make([]*presigning.LocalParty, 0, len(signPIDs))
 
 	errCh := make(chan *tss.Error, len(signPIDs))
-	outCh := make(chan tss.Message, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs)*2)
 	endCh := make(chan *presigning.PreSignatureData, len(signPIDs))
 	dumpCh := make(chan *presigning.LocalDumpPB, len(signPIDs))
 
@@ -202,12 +215,18 @@ func TestE2EConcurrentWithIdentification(t *testing.T) {
 
 		P := presigning.NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*presigning.LocalParty)
 		parties = append(parties, P)
+	}
+	var wg sync.WaitGroup
+	for _, party := range parties {
+		wg.Add(1)
 		go func(P *presigning.LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	preSigDatas := make([]*presigning.PreSignatureData, len(signPIDs))
 
@@ -270,12 +289,18 @@ signing:
 		keyDerivationDelta := big.NewInt(0)
 		P := NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*LocalParty)
 		signParties = append(signParties, P)
+	}
+	wg = sync.WaitGroup{}
+	for _, party := range signParties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	signDumps := make([]*LocalDumpPB, len(signPIDs))
 
@@ -330,13 +355,19 @@ identification:
 			assert.FailNow(t, err.Error())
 		}
 		identificationParties[i] = P.(*LocalParty)
+	}
+	wg = sync.WaitGroup{}
+	for i, party := range identificationParties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(identificationParties[i])
+		}(party)
 		fmt.Printf("Party%2d sign identification]: running...\n", i)
 	}
+	wg.Wait()
 
 	var identificationEnded int32
 	for {
