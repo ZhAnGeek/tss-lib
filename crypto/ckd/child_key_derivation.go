@@ -222,7 +222,7 @@ func DeriveChildKeyOfEcdsa(index uint32, pk *ExtendedKey, curve elliptic.Curve) 
 	if index >= HardenedKeyStart {
 		return nil, nil, errors.New("the index must be non-hardened")
 	}
-	if pk.Depth == maxDepth {
+	if pk.Depth >= maxDepth {
 		return nil, nil, errors.New("cannot derive key beyond max depth")
 	}
 

@@ -30,6 +30,7 @@ func (round *round3) Start() *tss.Error {
 
 	Ps := round.Parties().IDs()
 	PIdx := round.PartyID().Index
+	round.ok[PIdx] = true
 
 	// 1,10. calculate xi
 	xi := new(big.Int).Set(round.temp.shares[PIdx].Share)

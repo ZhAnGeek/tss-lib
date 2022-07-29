@@ -80,8 +80,7 @@ func NewIdentificationRound1Message(
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
-		To:          []*tss.PartyID{to},
-		IsBroadcast: false,
+		IsBroadcast: true,
 	}
 	MulProofBzs := MulProof.Bytes()
 	DjisBzs := make([][]byte, len(Djis))

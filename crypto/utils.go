@@ -13,6 +13,10 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 )
 
+var (
+	zero = new(big.Int).SetInt64(0)
+)
+
 func GenerateNTildei(safePrimes [2]*big.Int) (NTildei, h1i, h2i *big.Int, err error) {
 	if safePrimes[0] == nil || safePrimes[1] == nil {
 		return nil, nil, nil, fmt.Errorf("GenerateNTildei: needs two primes, got %v", safePrimes)

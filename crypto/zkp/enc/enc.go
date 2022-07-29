@@ -131,7 +131,7 @@ func (pf *ProofEnc) Verify(Session []byte, ec elliptic.Curve, pk *paillier.Publi
 	}
 
 	// Fig 14. Range Check
-	if pf.Z1.Cmp(q3) == 1 {
+	if !common.IsInInterval(pf.Z1, q3) {
 		return false
 	}
 

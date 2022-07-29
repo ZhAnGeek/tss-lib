@@ -39,6 +39,7 @@ type (
 	localTempData struct {
 		// temp data (thrown away after keygen)
 		ssid          []byte
+		ssidNonce     *big.Int
 		ui            *big.Int // used for tests
 		KGCs          []cmt.HashCommitment
 		vs            vss.Vs
@@ -108,15 +109,15 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
 	case *KGRound1Message:
-		//p.temp.kgRound1Messages[fromPIdx] = msg
+		// p.temp.kgRound1Messages[fromPIdx] = msg
 		r1msg := msg.Content().(*KGRound1Message)
 		p.temp.KGCs[fromPIdx] = r1msg.UnmarshalCommitment()
 	case *KGRound2Message1:
-		//p.temp.kgRound2Message1s[fromPIdx] = msg
+		// p.temp.kgRound2Message1s[fromPIdx] = msg
 		r2msg1 := msg.Content().(*KGRound2Message1)
 		p.temp.r2msg1Shares[fromPIdx] = r2msg1.UnmarshalShare()
 	case *KGRound2Message2:
-		//p.temp.kgRound2Message2s[fromPIdx] = msg
+		// p.temp.kgRound2Message2s[fromPIdx] = msg
 		r2msg2 := msg.Content().(*KGRound2Message2)
 		p.temp.r2msg2Decommit[fromPIdx] = r2msg2.UnmarshalDeCommitment()
 		proof, err := r2msg2.UnmarshalZKProof(p.params.EC())

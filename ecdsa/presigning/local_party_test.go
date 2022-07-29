@@ -63,6 +63,7 @@ func updatePartiesByMessages(parties []*LocalParty,
 func fetchingMessages(dumpCh chan *LocalDumpPB,
 	dumps []*LocalDumpPB,
 	N int,
+	MessageCount int,
 	errCh chan *tss.Error,
 	outCh chan tss.Message,
 	msgs *[]tss.Message,
@@ -91,7 +92,7 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 			i := duRestored.UnmarshalIndex()
 			dumps[i] = &duRestored
 			atomic.AddInt32(&ended1, 1)
-			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(N*(N-1)) {
+			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(MessageCount) {
 				return nil
 			}
 
@@ -102,7 +103,7 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 		case msg := <-outCh:
 			*msgs = append(*msgs, msg)
 			atomic.AddInt32(&ended2, 1)
-			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(N*(N-1)) {
+			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(MessageCount) {
 				return nil
 			}
 
@@ -172,7 +173,7 @@ func E2E(b *testing.B) {
 	b.StartTimer()
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		P := NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*LocalParty)
 		parties = append(parties, P)
@@ -231,7 +232,7 @@ signing:
 	b.StartTimer()
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
@@ -293,7 +294,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		P := NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*LocalParty)
 		parties = append(parties, P)
@@ -360,7 +361,7 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
@@ -452,7 +453,7 @@ func TestR2RConcurrent(t *testing.T) {
 
 	// @Presign 1
 	for i := 0; i < N; i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		P := NewLocalParty(params, keys[i], outCh, preSigCh, preDumpCh).(*LocalParty)
 		preSign1Parties[i] = P
@@ -465,7 +466,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Fetching messages produced by Presign 1
-	if err := fetchingMessages(preDumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r1dumps, N, N+N*(N-1), errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 1 all done. Received dump data from %d participants\n", N)
@@ -474,7 +475,7 @@ func TestR2RConcurrent(t *testing.T) {
 	preSign1Parties = nil
 	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign 2]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r1dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
@@ -490,7 +491,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Fetching messages produced by Presign 2
-	if err := fetchingMessages(preDumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r2dumps, N, N*(N-1), errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 2 all done. Received dump data from %d participants\n", N)
@@ -499,7 +500,7 @@ func TestR2RConcurrent(t *testing.T) {
 	preSign2Parties = nil
 	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign 3]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r2dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
@@ -515,7 +516,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Fetching messages produced by Presign 3
-	if err := fetchingMessages(preDumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r3dumps, N, N*(N-1), errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 3 all done. Received dump data from %d participants\n", N)
@@ -524,7 +525,7 @@ func TestR2RConcurrent(t *testing.T) {
 	preSign3Parties = nil
 	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign out]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r3dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
@@ -539,7 +540,7 @@ func TestR2RConcurrent(t *testing.T) {
 		t.Error(err)
 	}
 	// Fetching messages produced by PresignOut
-	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, preSigCh, preSigs, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(nil, nil, N, N*(N-1), errCh, nil, nil, preSigCh, preSigs, nil, nil, nil, nil); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("PresignOut all done. Received preSig data from %d participants\n", N)
@@ -547,7 +548,7 @@ func TestR2RConcurrent(t *testing.T) {
 	// @Signing
 	preSignOutParties = nil
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigs[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, signDumpCh).(*sign.LocalParty)
@@ -561,7 +562,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Processing messages produced by signing
-	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, nil, nil, sigCh, outCh, signParties, updater); err != nil {
+	if err := fetchingMessages(nil, nil, N, N*(N-1), errCh, nil, nil, nil, nil, sigCh, outCh, signParties, updater); err != nil {
 		t.Error(err)
 	}
 }
@@ -591,7 +592,7 @@ func TestR2RWithIdentification(t *testing.T) {
 
 	// Presign 1
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P := NewLocalParty(params, keys[i], outCh, preSigCh, dumpCh).(*LocalParty)
 		partiesPresign1 = append(partiesPresign1, P)
@@ -638,7 +639,7 @@ presign2:
 	// Presign 2
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign 2]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r1dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
@@ -702,7 +703,7 @@ presign3:
 	// Presign 3
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign 3]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r2dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
@@ -768,7 +769,7 @@ presignOut:
 	// Presign out
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign out]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r3dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
@@ -836,7 +837,7 @@ identification:
 	// Presign out
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d [presign identification]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r4dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
@@ -911,7 +912,7 @@ func TestE2EConcurrentHD(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		// Use master key vault
 		P := NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*LocalParty)
@@ -988,7 +989,7 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		// keys[i] is master key, keyDerivationDelta is child key delta relative to master key
 		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)

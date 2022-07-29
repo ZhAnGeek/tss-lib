@@ -9,8 +9,8 @@ package keygen
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/rand"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -40,7 +40,7 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 	}
 	for i := start; i < qty; i++ {
 		fixtureFilePath := makeTestFixtureFilePath(i)
-		bz, err := ioutil.ReadFile(fixtureFilePath)
+		bz, err := os.ReadFile(fixtureFilePath)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err,
 				"could not open the test fixture for party %d in the expected location: %s. run keygen tests first.",
@@ -78,7 +78,7 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 	}
 	for i := range plucked {
 		fixtureFilePath := makeTestFixtureFilePath(i)
-		bz, err := ioutil.ReadFile(fixtureFilePath)
+		bz, err := os.ReadFile(fixtureFilePath)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err,
 				"could not open the test fixture for party %d in the expected location: %s. run keygen tests first.",
