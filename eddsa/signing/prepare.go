@@ -36,7 +36,12 @@ func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int
 			panic(fmt.Errorf("index of two parties are equal"))
 		}
 		// big.Int Div is calculated as: a/b = a * modInv(b,q)
-		coef := modQ.Mul(ksj, modQ.ModInverse(new(big.Int).Sub(ksj, ksi)))
+		modQTemp := modQ.ModInverse(new(big.Int).Sub(ksj, ksi))
+		err := common.CheckBigIntNotNil(modQTemp)
+		if err != nil {
+			panic(err.Error())
+		}
+		coef := modQ.Mul(ksj, modQTemp)
 		wi = modQ.Mul(wi, coef)
 	}
 

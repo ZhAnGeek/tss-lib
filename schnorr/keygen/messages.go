@@ -47,6 +47,10 @@ func (m *KGRound1Message) ValidateBasic() bool {
 	return m != nil && common.NonEmptyBytes(m.GetCommitment())
 }
 
+func (m *KGRound1Message) RoundNumber() int {
+	return 1
+}
+
 func (m *KGRound1Message) UnmarshalCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetCommitment())
 }
@@ -72,6 +76,10 @@ func NewKGRound2Message1(
 func (m *KGRound2Message1) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetShare())
+}
+
+func (m *KGRound2Message1) RoundNumber() int {
+	return 2
 }
 
 func (m *KGRound2Message1) UnmarshalShare() *big.Int {
@@ -103,6 +111,10 @@ func (m *KGRound2Message2) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyMultiBytes(m.GetDeCommitment()) &&
 		common.NonEmptyMultiBytes(m.Proof, zkpsch.ProofSchBytesParts)
+}
+
+func (m *KGRound2Message2) RoundNumber() int {
+	return 2
 }
 
 func (m *KGRound2Message2) UnmarshalDeCommitment() []*big.Int {

@@ -11,9 +11,15 @@ option go_package = "ecdsa/presigning";
 /*
  * Represents a P2P message sent to each party during Round 1 of the ECDSA TSS signing protocol.
  */
-message PreSignRound1Message {
+message PreSignRound1Message1 {
     bytes K = 1;
     bytes G = 2;
+}
+
+/*
+ * Represents a P2P message sent to each party during Round 1 of the ECDSA TSS signing protocol.
+ */
+message PreSignRound1Message2 {
     repeated bytes EncProof = 3;
 }
 
@@ -45,7 +51,7 @@ message IdentificationRound1Message {
     repeated bytes MulProof = 2;
     repeated bytes Djis = 3;
     repeated bytes Fjis = 4;
-    repeated bytes DjiProofs = 5;
+    // repeated bytes DjiProofs = 5;
     repeated bytes DecProof = 6;
 }
 
@@ -69,6 +75,7 @@ message IdentificationRound1Message {
     repeated bytes LRChiMtAFs = 11;
     repeated bytes LRChiMtADs = 12;
     repeated bytes LRChiMtADProofs = 13;
+    bytes SsidNonce = 14;
 }
 
 
@@ -123,19 +130,16 @@ message IdentificationRound1Message {
     repeated bytes LTr3msgBigDeltaShare = 37;
     repeated bytes LTr3msgProofLogstar = 38;
 
-    //repeated bytes LTr4msgSigmaShare = 39;
-
     repeated bytes LTDeltaMtAFs = 40;
     repeated bytes LTDeltaMtADs = 41;
     repeated bytes LDDeltaMtADProofs = 42;
     repeated bytes LTChiMtAFs = 43;
     repeated bytes LTChiMtADs = 44;
-    repeated bytes LTChiMtADProofs = 45;
+    // repeated bytes LTChiMtADProofs = 45;
     repeated bytes LTr5msgH = 46;
     repeated bytes LTr5msgProofMul = 47;
-    // repeated bytes LTr5msgDeltaShareEnc = 46;
     repeated bytes LTr5msgProofDec = 48;
     repeated bytes LTr5msgDjis = 49;
     repeated bytes LTr5msgFjis = 50;
-    //repeated bytes LTr5msgQ3Enc = 51;
+    bytes LTssidNonce = 51;
 }

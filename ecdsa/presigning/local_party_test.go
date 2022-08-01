@@ -8,11 +8,10 @@ package presigning_test
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"math/big"
-	"os"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -37,23 +36,6 @@ func setUp(level string) {
 	if err := log.SetLogLevel("tss-lib", level); err != nil {
 		panic(err)
 	}
-}
-
-func WriteKeyToJson(filename string, keydata keygen.LocalPartySaveData) error {
-	fd, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-	bz, err := json.Marshal(&keydata)
-	fmt.Println(string(bz))
-	if err != nil {
-		return err
-	}
-	_, err = fd.Write(bz)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func updatePartiesByMessages(parties []*LocalParty,
@@ -91,10 +73,11 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 	signOutCh chan tss.Message,
 	signParties []*sign.LocalParty,
 	updater func(party tss.Party, msg tss.Message, errCh chan<- *tss.Error),
+	numMsgPerRound int,
 ) error {
 	var ended1, ended2 int32
 	for {
-		//fmt.Printf("Presign1 select messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		// fmt.Printf("Presign1 select messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
 			// Simulate serilize and restore
@@ -102,12 +85,15 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 			dumStr := base64.StdEncoding.EncodeToString(dum)
 			dumStrDec, _ := base64.StdEncoding.DecodeString(dumStr)
 			var duRestored LocalDumpPB
-			proto.Unmarshal(dumStrDec, &duRestored)
+			err := proto.Unmarshal(dumStrDec, &duRestored)
+			if err != nil {
+				return err
+			}
 
 			i := duRestored.UnmarshalIndex()
 			dumps[i] = &duRestored
 			atomic.AddInt32(&ended1, 1)
-			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(N*(N-1)) {
+			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(numMsgPerRound*N*(N-1)) {
 				return nil
 			}
 
@@ -118,7 +104,7 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 		case msg := <-outCh:
 			*msgs = append(*msgs, msg)
 			atomic.AddInt32(&ended2, 1)
-			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(N*(N-1)) {
+			if atomic.LoadInt32(&ended1) == int32(N) && atomic.LoadInt32(&ended2) == int32(numMsgPerRound*N*(N-1)) {
 				return nil
 			}
 
@@ -185,26 +171,32 @@ func E2E(b *testing.B) {
 
 	updater := test.SharedPartyUpdater
 
-	b.StartTimer()
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		P := NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*LocalParty)
 		parties = append(parties, P)
+	}
+	var wg sync.WaitGroup
+	for _, party := range parties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
+	b.StartTimer()
 	preSigDatas := make([]*PreSignatureData, len(signPIDs))
 
 	var presignEnded int32
 presigning:
 	for {
-		//fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		// fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case <-dumpCh:
 		case <-errCh:
@@ -230,7 +222,7 @@ presigning:
 		}
 	}
 signing:
-	//b.ResetTimer()
+	// b.ResetTimer()
 	// PHASE: signing
 	// use a shuffled selection of the list of parties for this test
 	b.StopTimer()
@@ -244,20 +236,27 @@ signing:
 
 	updater = test.SharedPartyUpdater
 
-	b.StartTimer()
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
 		signParties = append(signParties, P)
+	}
+	wg = sync.WaitGroup{}
+	for _, party := range signParties {
+		wg.Add(1)
 		go func(P *sign.LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
+
+	b.StartTimer()
 
 	var signEnded int32
 	for {
@@ -301,7 +300,7 @@ func TestE2EConcurrent(t *testing.T) {
 	parties := make([]*LocalParty, 0, len(signPIDs))
 
 	errCh := make(chan *tss.Error, len(signPIDs))
-	outCh := make(chan tss.Message, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs)*2)
 	endCh := make(chan *PreSignatureData, len(signPIDs))
 	dumpCh := make(chan *LocalDumpPB, len(signPIDs))
 
@@ -309,16 +308,22 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		P := NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*LocalParty)
 		parties = append(parties, P)
+	}
+	var wg sync.WaitGroup
+	for _, party := range parties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	preSigDatas := make([]*PreSignatureData, len(signPIDs))
 
@@ -376,17 +381,23 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
 		signParties = append(signParties, P)
+	}
+	wg = sync.WaitGroup{}
+	for _, party := range signParties {
+		wg.Add(1)
 		go func(P *sign.LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	var signEnded int32
 	for {
@@ -425,7 +436,7 @@ signing:
 }
 
 func TestR2RConcurrent(t *testing.T) {
-	setUp("error")
+	setUp("info")
 	threshold := testThreshold
 
 	// Load keygen fixtures
@@ -445,7 +456,7 @@ func TestR2RConcurrent(t *testing.T) {
 
 	// PreSign Channels
 	errCh := make(chan *tss.Error, N*10)
-	outCh := make(chan tss.Message, N*10)
+	outCh := make(chan tss.Message, N*20)
 	preSigCh := make(chan *PreSignatureData, N*10)
 	preDumpCh := make(chan *LocalDumpPB, N*10)
 
@@ -461,27 +472,34 @@ func TestR2RConcurrent(t *testing.T) {
 	r1dumps := make([]*LocalDumpPB, N)
 	r2msgs := make([]tss.Message, 0)
 	r2dumps := make([]*LocalDumpPB, N)
-	r3msgs := make([]tss.Message, 0) //, len(signPIDs)*(len(signPIDs)-1))
+	r3msgs := make([]tss.Message, 0)
 	r3dumps := make([]*LocalDumpPB, N)
 	// pre signatures
 	preSigs := make([]*PreSignatureData, N)
 
 	// @Presign 1
 	for i := 0; i < N; i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		P := NewLocalParty(params, keys[i], outCh, preSigCh, preDumpCh).(*LocalParty)
 		preSign1Parties[i] = P
+	}
+
+	var wg sync.WaitGroup
+	for i, party := range preSign1Parties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 		fmt.Printf("Party%2d [presign 1]: initialized and running...\n", i)
 	}
+	wg.Wait()
 
 	// Fetching messages produced by Presign 1
-	if err := fetchingMessages(preDumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil, 2); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 1 all done. Received dump data from %d participants\n", N)
@@ -490,7 +508,7 @@ func TestR2RConcurrent(t *testing.T) {
 	preSign1Parties = nil
 	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign 2]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r1dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
@@ -506,7 +524,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Fetching messages produced by Presign 2
-	if err := fetchingMessages(preDumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 2 all done. Received dump data from %d participants\n", N)
@@ -515,7 +533,7 @@ func TestR2RConcurrent(t *testing.T) {
 	preSign2Parties = nil
 	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign 3]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r2dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
@@ -531,7 +549,7 @@ func TestR2RConcurrent(t *testing.T) {
 	}
 
 	// Fetching messages produced by Presign 3
-	if err := fetchingMessages(preDumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(preDumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 3 all done. Received dump data from %d participants\n", N)
@@ -540,7 +558,7 @@ func TestR2RConcurrent(t *testing.T) {
 	preSign3Parties = nil
 	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign out]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r3dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
@@ -555,7 +573,7 @@ func TestR2RConcurrent(t *testing.T) {
 		t.Error(err)
 	}
 	// Fetching messages produced by PresignOut
-	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, preSigCh, preSigs, nil, nil, nil, nil); err != nil {
+	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, preSigCh, preSigs, nil, nil, nil, nil, 1); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("PresignOut all done. Received preSig data from %d participants\n", N)
@@ -563,21 +581,27 @@ func TestR2RConcurrent(t *testing.T) {
 	// @Signing
 	preSignOutParties = nil
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := sign.NewLocalParty(preSigs[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, signDumpCh).(*sign.LocalParty)
 		signParties[i] = P
+	}
+	wg = sync.WaitGroup{}
+	for i, party := range signParties {
+		wg.Add(1)
 		go func(P *sign.LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 		fmt.Printf("Party%2d [sign 1]: initialized and running...\n", i)
 	}
+	wg.Wait()
 
 	// Processing messages produced by signing
-	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, nil, nil, sigCh, outCh, signParties, updater); err != nil {
+	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, nil, nil, sigCh, outCh, signParties, updater, 1); err != nil {
 		t.Error(err)
 	}
 }
@@ -588,247 +612,146 @@ func TestR2RWithIdentification(t *testing.T) {
 
 	// Load keygen fixtures
 	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
+	N := len(signPIDs)
 	assert.NoError(t, err, "should load keygen fixtures")
 	assert.Equal(t, testThreshold+1, len(keys))
-	assert.Equal(t, testThreshold+1, len(signPIDs))
+	assert.Equal(t, testThreshold+1, N)
 
 	// Use a shuffled selection of the list of parties for this test
 	p2pCtx := tss.NewPeerContext(signPIDs)
-	parties_presign_1 := make([]*LocalParty, 0, len(signPIDs))
+	preSign1Parties := make([]*LocalParty, N)
+	preSign2Parties := make([]*LocalParty, N)
+	preSign3Parties := make([]*LocalParty, N)
+	preSignOutParties := make([]*LocalParty, N)
+	presignIdentificationParties := make([]*LocalParty, N)
 
 	// Channels
-	errCh := make(chan *tss.Error, len(signPIDs)*10)
-	outCh := make(chan tss.Message, len(signPIDs)*10)
-	preSigCh := make(chan *PreSignatureData, len(signPIDs)*10)
-	dumpCh := make(chan *LocalDumpPB, len(signPIDs)*10)
+	errCh := make(chan *tss.Error, N*10)
+	outCh := make(chan tss.Message, N*10)
+	preSigCh := make(chan *PreSignatureData, N*10)
+	dumpCh := make(chan *LocalDumpPB, N*10)
 
 	// Updater
 	updater := test.SharedPartyUpdater
 
-	// Presign 1
-	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+	// msgs and dumps
+	r1msgs := make([]tss.Message, 0)
+	r1dumps := make([]*LocalDumpPB, N)
+	r2msgs := make([]tss.Message, 0)
+	r2dumps := make([]*LocalDumpPB, N)
+	r3msgs := make([]tss.Message, 0)
+	r3dumps := make([]*LocalDumpPB, N)
+	r4dumps := make([]*LocalDumpPB, N)
+	preSigs := make([]*PreSignatureData, N)
+
+	// @Presign 1
+	for i := 0; i < N; i++ {
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P := NewLocalParty(params, keys[i], outCh, preSigCh, dumpCh).(*LocalParty)
-		parties_presign_1 = append(parties_presign_1, P)
+		preSign1Parties[i] = P
+	}
+	// var presign1Ended int32
+
+	var wg sync.WaitGroup
+	for i, party := range preSign1Parties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(parties_presign_1[i])
+		}(party)
 		fmt.Printf("Party%2d [presign 1]: initialized and running...\n", i)
 	}
+	wg.Wait()
 
-	r1msgs := make([]tss.Message, 0)
-	r1dumps := make([]*LocalDumpPB, len(signPIDs))
-	var presign_1_ended int32
-
-presign_1_loop:
-	for {
-		//fmt.Printf("Presign1 select messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
-		select {
-		case du := <-dumpCh:
-			i := du.UnmarshalIndex()
-			//i := du.Index
-			r1dumps[i] = du
-			atomic.AddInt32(&presign_1_ended, 1)
-			fmt.Printf("Party%2d [presign 1]: done and status dumped \n", i)
-			if atomic.LoadInt32(&presign_1_ended) == int32(len(signPIDs)) {
-				t.Logf("Presign 1 all done. Received dump data from %d participants", presign_1_ended)
-
-				goto presign_2
-			}
-		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
-			assert.FailNow(t, err.Error())
-			break presign_1_loop
-
-		case msg := <-outCh:
-			r1msgs = append(r1msgs, msg)
-		}
+	// Fetching messages produced by Presign 1
+	if err := fetchingMessages(dumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil, 2); err != nil {
+		t.Error(err)
 	}
+	fmt.Printf("Presign 1 all done. Received dump data from %d participants\n", N)
 
-presign_2:
-	parties_presign_1 = nil
-	parties_presign_2 := make([]*LocalParty, 0, len(signPIDs))
-	// Presign 2
-	for i := 0; i < len(signPIDs); i++ {
+	// @Presign 2
+	preSign1Parties = nil
+	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign 2]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r1dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		parties_presign_2 = append(parties_presign_2, P.(*LocalParty))
+		preSign2Parties[i] = P.(*LocalParty)
 	}
 
-	r2msgs := make([]tss.Message, 0)
-	r2dumps := make([]*LocalDumpPB, len(signPIDs))
-	var presign_2_ended int32
-
-	// Consuming r1msgs
+	// Update parties@Presign2 by r1msgs
 	fmt.Printf("Parties consuming r1msgs and run... \n")
-	for i, msg := range r1msgs {
-		dest := msg.GetTo()
-		if dest == nil {
-			for _, P := range parties_presign_2 {
-				if P.PartyID().Index == msg.GetFrom().Index {
-					continue
-				}
-				go updater(P, msg, errCh)
-			}
-		} else {
-			if dest[0].Index == msg.GetFrom().Index {
-				t.Fatalf("party %d tried to send a message(%d) to itself (%d)", dest[0].Index, i, msg.GetFrom().Index)
-			}
-			go updater(parties_presign_2[dest[0].Index], msg, errCh)
-		}
-
+	if err := updatePartiesByMessages(preSign2Parties, r1msgs, updater, errCh); err != nil {
+		t.Error(err)
 	}
 
-presign_2_loop:
-	for {
-		//fmt.Printf("Presign2 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
-		select {
-		case du := <-dumpCh:
-			i := du.UnmarshalIndex()
-			//i := du.Index
-			r2dumps[i] = du
-			atomic.AddInt32(&presign_2_ended, 1)
-			fmt.Printf("Party%2d [presign 2]: done and status dumped \n", i)
-			if atomic.LoadInt32(&presign_2_ended) == int32(len(signPIDs)) {
-				t.Logf("Presign 2 all done. Received dump data from %d participants", presign_2_ended)
-
-				goto presign_3
-			}
-		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
-			assert.FailNow(t, err.Error())
-			break presign_2_loop
-
-		case msg := <-outCh:
-			r2msgs = append(r2msgs, msg)
-		}
+	// Fetching messages produced by Presign 2
+	if err := fetchingMessages(dumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
+		t.Error(err)
 	}
+	fmt.Printf("Presign 2 all done. Received dump data from %d participants\n", N)
 
-presign_3:
-	parties_presign_2 = nil
-	parties_presign_3 := make([]*LocalParty, 0, len(signPIDs))
-
-	// Presign 3
-	for i := 0; i < len(signPIDs); i++ {
+	// @Presign 3
+	preSign2Parties = nil
+	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign 3]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r2dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		parties_presign_3 = append(parties_presign_3, P.(*LocalParty))
+		preSign3Parties[i] = P.(*LocalParty)
 	}
 
-	r3msgs := make([]tss.Message, 0) //, len(signPIDs)*(len(signPIDs)-1))
-	r3dumps := make([]*LocalDumpPB, len(signPIDs))
-	var presign_3_ended int32
-
-	// Consuming r2msgs
+	// Update parties@Presign3 by r2msgs
 	fmt.Printf("Parties consuming r2msgs and run... \n")
-	for i, msg := range r2msgs {
-		dest := msg.GetTo()
-		if dest == nil {
-			for _, P := range parties_presign_3 {
-				if P.PartyID().Index == msg.GetFrom().Index {
-					continue
-				}
-				go updater(P, msg, errCh)
-			}
-		} else {
-			if dest[0].Index == msg.GetFrom().Index {
-				t.Fatalf("party %d tried to send a message(%d) to itself (%d)", dest[0].Index, i, msg.GetFrom().Index)
-			}
-			go updater(parties_presign_3[dest[0].Index], msg, errCh)
-		}
-
+	if err := updatePartiesByMessages(preSign3Parties, r2msgs, updater, errCh); err != nil {
+		t.Error(err)
 	}
 
-presign_3_loop:
-	for {
-		//fmt.Printf("Presign3 selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
-		select {
-		case du := <-dumpCh:
-			i := du.UnmarshalIndex()
-			//i := du.Index
-			r3dumps[i] = du
-			atomic.AddInt32(&presign_3_ended, 1)
-			fmt.Printf("Party%2d [presign 3]: done and status dumped \n", i)
-			if atomic.LoadInt32(&presign_3_ended) == int32(len(signPIDs)) {
-				t.Logf("Presign 3 all done. Received dump data from %d participants", presign_3_ended)
-
-				goto presign_out
-			}
-		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
-			assert.FailNow(t, err.Error())
-			break presign_3_loop
-
-		case msg := <-outCh:
-			r3msgs = append(r3msgs, msg)
-		}
+	// Fetching messages produced by Presign 3
+	if err := fetchingMessages(dumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
+		t.Error(err)
 	}
+	fmt.Printf("Presign 3 all done. Received dump data from %d participants\n", N)
 
-presign_out:
-	// setup parties_sign
-	// update r3msgs
-	parties_presign_3 = nil
-	parties_presign_out := make([]*LocalParty, 0, len(signPIDs))
-
-	// Presign out
-	for i := 0; i < len(signPIDs); i++ {
+	// @Presign out
+	preSign3Parties = nil
+	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign out]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r3dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		parties_presign_out = append(parties_presign_out, P.(*LocalParty))
+		preSignOutParties[i] = P.(*LocalParty)
 	}
 
-	r4dumps := make([]*LocalDumpPB, len(signPIDs))
-	preSigs := make([]*PreSignatureData, len(signPIDs))
-	var presign_out_ended int32
-
-	// Consuming r3msgs
+	// Update parties@PresignOut by r3msgs
 	fmt.Printf("Parties consuming r3msgs and run... \n")
-	for i, msg := range r3msgs {
-		dest := msg.GetTo()
-		if dest == nil {
-			for _, P := range parties_presign_out {
-				if P.PartyID().Index == msg.GetFrom().Index {
-					continue
-				}
-				go updater(P, msg, errCh)
-			}
-		} else {
-			if dest[0].Index == msg.GetFrom().Index {
-				t.Fatalf("party %d tried to send a message(%d) to itself (%d)", dest[0].Index, i, msg.GetFrom().Index)
-			}
-			go updater(parties_presign_out[dest[0].Index], msg, errCh)
-		}
-
+	if err := updatePartiesByMessages(preSignOutParties, r3msgs, updater, errCh); err != nil {
+		t.Error(err)
 	}
 
-presign_out_loop:
+	var presignOutEnded int32
+presignOutLoop:
 	for {
-		//fmt.Printf("Presignout generating presig...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		// fmt.Printf("Presignout generating presig...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
 			i := du.UnmarshalIndex()
 			r4dumps[i] = du
-			atomic.AddInt32(&presign_out_ended, 1)
-			if atomic.LoadInt32(&presign_out_ended) == int32(len(signPIDs)) {
-				t.Logf("Presign_out Done. Received dump data from %d participants", presign_out_ended)
+			atomic.AddInt32(&presignOutEnded, 1)
+			if atomic.LoadInt32(&presignOutEnded) == int32(len(signPIDs)) {
+				t.Logf("Presign_out Done. Received dump data from %d participants", presignOutEnded)
 
 				goto identification
 			}
@@ -836,7 +759,7 @@ presign_out_loop:
 		case err := <-errCh:
 			common.Logger.Errorf("Error: %s", err)
 			assert.FailNow(t, err.Error())
-			break presign_out_loop
+			break presignOutLoop
 
 		case predata := <-preSigCh:
 			preSigs[predata.UnmarshalIndex()] = predata
@@ -845,33 +768,31 @@ presign_out_loop:
 			fmt.Printf("Party%2d [presign out]: done and stored preSig(%d) \n", i, ssid)
 		}
 	}
-	parties_presign_out = nil
 
 identification:
-	parties_presign_out = nil
-	parties_presign_identification := make([]*LocalParty, 0, len(signPIDs))
-
 	// Presign out
-	for i := 0; i < len(signPIDs); i++ {
+	for i := 0; i < N; i++ {
 		fmt.Printf("Party%2d [presign identification]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(params, keys[i], r4dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
-		parties_presign_identification = append(parties_presign_identification, P.(*LocalParty))
+		presignIdentificationParties[i] = P.(*LocalParty)
+	}
+	for i, party := range presignIdentificationParties {
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(parties_presign_identification[i])
+		}(party)
 		fmt.Printf("Party%2d [presign identification]: running...\n", i)
 	}
 
-	var identification_ended int32
+	var identificationEnded int32
 	for {
-		//fmt.Printf("Signing selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		// fmt.Printf("Signing selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
 			common.Logger.Errorf("Error: %s", err)
@@ -881,7 +802,7 @@ identification:
 		case msg := <-outCh:
 			dest := msg.GetTo()
 			if dest == nil {
-				for _, P := range parties_presign_identification {
+				for _, P := range presignIdentificationParties {
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
@@ -891,13 +812,13 @@ identification:
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties_presign_identification[dest[0].Index], msg, errCh)
+				go updater(presignIdentificationParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-dumpCh:
-			atomic.AddInt32(&identification_ended, 1)
-			if atomic.LoadInt32(&identification_ended) == int32(len(signPIDs)) {
-				t.Logf("Identification Done. Received from %d participants", identification_ended)
+			atomic.AddInt32(&identificationEnded, 1)
+			if atomic.LoadInt32(&identificationEnded) == int32(len(signPIDs)) {
+				t.Logf("Identification Done. Received from %d participants", identificationEnded)
 
 				return
 			}
@@ -921,7 +842,7 @@ func TestE2EConcurrentHD(t *testing.T) {
 	parties := make([]*LocalParty, 0, len(signPIDs))
 
 	errCh := make(chan *tss.Error, len(signPIDs))
-	outCh := make(chan tss.Message, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs)*2)
 	endCh := make(chan *PreSignatureData, len(signPIDs))
 	dumpCh := make(chan *LocalDumpPB, len(signPIDs))
 
@@ -929,21 +850,27 @@ func TestE2EConcurrentHD(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		// Use master key vault
 		P := NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*LocalParty)
 		parties = append(parties, P)
+	}
+	var wg sync.WaitGroup
+	for _, party := range parties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	preSigDatas := make([]*PreSignatureData, len(signPIDs))
 
-	var presignended int32
+	var presignEnded int32
 presigning:
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
@@ -972,11 +899,11 @@ presigning:
 			}
 
 		case predata := <-endCh:
-			atomic.AddInt32(&presignended, 1)
+			atomic.AddInt32(&presignEnded, 1)
 			preSigDatas[predata.UnmarshalIndex()] = predata
 			t.Logf("%d ssid: %d", predata.UnmarshalIndex(), new(big.Int).SetBytes(predata.UnmarshalSsid()).Int64())
-			if atomic.LoadInt32(&presignended) == int32(len(signPIDs)) {
-				t.Logf("Done. Received presignature data from %d participants", presignended)
+			if atomic.LoadInt32(&presignEnded) == int32(len(signPIDs)) {
+				t.Logf("Done. Received presignature data from %d participants", presignEnded)
 
 				goto signing
 			}
@@ -1000,28 +927,31 @@ signing:
 	max32b := new(big.Int).Lsh(new(big.Int).SetUint64(1), 256)
 	max32b = new(big.Int).Sub(max32b, new(big.Int).SetUint64(1))
 	common.GetRandomPositiveInt(max32b).FillBytes(chainCode)
-	//il, extendedChildPk, errorDerivation := DerivingPubkeyFromPath(keys[0].ECDSAPub, chainCode, []uint32{12, 209, 3}, tss.S256())
 	il, _, errorDerivation := DerivingPubkeyFromPath(keys[0].ECDSAPub, chainCode, []uint32{12, 209, 3}, tss.S256())
 	assert.NoErrorf(t, errorDerivation, "there should not be an error deriving the child public key")
 	keyDerivationDelta := il
-	//err = UpdateKeys(keyDerivationDelta, keys, &extendedChildPk.PublicKey, tss.S256()) // will update keys to child key vault
-	//assert.NoErrorf(t, err, "there should not be an error setting the derived keys")
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		// keys[i] is master key, keyDerivationDelta is child key delta relative to master key
 		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
 		signParties = append(signParties, P)
+	}
+	wg = sync.WaitGroup{}
+	for _, party := range signParties {
+		wg.Add(1)
 		go func(P *sign.LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
-	var signended int32
+	var signEnded int32
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
@@ -1047,9 +977,9 @@ signing:
 			}
 
 		case <-sigCh:
-			atomic.AddInt32(&signended, 1)
-			if atomic.LoadInt32(&signended) == int32(len(signPIDs)) {
-				t.Logf("Done. Received signature data from %d participants", signended)
+			atomic.AddInt32(&signEnded, 1)
+			if atomic.LoadInt32(&signEnded) == int32(len(signPIDs)) {
+				t.Logf("Done. Received signature data from %d participants", signEnded)
 
 				return
 			}

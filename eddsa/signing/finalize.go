@@ -30,6 +30,7 @@ func (round *finalization) Start() *tss.Error {
 	round.resetOK()
 
 	sumS := round.temp.si
+	oneBytes := bigIntToEncodedBytes(big.NewInt(1))
 	for j := range round.Parties().IDs() {
 		round.ok[j] = true
 		if j == round.PartyID().Index {
@@ -38,7 +39,7 @@ func (round *finalization) Start() *tss.Error {
 		r3msg := round.temp.signRound3Messages[j].Content().(*SignRound3Message)
 		sjBytes := bigIntToEncodedBytes(r3msg.UnmarshalS())
 		var tmpSumS [32]byte
-		edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), sjBytes)
+		edwards25519.ScMulAdd(&tmpSumS, sumS, oneBytes, sjBytes)
 		sumS = &tmpSumS
 	}
 	s := encodedBytesToBigInt(sumS)
@@ -64,7 +65,7 @@ func (round *finalization) Start() *tss.Error {
 	return nil
 }
 
-func (round *finalization) CanAccept(msg tss.ParsedMessage) bool {
+func (round *finalization) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }

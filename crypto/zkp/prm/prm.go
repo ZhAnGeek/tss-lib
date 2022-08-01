@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	Iterations         = 64
+	Iterations         = 80
 	ProofPrmBytesParts = Iterations * 2
 )
 
@@ -23,6 +23,10 @@ type (
 		A [Iterations]*big.Int
 		Z [Iterations]*big.Int
 	}
+)
+
+var (
+	one = big.NewInt(1)
 )
 
 func NewProof(Session []byte, s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
@@ -72,8 +76,34 @@ func (pf *ProofPrm) Verify(Session []byte, s, t, N *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
+	if N.Sign() != 1 {
+		return false
+	}
 	modN := common.ModInt(N)
 	e := common.SHA512_256i_TAGGED(Session, append([]*big.Int{s, t, N}, pf.A[:]...)...)
+	s_ := new(big.Int).Mod(s, N)
+	if s_.Cmp(one) != 1 || s_.Cmp(N) != -1 {
+		return false
+	}
+	t_ := new(big.Int).Mod(t, N)
+	if t_.Cmp(one) != 1 || t_.Cmp(N) != -1 {
+		return false
+	}
+	if s_.Cmp(t_) == 0 {
+		return false
+	}
+	for i := range pf.A {
+		a := new(big.Int).Mod(pf.A[i], N)
+		if a.Cmp(one) != 1 || a.Cmp(N) != -1 {
+			return false
+		}
+	}
+	for i := range pf.Z {
+		z := new(big.Int).Mod(pf.Z[i], N)
+		if z.Cmp(one) != 1 || z.Cmp(N) != -1 {
+			return false
+		}
+	}
 
 	// Fig 17. Verification
 	for i := 0; i < Iterations; i++ {

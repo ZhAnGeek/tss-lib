@@ -110,6 +110,10 @@ func (pf *ProofMulstar) Verify(Session []byte, ec elliptic.Curve, pk *paillier.P
 		e = common.RejectionSample(q, eHash)
 	}
 
+	if pf.Z1.Sign() == -1 || pf.Z1.Cmp(q3) != -1 {
+		return false
+	}
+
 	// Fig 31. Equality Check
 	{
 		modN2 := common.ModInt(pk.NSquare())
@@ -124,7 +128,10 @@ func (pf *ProofMulstar) Verify(Session []byte, ec elliptic.Curve, pk *paillier.P
 	{
 		LHS := g.ScalarMult(pf.Z1)
 		// left := crypto.ScalarBaseMult(ec, z1ModQ)
-		B := crypto.NewECPointNoCurveCheck(ec, pf.Bx, pf.By)
+		B, err := crypto.NewECPoint(ec, pf.Bx, pf.By)
+		if err != nil {
+			return false
+		}
 		RHS, err := X.ScalarMult(e).Add(B)
 		if err != nil || !LHS.Equals(RHS) {
 			return false

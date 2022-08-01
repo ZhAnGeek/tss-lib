@@ -8,40 +8,31 @@ package presigning_test
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/crypto/paillier"
 	"github.com/binance-chain/tss-lib/ecdsa/keygen"
 	. "github.com/binance-chain/tss-lib/ecdsa/presigning"
 	"github.com/binance-chain/tss-lib/tss"
-)
-
-// Using a modulus length of 2048 is recommended in the GG18 spec
-const (
-	testPaillierKeyLength = 2048
 )
 
 var (
 	Session = []byte("session")
 )
 
-func TestAffg(test *testing.T) {
+func TestMtA(test *testing.T) {
 	ec := tss.EC()
 	q := ec.Params().N
-	// q3 := new(big.Int).Mul(q, q)
-	// q3 = new(big.Int).Mul(q, q3)
-	// q6 := new(big.Int).Mul(q3, q3)
 
-	_, pki, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
-	assert.NoError(test, err)
-	skj, pkj, err := paillier.GenerateKeyPair(testPaillierKeyLength, 10*time.Minute)
-	assert.NoError(test, err)
-
-	// gammai * kj == betai + alphaj
+	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
+	assert.NoError(test, err, "should load keygen fixtures")
+	assert.Equal(test, testThreshold+1, len(keys))
+	assert.Equal(test, testThreshold+1, len(signPIDs))
+	pki := keys[0].PaillierPKs[0]
+	// skj := keys[1].PaillierSK
+	pkj := keys[1].PaillierPKs[1]
 	kj := common.GetRandomPositiveInt(q)
 	Kj, err := pkj.Encrypt(kj)
 	assert.NoError(test, err)
@@ -55,15 +46,6 @@ func TestAffg(test *testing.T) {
 	MtaOut, err := NewMtA(Session, ec, Kj, gammai, BigGammai, pkj, pki, NCap, s, t)
 	assert.NoError(test, err)
 
-	alphaj, err := skj.Decrypt(MtaOut.Dji)
-	assert.NoError(test, err)
-	betai := MtaOut.Beta
-
-	modN := common.ModInt(ec.Params().N)
-	lhs := modN.Add(alphaj, betai)
-	rhs := modN.Mul(kj, gammai)
-	test.Log(lhs, rhs)
-	assert.Equal(test, 0, lhs.Cmp(rhs))
 	ok := MtaOut.Proofji.Verify(Session, ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai)
 	assert.True(test, ok)
 }

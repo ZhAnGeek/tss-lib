@@ -70,8 +70,12 @@ func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 	p, q := sgps[0].Prime(), sgps[1].Prime()
 	modPQ := common.ModInt(new(big.Int).Mul(p, q))
 	f1 := common.GetRandomPositiveRelativelyPrimeInt(NTildei)
-	alpha := common.GetRandomPositiveRelativelyPrimeInt(NTildei)
+	alpha := common.GetRandomPositiveRelativelyPrimeInt(phiN)
 	beta := modPQ.ModInverse(alpha)
+	err = common.CheckBigIntNotNil(beta)
+	if err != nil {
+		return nil, err
+	}
 	h1i := modNTildeI.Mul(f1, f1)
 	h2i := modNTildeI.Exp(h1i, alpha)
 

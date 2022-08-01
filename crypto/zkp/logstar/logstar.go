@@ -29,6 +29,10 @@ type (
 	}
 )
 
+var (
+	zero = new(big.Int).SetInt64(0)
+)
+
 // NewProof implements prooflogstar
 func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t, x, rho *big.Int) (*ProofLogstar, error) {
 	if ec == nil || pk == nil || C == nil || X == nil || g == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
@@ -64,7 +68,8 @@ func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.
 	// Fig 25.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), C, X.X(), X.Y(), g.X(), g.Y(), S, A, Y.X(), Y.Y(), D)...)
+		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
+			C, X.X(), X.Y(), g.X(), g.Y(), S, A, Y.X(), Y.Y(), D)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -113,13 +118,27 @@ func (pf *ProofLogstar) Verify(Session []byte, ec elliptic.Curve, pk *paillier.P
 	q3 = new(big.Int).Mul(q, q3)
 
 	// Fig 25. range check
-	if pf.Z1.Cmp(q3) == 1 {
+	if !common.IsInInterval(pf.Z1, q3) {
+		return false
+	}
+
+	err := common.CheckInvertibleAndValidityModuloN(ec.Params().N, pf.S, pf.A, pf.D, pf.Z2)
+	if err != nil {
+		return false
+	}
+
+	if !pf.Y.IsOnCurve() {
+		return false
+	}
+
+	if pf.Z1.Cmp(zero) <= 0 || pf.Z3.Cmp(zero) <= 0 {
 		return false
 	}
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), C, X.X(), X.Y(), g.X(), g.Y(), pf.S, pf.A, pf.Y.X(), pf.Y.Y(), pf.D)...)
+		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
+			C, X.X(), X.Y(), g.X(), g.Y(), pf.S, pf.A, pf.Y.X(), pf.Y.Y(), pf.D)...)
 		e = common.RejectionSample(q, eHash)
 	}
 

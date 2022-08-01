@@ -46,8 +46,12 @@ func NewSignRound1Message(
 }
 
 func (m *SignRound1Message) ValidateBasic() bool {
-	return m.Commitment != nil &&
+	return m != nil && m.Commitment != nil &&
 		common.NonEmptyBytes(m.GetCommitment())
+}
+
+func (m *SignRound1Message) RoundNumber() int {
+	return 1
 }
 
 func (m *SignRound1Message) UnmarshalCommitment() *big.Int {
@@ -81,6 +85,10 @@ func (m *SignRound2Message) ValidateBasic() bool {
 		common.NonEmptyMultiBytes(m.Proof, zkpsch.ProofSchBytesParts)
 }
 
+func (m *SignRound2Message) RoundNumber() int {
+	return 2
+}
+
 func (m *SignRound2Message) UnmarshalDeCommitment() []*big.Int {
 	deComBzs := m.GetDeCommitment()
 	return cmt.NewHashDeCommitmentFromBytes(deComBzs)
@@ -110,6 +118,10 @@ func NewSignRound3Message(
 func (m *SignRound3Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.S)
+}
+
+func (m *SignRound3Message) RoundNumber() int {
+	return 3
 }
 
 func (m *SignRound3Message) UnmarshalS() *big.Int {

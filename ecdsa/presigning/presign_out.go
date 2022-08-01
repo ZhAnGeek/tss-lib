@@ -89,6 +89,10 @@ func (round *presignout) Start() *tss.Error {
 	}
 	// compute the multiplicative inverse thelta mod q
 	deltaInverse := modN.ModInverse(Delta)
+	err := common.CheckBigIntNotNil(deltaInverse)
+	if err != nil {
+		return round.WrapError(err)
+	}
 	BigR := round.temp.BigGamma.ScalarMult(deltaInverse)
 
 	transcript := &Transcript{}
@@ -106,7 +110,7 @@ func (round *presignout) Start() *tss.Error {
 		}
 	}
 
-	preSignData := NewPreSignData(i, round.temp.Ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript)
+	preSignData := NewPreSignData(i, round.temp.Ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript, round.temp.SsidNonce)
 	round.end <- preSignData
 
 	if round.NeedsIdentifaction() && round.dump != nil {

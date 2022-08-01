@@ -63,9 +63,6 @@ func (round *identification1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	if err != nil {
-		return round.WrapError(err, Pi)
-	}
 	for k := range round.Parties().IDs() {
 		if k == i {
 			continue
@@ -76,6 +73,10 @@ func (round *identification1) Start() *tss.Error {
 			return round.WrapError(err, Pi)
 		}
 		FinvEnc := modN2.ModInverse(round.temp.DeltaMtAFs[k])
+		err = common.CheckBigIntNotNil(FinvEnc)
+		if err != nil {
+			return round.WrapError(err, Pi)
+		}
 		BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
 		if err != nil {
 			return round.WrapError(err, Pi)
@@ -90,6 +91,9 @@ func (round *identification1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 
+	// Fill to prevent nil
+	round.temp.DeltaMtADs[i] = round.temp.DeltaMtADs[1-i]
+	round.temp.DeltaMtAFs[i] = round.temp.DeltaMtAFs[1-i]
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -100,7 +104,7 @@ func (round *identification1) Start() *tss.Error {
 			return round.WrapError(err, Pi)
 		}
 
-		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.DeltaMtADs, round.temp.DeltaMtAFs, round.temp.DeltaMtADProofs, proofDec)
+		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.DeltaMtADs, round.temp.DeltaMtAFs, proofDec)
 		round.out <- r6msg
 	}
 
@@ -123,7 +127,7 @@ func (round *identification1) Update() (bool, *tss.Error) {
 
 func (round *identification1) CanAccept(msg tss.ParsedMessage) bool {
 	if _, ok := msg.Content().(*IdentificationRound1Message); ok {
-		return !msg.IsBroadcast()
+		return msg.IsBroadcast()
 	}
 	return false
 }

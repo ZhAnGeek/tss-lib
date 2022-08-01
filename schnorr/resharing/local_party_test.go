@@ -67,14 +67,14 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 
 	// init the new parties
 	for _, pID := range newPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
 		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
 		newCommittee = append(newCommittee, P)
@@ -163,7 +163,7 @@ signing:
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false)
+		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
 		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
@@ -197,31 +197,31 @@ signing:
 				go updater(signParties[dest[0].Index], msg, signErrCh)
 			}
 
-		//case signData := <-signEndCh:
+		// case signData := <-signEndCh:
 		case <-signEndCh:
 			atomic.AddInt32(&signEnded, 1)
 			if atomic.LoadInt32(&signEnded) == int32(len(signPIDs)) {
 				t.Logf("Signing done. Received sign data from %d participants", signEnded)
 
-				//// BEGIN Schnorr verify
-				//pkX, pkY := signKeys[0].PubKey.X(), signKeys[0].PubKey.Y()
-				//pk := edwards.PublicKey{
+				// // BEGIN Schnorr verify
+				// pkX, pkY := signKeys[0].PubKey.X(), signKeys[0].PubKey.Y()
+				// pk := edwards.PublicKey{
 				//	Curve: tss.Edwards(),
 				//	X:     pkX,
 				//	Y:     pkY,
-				//}
+				// }
 
-				//newSig, err := edwards.ParseSignature(signData.Signature)
-				//if err != nil {
+				// newSig, err := edwards.ParseSignature(signData.Signature)
+				// if err != nil {
 				//	println("new sig error, ", err.Error())
-				//}
+				// }
 
-				//ok := edwards.Verify(&pk, big.NewInt(42).Bytes(),
+				// ok := edwards.Verify(&pk, big.NewInt(42).Bytes(),
 				//	newSig.R, newSig.S)
 
-				//assert.True(t, ok, "schnorr verify must pass")
-				//t.Log("Schnorr signing test done.")
-				//// END Schnorr verify
+				// assert.True(t, ok, "schnorr verify must pass")
+				// t.Log("Schnorr signing test done.")
+				// // END Schnorr verify
 
 				return
 			}

@@ -115,7 +115,7 @@ func (round *presign2) Start() *tss.Error {
 				// record transcript for sign identification 1
 				round.temp.ChiMtAFs[j] = ChiMtA.Fji
 				round.temp.ChiMtADs[j] = ChiMtA.Dji
-				round.temp.ChiMtADProofs[j] = ChiMtA.Proofji
+				// round.temp.ChiMtADProofs[j] = ChiMtA.Proofji
 			}
 		}(j, Pj)
 	}

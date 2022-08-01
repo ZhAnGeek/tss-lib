@@ -7,6 +7,7 @@
 package zkpmul_test
 
 import (
+	"math/big"
 	"testing"
 	"time"
 
@@ -50,4 +51,34 @@ func TestMul(test *testing.T) {
 
 	ok := proof.Verify(Session, ec, pk, X, Y, C)
 	assert.True(test, ok, "proof must verify")
+}
+
+func NewProofForged() (*ProofMul, error) {
+	zero := big.NewInt(0)
+	A := zero
+	B := zero
+	z := zero
+	u := zero
+	v := zero
+	return &ProofMul{A: A, B: B, Z: z, U: u, V: v}, nil
+}
+
+func TestMulForged(test *testing.T) {
+	ec := tss.EC()
+	q := ec.Params().N
+	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
+	assert.NoError(test, err)
+	x := common.GetRandomPositiveInt(q)
+	X, _, err := sk.EncryptAndReturnRandomness(x)
+	assert.NoError(test, err)
+	y := common.GetRandomPositiveInt(q)
+	Y, _, err := sk.EncryptAndReturnRandomness(y)
+	assert.NoError(test, err)
+	C, _, err := pk.HomoMultObfuscate(x, Y)
+	assert.NoError(test, err)
+	// no arguments needed
+	proof, err := NewProofForged()
+	assert.NoError(test, err)
+	ok := proof.Verify(Session, ec, pk, X, Y, C)
+	assert.False(test, ok, "proof must verify")
 }

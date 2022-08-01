@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -45,7 +46,7 @@ func TestStartRound1Paillier(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(1)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	threshold := 1
-	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold, false)
+	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold, false, 0)
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -85,7 +86,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(1)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	threshold := 1
-	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold, false)
+	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold, false, 0)
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
@@ -153,19 +154,25 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams).(*LocalParty)
 		} else {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		}
 		parties = append(parties, P)
+	}
+	var wg sync.WaitGroup
+	for _, party := range parties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	// PHASE: keygen
 	var ended int32
@@ -219,7 +226,7 @@ keygen:
 							shareStruct = &vss.Share{
 								Threshold: threshold,
 								ID:        P.PartyID().KeyInt(),
-								Share:     share, //new(big.Int).SetBytes(share),
+								Share:     share, // new(big.Int).SetBytes(share),
 							}
 						}
 						pShares = append(pShares, shareStruct)
@@ -250,12 +257,12 @@ keygen:
 						assert.NoError(t, err)
 						assert.NotEqual(t, parties[j].temp.ui, uj)
 						BigXjX, BigXjY := tss.EC().ScalarBaseMult(uj.Bytes())
-						V_0 := Pj.temp.vs[0]
+						// V0 := Pj.temp.vs[0]
 						if Pj.temp.r2msgVss[j] != nil {
-							V_0 = Pj.temp.r2msgVss[j][0]
+							V0 = Pj.temp.r2msgVss[j][0]
 						}
-						assert.NotEqual(t, BigXjX, V_0.X())
-						assert.NotEqual(t, BigXjY, V_0.Y())
+						assert.NotEqual(t, BigXjX, V0.X())
+						assert.NotEqual(t, BigXjY, V0.Y())
 					}
 					u = new(big.Int).Add(u, uj)
 				}
@@ -311,7 +318,8 @@ func tryWriteTestFixtureFile(t *testing.T, index int, data LocalPartySaveData) {
 	fixtureFileName := makeTestFixtureFilePath(index)
 
 	dir := path.Dir(fixtureFileName)
-	os.MkdirAll(dir, 0751)
+	err := os.MkdirAll(dir, 0751)
+	assert.NoError(t, err)
 	// fixture file does not already exist?
 	// if it does, we won't re-create it here
 	fi, err := os.Stat(fixtureFileName)

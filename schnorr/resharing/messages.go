@@ -59,6 +59,10 @@ func (m *DGRound1Message) ValidateBasic() bool {
 		common.NonEmptyBytes(m.VCommitment)
 }
 
+func (m *DGRound1Message) RoundNumber() int {
+	return 1
+}
+
 func (m *DGRound1Message) UnmarshalPubKey(ec elliptic.Curve) (*crypto.ECPoint, error) {
 	return crypto.NewECPoint(
 		ec,
@@ -91,6 +95,10 @@ func (m *DGRound2Message) ValidateBasic() bool {
 	return true
 }
 
+func (m *DGRound2Message) RoundNumber() int {
+	return 2
+}
+
 // ----- //
 
 func NewDGRound3Message1(
@@ -114,6 +122,10 @@ func NewDGRound3Message1(
 func (m *DGRound3Message1) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.Share)
+}
+
+func (m *DGRound3Message1) RoundNumber() int {
+	return 3
 }
 
 // ----- //
@@ -142,6 +154,10 @@ func (m *DGRound3Message2) ValidateBasic() bool {
 		common.NonEmptyMultiBytes(m.VDecommitment)
 }
 
+func (m *DGRound3Message2) RoundNumber() int {
+	return 3
+}
+
 func (m *DGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
 	deComBzs := m.GetVDecommitment()
 	return cmt.NewHashDeCommitmentFromBytes(deComBzs)
@@ -166,4 +182,8 @@ func NewDGRound4Message(
 
 func (m *DGRound4Message) ValidateBasic() bool {
 	return true
+}
+
+func (m *DGRound4Message) RoundNumber() int {
+	return 4
 }

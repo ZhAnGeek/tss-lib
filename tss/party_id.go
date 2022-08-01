@@ -67,11 +67,11 @@ func SortPartyIDs(ids UnSortedPartyIDs, startAt ...int) SortedPartyIDs {
 	}
 	sort.Sort(sorted)
 	// assign party indexes
+	frm := 0
+	if len(startAt) > 0 {
+		frm = startAt[0]
+	}
 	for i, id := range sorted {
-		frm := 0
-		if len(startAt) > 0 {
-			frm = startAt[0]
-		}
 		id.Index = i + frm
 	}
 	return sorted

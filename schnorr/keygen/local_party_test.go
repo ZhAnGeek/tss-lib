@@ -61,7 +61,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold, false)
+		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		} else {
@@ -122,13 +122,13 @@ keygen:
 						if j2 == j {
 							continue
 						}
-						//vssMsgs := P.temp.kgRound2Message1s
-						//share := vssMsgs[j].Content().(*KGRound2Message1).Share
+						// vssMsgs := P.temp.kgRound2Message1s
+						// share := vssMsgs[j].Content().(*KGRound2Message1).Share
 						share := P.temp.r2msg1Shares[j]
 						shareStruct := &vss.Share{
 							Threshold: threshold,
 							ID:        P.PartyID().KeyInt(),
-							//Share:     new(big.Int).SetBytes(share),
+							// Share:     new(big.Int).SetBytes(share),
 							Share: new(big.Int).SetBytes(share.Bytes()),
 						}
 						pShares = append(pShares, shareStruct)

@@ -78,10 +78,11 @@ func (round *identification1) Start() *tss.Error {
 			return round.WrapError(err, Pi)
 		}
 		FinvEnc := modN2.ModInverse(round.temp.ChiMtAFs[k])
-		BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
+		err = common.CheckBigIntNotNil(FinvEnc)
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}
+		BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
 		ChiShareEnc, err = round.key.PaillierSK.HomoAdd(ChiShareEnc, BetaEnc)
 		if err != nil {
 			return round.WrapError(err, Pi)
@@ -105,6 +106,8 @@ func (round *identification1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 
+	round.temp.ChiMtADs[i] = round.temp.ChiMtADs[1-i]
+	round.temp.ChiMtAFs[i] = round.temp.ChiMtAFs[1-i]
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -115,7 +118,7 @@ func (round *identification1) Start() *tss.Error {
 			return round.WrapError(err, Pi)
 		}
 
-		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.ChiMtADs, round.temp.ChiMtAFs, round.temp.ChiMtADProofs, proofDec, Q3Enc)
+		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.ChiMtADs, round.temp.ChiMtAFs, proofDec, Q3Enc)
 		round.out <- r6msg
 	}
 
@@ -138,7 +141,7 @@ func (round *identification1) Update() (bool, *tss.Error) {
 
 func (round *identification1) CanAccept(msg tss.ParsedMessage) bool {
 	if _, ok := msg.Content().(*IdentificationRound1Message); ok {
-		return !msg.IsBroadcast()
+		return msg.IsBroadcast()
 	}
 	return false
 }

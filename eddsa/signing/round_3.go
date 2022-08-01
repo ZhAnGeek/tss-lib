@@ -34,6 +34,8 @@ func (round *round3) Start() *tss.Error {
 
 	// 2-6. compute R
 	i := round.PartyID().Index
+	round.ok[i] = true
+
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -43,7 +45,7 @@ func (round *round3) Start() *tss.Error {
 		msg := round.temp.signRound2Messages[j]
 		r2msg := msg.Content().(*SignRound2Message)
 		cmtDeCmt := commitments.HashCommitDecommit{C: round.temp.cjs[j], D: r2msg.UnmarshalDeCommitment()}
-		ok, coordinates := cmtDeCmt.DeCommit()
+		ok, coordinates := cmtDeCmt.DeCommit(2)
 		if !ok {
 			return round.WrapError(errors.New("de-commitment verify failed"))
 		}

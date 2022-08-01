@@ -106,6 +106,9 @@ func (round *base) resetOK() {
 func (round *base) getSSID() ([]byte, error) {
 	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
 	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                         // parties
+	ssidList = append(ssidList, big.NewInt(int64(round.number)))
+	ssidList = append(ssidList, round.temp.ssidNonce)
+	// round number
 	ssid := common.SHA512_256i(ssidList...).Bytes()
 
 	return ssid, nil

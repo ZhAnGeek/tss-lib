@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	Iterations         = 13
+	Iterations         = 80
 	ProofModBytesParts = Iterations*2 + 3
 )
 
@@ -32,18 +32,15 @@ type (
 	}
 )
 
-// isQuandraticResidue checks Euler criterion
-func isQuandraticResidue(X, N *big.Int) bool {
-	modN := common.ModInt(N)
-	XEXP := modN.Exp(X, new(big.Int).Rsh(N, 1))
-	ok := XEXP.Cmp(big.NewInt(1)) == 0
-	return ok
+// isQuadraticResidue checks Euler criterion
+func isQuadraticResidue(X, N *big.Int) bool {
+	return big.Jacobi(X, N) == 1
 }
 
 func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
 	// Fig 16.1
-	W := common.GetRandomQuandraticNonResidue(N)
+	W := common.GetRandomQuadraticNonResidue(N)
 
 	// Fig 16.2
 	Y := [Iterations]*big.Int{}
@@ -71,7 +68,7 @@ func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 			if b > 0 {
 				Yi = modN.Mul(W, Yi)
 			}
-			if isQuandraticResidue(Yi, P) && isQuandraticResidue(Yi, Q) {
+			if isQuadraticResidue(Yi, P) && isQuadraticResidue(Yi, Q) {
 				e := new(big.Int).Add(Phi, big.NewInt(4))
 				e = new(big.Int).Rsh(e, 3)
 				e = modPhi.Mul(e, e)
@@ -80,13 +77,14 @@ func NewProof(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 				X[i], Z[i] = Xi, Zi
 				Abz = append(Abz, byte(a))
 				Bbz = append(Bbz, byte(b))
+				break
 			}
 		}
 	}
 	A := new(big.Int).SetBytes(Abz)
 	B := new(big.Int).SetBytes(Bbz)
 
-	return &ProofMod{W: W, X: [Iterations]*big.Int(X), A: A, B: B, Z: Z}, nil
+	return &ProofMod{W: W, X: X, A: A, B: B, Z: Z}, nil
 }
 
 func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
@@ -117,6 +115,30 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
+	// TODO: add basic properties checker
+	if isQuadraticResidue(pf.W, N) {
+		return false
+	}
+	if pf.W.Sign() != 1 || pf.W.Cmp(N) != -1 {
+		return false
+	}
+	for i := range pf.Z {
+		if pf.Z[i].Sign() != 1 || pf.Z[i].Cmp(N) != -1 {
+			return false
+		}
+	}
+	for i := range pf.X {
+		if pf.X[i].Sign() != 1 || pf.X[i].Cmp(N) != -1 {
+			return false
+		}
+	}
+	if len(pf.A.Bytes()) != Iterations+1 {
+		return false
+	}
+	if len(pf.B.Bytes()) != Iterations+1 {
+		return false
+	}
+
 	modN := common.ModInt(N)
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
@@ -126,7 +148,7 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 
 	// Fig 16. Verification
 	{
-		if N.Bit(0) == 0 || N.ProbablyPrime(16) {
+		if N.Bit(0) == 0 || N.ProbablyPrime(30) {
 			return false
 		}
 	}
@@ -144,6 +166,14 @@ func (pf *ProofMod) Verify(Session []byte, N *big.Int) bool {
 		go func(i int) {
 			a := int(pf.A.Bytes()[i+1]) // sentinel at 0
 			b := int(pf.B.Bytes()[i+1])
+			if a != 0 && a != 1 {
+				chs <- false
+				return
+			}
+			if b != 0 && b != 1 {
+				chs <- false
+				return
+			}
 			left := modN.Exp(pf.X[i], big.NewInt(4))
 			right := Y[i]
 			if a > 0 {

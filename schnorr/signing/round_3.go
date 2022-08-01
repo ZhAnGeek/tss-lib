@@ -15,7 +15,6 @@ import (
 	"github.com/binance-chain/tss-lib/common"
 	"github.com/binance-chain/tss-lib/crypto"
 	"github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/schnorr/keygen"
 	"github.com/binance-chain/tss-lib/tss"
 )
 
@@ -23,12 +22,6 @@ var (
 	TagNonce     = "BIP0340/nonce"
 	TagChallenge = "BIP0340/challenge"
 )
-
-// round 3 represents round 3 of the signing part of the Schnorr TSS spec
-func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
-	return &round3{&round2{&round1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}}}
-}
 
 func (round *round3) Start() *tss.Error {
 	if round.started {
@@ -60,7 +53,7 @@ func (round *round3) Start() *tss.Error {
 			msg := round.temp.signRound2Messages[j]
 			r2msg := msg.Content().(*SignRound2Message)
 			cmtDeCmt := commitments.HashCommitDecommit{C: round.temp.cjs[j], D: r2msg.UnmarshalDeCommitment()}
-			ok, coordinates := cmtDeCmt.DeCommit()
+			ok, coordinates := cmtDeCmt.DeCommit(4)
 			if !ok {
 				errChs <- round.WrapError(errors.New("de-commitment verify failed"))
 				return
@@ -122,7 +115,14 @@ func (round *round3) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(errors.New("failed to flattern Ejs"), round.PartyID())
 	}
-	DEFlat := append(DjFlat, EjFlat...)
+
+	BIndexes := make([]*big.Int, 0)
+	for j, _ := range round.Parties().IDs() {
+		BIndexes = append(BIndexes, big.NewInt(int64(j)))
+	}
+	// <i, Di, Ei>
+	DEFlat := append(BIndexes, DjFlat...) // i, Di
+	DEFlat = append(BIndexes, EjFlat...)  // i, Ei
 
 	for j, Pj := range round.Parties().IDs() {
 		rho := common.SHA512_256i_TAGGED([]byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)

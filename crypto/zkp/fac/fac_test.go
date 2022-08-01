@@ -27,9 +27,9 @@ var (
 	Session = []byte("session")
 )
 
-func TestEnc(test *testing.T) {
+func TestFac(test *testing.T) {
 	ec := tss.EC()
-	//q := ec.Params().N
+	// q := ec.Params().N
 
 	N0p := common.GetRandomPrimeInt(testSafePrimeBits)
 	N0q := common.GetRandomPrimeInt(testSafePrimeBits)
@@ -52,5 +52,5 @@ func TestEnc(test *testing.T) {
 	assert.NoError(test, err)
 
 	ok = proof.Verify(Session, ec, N0, NCap, s, t)
-	assert.False(test, ok, "proof must verify")
+	assert.True(test, ok, "proof must verify")
 }

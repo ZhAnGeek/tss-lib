@@ -40,6 +40,7 @@ func (round *round1) Start() *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
+	round.temp.ssidNonce = new(big.Int).SetInt64(int64(0))
 	ssid, err := round.getSSID()
 	if err != nil {
 		return round.WrapError(err, round.PartyID())

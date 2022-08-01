@@ -17,10 +17,6 @@ import (
 	"github.com/binance-chain/tss-lib/tss"
 )
 
-var (
-	zero = big.NewInt(0)
-)
-
 // round 1 represents round 1 of the keygen part of the EDDSA TSS spec
 func newRound1(params *tss.Parameters, save *LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- LocalPartySaveData) tss.Round {
 	return &round1{
@@ -37,7 +33,9 @@ func (round *round1) Start() *tss.Error {
 
 	Pi := round.PartyID()
 	i := Pi.Index
+	round.ok[i] = true
 
+	round.temp.ssidNonce = new(big.Int).SetInt64(int64(0))
 	ssid, err := round.getSSID()
 	if err != nil {
 		return round.WrapError(err, Pi)
@@ -55,10 +53,6 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 	round.save.Ks = ids
-
-	// security: the original u_i may be discarded
-	ui = zero // clears the secret data from memory
-	_ = ui    // silences a linter warning
 
 	// 3. make commitment -> (C, D)
 	pGFlat, err := crypto.FlattenECPoints(vs)

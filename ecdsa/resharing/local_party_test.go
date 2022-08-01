@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math/big"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -63,7 +64,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	oldCommittee := make([]*LocalParty, 0, len(oldPIDs))
 	newCommittee := make([]*LocalParty, 0, newPCount)
-	bothCommitteesPax := len(oldCommittee) + len(newCommittee)
+	bothCommitteesPax := len(oldCommittee) + newPCount
 
 	errCh := make(chan *tss.Error, bothCommitteesPax)
 	outCh := make(chan tss.Message, bothCommitteesPax)
@@ -73,13 +74,13 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 	// init the new parties
 	for j, pID := range newPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold)
+		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
 		if j < len(fixtures) && len(newPIDs) <= len(fixtures) {
 			save.LocalPreParams = fixtures[j].LocalPreParams
@@ -88,22 +89,29 @@ func TestE2EConcurrent(t *testing.T) {
 		newCommittee = append(newCommittee, P)
 	}
 
+	var wg sync.WaitGroup
 	// start the new parties; they will wait for messages
 	for _, P := range newCommittee {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
 		}(P)
 	}
+	wg.Wait()
 	// start the old parties; they will send messages
 	for _, P := range oldCommittee {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				errCh <- err
 			}
 		}(P)
 	}
+	wg.Wait()
 
 	newKeys := make([]keygen.LocalPartySaveData, len(newCommittee))
 	endedOldCommittee := 0
@@ -173,18 +181,20 @@ presigning:
 
 	// PHASE: presigning
 	for j, signPID := range presignPIDs {
-		params := tss.NewParameters(tss.S256(), presignP2pCtx, signPID, len(presignPIDs), newThreshold, false)
+		params := tss.NewParameters(tss.S256(), presignP2pCtx, signPID, len(presignPIDs), newThreshold, false, 0)
 		P := presigning.NewLocalParty(params, presignKeys[j], presignOutCh, presignEndCh, presignDumpCh).(*presigning.LocalParty)
 		presignParties = append(presignParties, P)
+	}
+	for _, party := range presignParties {
 		go func(P *presigning.LocalParty) {
 			if err := P.Start(); err != nil {
 				presignErrCh <- err
 			}
-		}(P)
+		}(party)
 	}
 	preSigDatas := make([]*presigning.PreSignatureData, len(presignPIDs))
 
-	var presignended int32
+	var presignEnded int32
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
@@ -209,12 +219,12 @@ presigning:
 				go updater(presignParties[dest[0].Index], msg, errCh)
 			}
 
-		case predata := <-presignEndCh:
-			atomic.AddInt32(&presignended, 1)
-			preSigDatas[predata.UnmarshalIndex()] = predata
-			t.Logf("%d ssid: %d", predata.UnmarshalIndex(), new(big.Int).SetBytes(predata.UnmarshalSsid()).Int64())
-			if atomic.LoadInt32(&presignended) == int32(len(presignPIDs)) {
-				t.Logf("Done. Received presignature data from %d participants", presignended)
+		case preData := <-presignEndCh:
+			atomic.AddInt32(&presignEnded, 1)
+			preSigDatas[preData.UnmarshalIndex()] = preData
+			t.Logf("%d ssid: %d", preData.UnmarshalIndex(), new(big.Int).SetBytes(preData.UnmarshalSsid()).Int64())
+			if atomic.LoadInt32(&presignEnded) == int32(len(presignPIDs)) {
+				t.Logf("Done. Received presignature data from %d participants", presignEnded)
 
 				goto signing
 			}
@@ -235,15 +245,21 @@ signing:
 	signDumpCh := make(chan *signing.LocalDumpPB, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false)
+		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
 		P := signing.NewLocalParty(preSigDatas[j], big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh, signDumpCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
+	}
+	wg = sync.WaitGroup{}
+	for _, party := range signParties {
+		wg.Add(1)
 		go func(P *signing.LocalParty) {
+			defer wg.Done()
 			if err := P.Start(); err != nil {
 				signErrCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	var signEnded int32
 	for {

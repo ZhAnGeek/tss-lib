@@ -119,7 +119,7 @@ func (p *LocalParty) Start() *tss.Error {
 }
 
 func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(p, msg, TaskName)
+	return tss.BaseUpdatePool(p, msg, TaskName)
 }
 
 func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
@@ -162,6 +162,9 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 			return false, p.WrapError(errors.New("got Paillier modulus with not enough bits"), msg.GetFrom())
 		}
 		p.data.NTildej[fromPIdx] = r2msg.UnmarshalNTilde()
+		if p.data.NTildej[fromPIdx].Cmp(p.data.PaillierPKs[fromPIdx].N) != 0 {
+			return false, p.WrapError(errors.New("got NTildej not equal to Paillier modulus"), msg.GetFrom())
+		}
 		p.data.H1j[fromPIdx], p.data.H2j[fromPIdx] = r2msg.UnmarshalH1(), r2msg.UnmarshalH2()
 		var err error
 		p.temp.r2msgVss[fromPIdx], err = r2msg.UnmarshalVs(p.params.EC())
@@ -207,7 +210,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		p.temp.r4msgpfsch[fromPIdx] = proof
 
 	default: // unrecognised message, just ignore!
-		common.Logger.Warningf("unrecognised message ignored: %v", msg)
+		common.Logger.Warnf("unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

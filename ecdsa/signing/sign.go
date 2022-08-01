@@ -38,6 +38,7 @@ func (round *sign1) Start() *tss.Error {
 	Pi := round.PartyID()
 	round.ok[i] = true
 
+	round.temp.SsidNonce = round.predata.UnmarshalSsidNonce()
 	ssid, err := round.getSSID()
 	if err != nil {
 		return round.WrapError(err, Pi)
@@ -63,8 +64,10 @@ func (round *sign1) Start() *tss.Error {
 	SigmaShare := modN.Add(modN.Mul(round.temp.KShare, round.temp.m), modN.Mul(Rx, round.temp.ChiShare))
 	SigmaShareDelta := modN.Mul(Rx, modN.Mul(round.temp.KShare, round.temp.KeyDerivationDelta))
 	SigmaShare = modN.Add(SigmaShare, SigmaShareDelta)
+	bitSizeInBytes := round.Params().EC().Params().BitSize / 8
+	RxBytes := PadToLengthBytesInPlace(Rx.Bytes(), bitSizeInBytes)
 
-	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare, Rx, Ry)
+	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare, RxBytes, Ry)
 	round.out <- r1msg
 
 	round.temp.SigmaShare = SigmaShare

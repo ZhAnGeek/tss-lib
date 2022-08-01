@@ -119,6 +119,9 @@ func (pf *ProofFac) Verify(Session []byte, ec elliptic.Curve, N0, NCap, s, t *bi
 	if pf == nil || !pf.ValidateBasic() || ec == nil || N0 == nil || NCap == nil || s == nil || t == nil {
 		return false
 	}
+	if N0.Sign() != 1 {
+		return false
+	}
 
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
@@ -127,11 +130,11 @@ func (pf *ProofFac) Verify(Session []byte, ec elliptic.Curve, N0, NCap, s, t *bi
 	q3SqrtN0 := new(big.Int).Mul(q3, sqrtN0)
 
 	// Fig 28. Range Check
-	if pf.Z1.Cmp(q3SqrtN0) == 1 {
+	if !common.IsInInterval(pf.Z1, q3SqrtN0) {
 		return false
 	}
 
-	if pf.Z2.Cmp(q3SqrtN0) == 1 {
+	if !common.IsInInterval(pf.Z2, q3SqrtN0) {
 		return false
 	}
 

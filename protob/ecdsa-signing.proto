@@ -23,10 +23,9 @@ message IdentificationRound1Message {
     repeated bytes MulProof = 2;
     repeated bytes Djis = 3;
     repeated bytes Fjis = 4;
-    repeated bytes DjiProofs = 5;
+    // repeated bytes DjiProofs = 5;
     repeated bytes DecProof = 6;
     bytes Q3Enc = 7;
-    //bytes SigmaShareEnc = 8;
 }
 
 /*
@@ -63,9 +62,8 @@ message LocalDumpPB {
 
     repeated bytes LTr5msgH = 22;
     repeated bytes LTr5msgProofMulstar = 23;
-    //repeated bytes LTr5msgSigmaShareEnc = 24;
     repeated bytes LTr5msgProofDec = 25;
     repeated bytes LTr5msgDjis = 26;
     repeated bytes LTr5msgFjis = 27;
-    //repeated bytes LTr5msgQ3Enc = 28;
+    bytes LTssidNonce = 28;
 }

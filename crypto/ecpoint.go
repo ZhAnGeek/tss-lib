@@ -7,10 +7,8 @@
 package crypto
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -60,7 +58,10 @@ func (p *ECPoint) Add(p1 *ECPoint) (*ECPoint, error) {
 
 func (p *ECPoint) ScalarMult(k *big.Int) *ECPoint {
 	x, y := p.curve.ScalarMult(p.X(), p.Y(), k.Bytes())
-	newP, _ := NewECPoint(p.curve, x, y) // it must be on the curve, no need to check.
+	newP, err := NewECPoint(p.curve, x, y) // it must be on the curve, no need to check.
+	if err != nil {
+		panic(fmt.Errorf("scalar mult to an ecpoint %s", err.Error()))
+	}
 	return newP
 }
 
@@ -155,70 +156,7 @@ func UnFlattenECPoints(curve elliptic.Curve, in []*big.Int, noCurveCheck ...bool
 }
 
 // ----- //
-// Gob helpers for if you choose to encode messages with Gob.
 
-func (p *ECPoint) GobEncode() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	x, err := p.coords[0].GobEncode()
-	if err != nil {
-		return nil, err
-	}
-	y, err := p.coords[1].GobEncode()
-	if err != nil {
-		return nil, err
-	}
-
-	err = binary.Write(buf, binary.LittleEndian, uint32(len(x)))
-	if err != nil {
-		return nil, err
-	}
-	buf.Write(x)
-	err = binary.Write(buf, binary.LittleEndian, uint32(len(y)))
-	if err != nil {
-		return nil, err
-	}
-	buf.Write(y)
-
-	return buf.Bytes(), nil
-}
-
-func (p *ECPoint) GobDecode(buf []byte) error {
-	reader := bytes.NewReader(buf)
-	var length uint32
-	if err := binary.Read(reader, binary.LittleEndian, &length); err != nil {
-		return err
-	}
-	x := make([]byte, length)
-	n, err := reader.Read(x)
-	if n != int(length) || err != nil {
-		return fmt.Errorf("gob decode failed: %v", err)
-	}
-	if err := binary.Read(reader, binary.LittleEndian, &length); err != nil {
-		return err
-	}
-	y := make([]byte, length)
-	n, err = reader.Read(y)
-	if n != int(length) || err != nil {
-		return fmt.Errorf("gob decode failed: %v", err)
-	}
-
-	X := new(big.Int)
-	if err := X.GobDecode(x); err != nil {
-		return err
-	}
-	Y := new(big.Int)
-	if err := Y.GobDecode(y); err != nil {
-		return err
-	}
-	p.curve = tss.EC()
-	p.coords = [2]*big.Int{X, Y}
-	if !p.IsOnCurve() {
-		return errors.New("ECPoint.UnmarshalJSON: the point is not on the elliptic curve")
-	}
-	return nil
-}
-
-// ----- //
 func (p *ECPoint) Bytes() [2][]byte {
 	return [...][]byte{
 		p.X().Bytes(),
