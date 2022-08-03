@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/binance-chain/tss-lib/ecdsa/signing"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
@@ -170,7 +171,7 @@ keygen:
 					X:     pkX,
 					Y:     pkY,
 				}
-				println("u len: ", len(u.Bytes()))
+				println("u len: ", len(signing.PadToLengthBytesInPlace(u.Bytes(), 32)))
 				sk, _, err := edwards.PrivKeyFromScalar(u.Bytes())
 				// fmt.Println("err: ", err.Error())
 				assert.NoError(t, err)
