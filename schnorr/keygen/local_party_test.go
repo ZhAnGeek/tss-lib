@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"runtime"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -77,6 +78,8 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 
 	// PHASE: keygen
 	var ended int32
+	wg := sync.WaitGroup{}
+	wg.Add(3 * len(pIDs) * (len(pIDs) - 1))
 keygen:
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
@@ -94,6 +97,7 @@ keygen:
 						continue
 					}
 					go updater(P, msg, errCh)
+					wg.Done()
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
@@ -101,6 +105,7 @@ keygen:
 					return
 				}
 				go updater(parties[dest[0].Index], msg, errCh)
+				wg.Done()
 			}
 
 		case save := <-endCh:
@@ -112,6 +117,7 @@ keygen:
 
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(pIDs)) {
+				wg.Wait()
 				t.Logf("Done. Received save data from %d participants", ended)
 
 				// combine shares for each Pj to get u
