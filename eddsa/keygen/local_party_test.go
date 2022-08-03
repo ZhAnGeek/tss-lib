@@ -171,8 +171,8 @@ keygen:
 					X:     pkX,
 					Y:     pkY,
 				}
-				println("u len: ", len(signing.PadToLengthBytesInPlace(u.Bytes(), 32)))
-				sk, _, err := edwards.PrivKeyFromScalar(u.Bytes())
+				println("u len: ", u.Bytes())
+				sk, _, err := edwards.PrivKeyFromScalar(signing.PadToLengthBytesInPlace(u.Bytes(), 32))
 				// fmt.Println("err: ", err.Error())
 				assert.NoError(t, err)
 
