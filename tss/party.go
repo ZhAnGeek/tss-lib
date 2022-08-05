@@ -123,6 +123,8 @@ func (p *BaseParty) PopMsgFromPool() (ok bool, pMsg *ParsedMessage) {
 }
 
 func (p *BaseParty) TopMsgOfPool() (ok bool, pMsg *ParsedMessage) {
+	p.poolMtx.Lock()
+	defer p.poolMtx.Unlock()
 	if len(p.msgPool) == 0 {
 		return false, nil
 	}
@@ -299,21 +301,28 @@ func BaseUpdatePool(p Party, msg ParsedMessage, task string) (ok bool, err *Erro
 	if _, err := p.ValidateMessage(msg); err != nil {
 		return false, err
 	}
+	r := func(ok bool, err *Error) (bool, *Error) {
+		p.unlock()
+		return ok, err
+	}
+	p.lock()
 	if msg.Content().RoundNumber() > p.ExpectMsgRound() {
 		common.Logger.Debugf("party %v: %s will pool msg %d", p.round().Params().PartyID(), task, p.ExpectMsgRound())
 		p.PushMsgToPool(msg)
-		return true, nil
+		return r(true, nil)
 	}
 	if msg.Content().RoundNumber() < p.ExpectMsgRound() {
 		// drop message
 		common.Logger.Debugf("party %v: %s will drop msg %d", p.round().Params().PartyID(), task, msg.Content().RoundNumber())
-		return true, nil
+		return r(true, nil)
 	}
 
+	p.unlock()
 	ok, err = BaseUpdateNR(p, msg, task)
 	if !ok {
-		return ok, err
+		return r(ok, err)
 	}
+	p.lock()
 	for {
 		ok, hMsg := p.TopMsgOfPool()
 		if !ok {
@@ -330,12 +339,14 @@ func BaseUpdatePool(p Party, msg ParsedMessage, task string) (ok bool, err *Erro
 			break
 		}
 		if hRnd == p.ExpectMsgRound() {
+			p.unlock()
 			ok, err = BaseUpdateNR(p, *hMsg, task)
 			if !ok {
 				return ok, err
 			}
+			p.lock()
 		}
 	}
 
-	return true, nil
+	return r(true, nil)
 }

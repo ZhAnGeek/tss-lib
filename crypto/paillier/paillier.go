@@ -221,10 +221,24 @@ func (privateKey *PrivateKey) Decrypt(c *big.Int) (m *big.Int, err error) {
 		Lg := L(new(big.Int).Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
 		// 3. (1) * modInv(2) mod N
 		inv := new(big.Int).ModInverse(Lg, privateKey.N)
-		privateKey.LgInv = inv
+		m = common.ModInt(privateKey.N).Mul(Lc, inv)
+	} else {
+		m = common.ModInt(privateKey.N).Mul(Lc, privateKey.LgInv)
 	}
-	m = common.ModInt(privateKey.N).Mul(Lc, privateKey.LgInv)
 	return
+}
+
+func (privateKey *PrivateKey) CacheLgInv() bool {
+	N2 := privateKey.NSquare()
+	if privateKey.LgInv == nil {
+		// 2. L(u) = (Gamma^LambdaN-1 mod N2) / N
+		Lg := L(new(big.Int).Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
+		// 3. (1) * modInv(2) mod N
+		inv := new(big.Int).ModInverse(Lg, privateKey.N)
+		privateKey.LgInv = inv // TODO
+		return true
+	}
+	return false
 }
 
 func (privateKey *PrivateKey) GetRandomness(c *big.Int) (r *big.Int, err error) {

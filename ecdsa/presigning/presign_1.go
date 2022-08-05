@@ -24,7 +24,6 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 }
 
 func (round *presign1) Start() *tss.Error {
-	fmt.Println("################################################################ in Start() pre1")
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -62,7 +61,6 @@ func (round *presign1) Start() *tss.Error {
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg := sync.WaitGroup{}
 	ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
-	fmt.Println("################################################################ in L65 pre1")
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -95,7 +93,6 @@ func (round *presign1) Start() *tss.Error {
 	round.temp.KNonce = KNonce
 	round.temp.GNonce = GNonce
 
-	fmt.Println("################################################## pre1 AA", round.PartyID())
 	if round.dump != nil {
 		du := &LocalDump{
 			Temp:     round.temp,
@@ -105,7 +102,6 @@ func (round *presign1) Start() *tss.Error {
 		duPB := NewLocalDumpPB(du.Index, du.RoundNum, du.Temp)
 		round.dump <- duPB
 	}
-	fmt.Println("################################################## pre1", round.PartyID())
 
 	return nil
 }
@@ -155,5 +151,7 @@ func (round *presign1) prepare() error {
 
 	round.temp.W = wi
 	round.temp.BigWs = BigWs
+
+	round.key.PaillierSK.CacheLgInv()
 	return nil
 }
