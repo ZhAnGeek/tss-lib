@@ -11,12 +11,12 @@ import (
 	"math/big"
 	sync "sync"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/tss"
 
-	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
-	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
 )
 
 func (round *round3) Start() *tss.Error {

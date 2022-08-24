@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
 )
 
 type (

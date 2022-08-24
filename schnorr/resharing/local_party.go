@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/crypto/vss"
-	"github.com/binance-chain/tss-lib/schnorr/keygen"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/schnorr/keygen"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // Implements Party

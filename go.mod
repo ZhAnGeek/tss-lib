@@ -1,4 +1,4 @@
-module github.com/binance-chain/tss-lib
+module github.com/Safulet/tss-lib-private
 
 go 1.15
 

@@ -10,10 +10,10 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
-	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
+	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into schnorr-signing.pb.go

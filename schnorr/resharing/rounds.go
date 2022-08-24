@@ -7,8 +7,8 @@
 package resharing
 
 import (
-	"github.com/binance-chain/tss-lib/schnorr/keygen"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/schnorr/keygen"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (

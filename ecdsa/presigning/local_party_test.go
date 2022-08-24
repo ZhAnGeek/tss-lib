@@ -18,12 +18,12 @@ import (
 	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	. "github.com/binance-chain/tss-lib/ecdsa/presigning"
-	sign "github.com/binance-chain/tss-lib/ecdsa/signing"
-	"github.com/binance-chain/tss-lib/test"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	. "github.com/Safulet/tss-lib-private/ecdsa/presigning"
+	sign "github.com/Safulet/tss-lib-private/ecdsa/signing"
+	"github.com/Safulet/tss-lib-private/test"
+	"github.com/Safulet/tss-lib-private/tss"
 	"google.golang.org/protobuf/proto"
 )
 

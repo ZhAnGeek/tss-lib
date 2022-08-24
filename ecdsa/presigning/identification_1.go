@@ -10,11 +10,11 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
-	zkpmul "github.com/binance-chain/tss-lib/crypto/zkp/mul"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	zkpdec "github.com/Safulet/tss-lib-private/crypto/zkp/dec"
+	zkpmul "github.com/Safulet/tss-lib-private/crypto/zkp/mul"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func newRound5(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {

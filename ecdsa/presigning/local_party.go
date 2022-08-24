@@ -11,15 +11,15 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	zkpaffg "github.com/binance-chain/tss-lib/crypto/zkp/affg"
-	zkpdec "github.com/binance-chain/tss-lib/crypto/zkp/dec"
-	zkpenc "github.com/binance-chain/tss-lib/crypto/zkp/enc"
-	zkplogstar "github.com/binance-chain/tss-lib/crypto/zkp/logstar"
-	zkpmul "github.com/binance-chain/tss-lib/crypto/zkp/mul"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
+	zkpdec "github.com/Safulet/tss-lib-private/crypto/zkp/dec"
+	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
+	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
+	zkpmul "github.com/Safulet/tss-lib-private/crypto/zkp/mul"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // Implements Party

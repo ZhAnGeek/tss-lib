@@ -10,12 +10,12 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/crypto/vss"
-	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
-	zkpsch "github.com/binance-chain/tss-lib/crypto/zkp/sch"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
+	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func newRound1(params *tss.Parameters, save *LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- LocalPartySaveData) tss.Round {

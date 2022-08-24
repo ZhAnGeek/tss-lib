@@ -7,10 +7,10 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/crypto/ckd"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/ckd"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 
 	"github.com/btcsuite/btcd/chaincfg"
 )

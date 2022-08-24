@@ -22,7 +22,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/binance-chain/tss-lib/common"
+	"github.com/Safulet/tss-lib-private/common"
 )
 
 const (
