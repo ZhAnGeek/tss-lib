@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
+	"github.com/Safulet/tss-lib-private/common"
 )
 
 // PrepareForSigning(), Fig. 7

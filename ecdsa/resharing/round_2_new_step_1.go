@@ -11,10 +11,10 @@ import (
 	"errors"
 	"math/big"
 
-	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
-	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
-	"github.com/binance-chain/tss-lib/tss"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func (round *round2) Start() *tss.Error {

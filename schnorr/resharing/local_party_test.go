@@ -14,13 +14,13 @@ import (
 	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	"github.com/binance-chain/tss-lib/schnorr/keygen"
-	. "github.com/binance-chain/tss-lib/schnorr/resharing"
-	"github.com/binance-chain/tss-lib/schnorr/signing"
-	"github.com/binance-chain/tss-lib/test"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/schnorr/keygen"
+	. "github.com/Safulet/tss-lib-private/schnorr/resharing"
+	"github.com/Safulet/tss-lib-private/schnorr/signing"
+	"github.com/Safulet/tss-lib-private/test"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (

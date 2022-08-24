@@ -9,7 +9,7 @@ package keygen
 import (
 	"errors"
 
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func (round *round2) Start() *tss.Error {

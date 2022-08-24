@@ -10,15 +10,15 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/common"
-	"github.com/binance-chain/tss-lib/crypto"
-	cmt "github.com/binance-chain/tss-lib/crypto/commitments"
-	"github.com/binance-chain/tss-lib/crypto/paillier"
-	"github.com/binance-chain/tss-lib/crypto/vss"
-	zkpfac "github.com/binance-chain/tss-lib/crypto/zkp/fac"
-	zkpmod "github.com/binance-chain/tss-lib/crypto/zkp/mod"
-	zkpprm "github.com/binance-chain/tss-lib/crypto/zkp/prm"
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/crypto/paillier"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-resharing.pb.go

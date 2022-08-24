@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/binance-chain/tss-lib/tss"
+	"github.com/Safulet/tss-lib-private/tss"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 

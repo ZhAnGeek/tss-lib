@@ -13,8 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/binance-chain/tss-lib/crypto/zkp/prm"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	. "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 )
 
 var (

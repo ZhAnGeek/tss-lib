@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/binance-chain/tss-lib/common"
-	. "github.com/binance-chain/tss-lib/crypto/zkp/mod"
-	"github.com/binance-chain/tss-lib/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/common"
+	. "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/stretchr/testify/assert"
 )
 
