@@ -56,7 +56,7 @@ func (round *finalization) Start() *tss.Error {
 		Y:     round.temp.PKY,
 	}
 
-	ok := edwards.Verify(&pk, round.temp.m, round.temp.r, s)
+	ok := VerifyEdwards(&pk, round.temp.m, round.temp.r, s, round.HashFunc)
 	if !ok {
 		return round.WrapError(fmt.Errorf("signature verification failed"))
 	}

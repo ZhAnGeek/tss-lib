@@ -7,7 +7,6 @@
 package signing
 
 import (
-	"crypto/sha512"
 	"math/big"
 
 	"github.com/agl/ed25519/edwards25519"
@@ -95,7 +94,7 @@ func (round *round3) Start() *tss.Error {
 	encodedPubKey := ecPointToEncodedBytes(round.temp.PKX, round.temp.PKY)
 
 	// h = hash512(k || A || M)
-	h := sha512.New()
+	h := round.Parameters.HashFunc()
 	h.Reset()
 	h.Write(encodedR[:])
 	h.Write(encodedPubKey[:])
