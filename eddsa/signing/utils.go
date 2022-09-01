@@ -8,9 +8,13 @@ package signing
 
 import (
 	"crypto/elliptic"
+	"crypto/subtle"
+	"hash"
 	"math/big"
 
+	"github.com/agl/ed25519"
 	"github.com/agl/ed25519/edwards25519"
+	"github.com/decred/dcrd/dcrec/edwards/v2"
 
 	"github.com/Safulet/tss-lib-private/common"
 )
@@ -62,6 +66,31 @@ func CopyBytes(aB []byte) *[32]byte {
 	}
 
 	for i := 0; i < 32; i++ {
+		s[i] = aB[i]
+	}
+
+	return s
+}
+
+// CopyBytes64 copies a byte slice to a 64 byte array.
+func CopyBytes64(aB []byte) *[64]byte {
+	if aB == nil {
+		return nil
+	}
+
+	s := new([64]byte)
+
+	// If we have a short byte string, expand
+	// it so that it's long enough.
+	aBLen := len(aB)
+	if aBLen < 64 {
+		diff := 64 - aBLen
+		for i := 0; i < diff; i++ {
+			aB = append([]byte{0x00}, aB...)
+		}
+	}
+
+	for i := 0; i < 64; i++ {
 		s[i] = aB[i]
 	}
 
@@ -125,4 +154,51 @@ func ecPointToExtendedElement(ec elliptic.Curve, x *big.Int, y *big.Int) edwards
 		Z: Z,
 		T: T,
 	}
+}
+
+// VerifyED25519 returns true iff sig is a valid signature of message by publicKey.
+func VerifyED25519(publicKey *[ed25519.PublicKeySize]byte, message []byte, sig *[ed25519.SignatureSize]byte, hashFunc func() hash.Hash) bool {
+	if sig[63]&224 != 0 {
+		return false
+	}
+
+	var A edwards25519.ExtendedGroupElement
+	if !A.FromBytes(publicKey) {
+		return false
+	}
+	edwards25519.FeNeg(&A.X, &A.X)
+	edwards25519.FeNeg(&A.T, &A.T)
+
+	h := hashFunc()
+	h.Write(sig[:32])
+	h.Write(publicKey[:])
+	h.Write(message)
+	var digest [64]byte
+	h.Sum(digest[:0])
+
+	var hReduced [32]byte
+	edwards25519.ScReduce(&hReduced, &digest)
+
+	var R edwards25519.ProjectiveGroupElement
+	var b [32]byte
+	copy(b[:], sig[32:])
+	edwards25519.GeDoubleScalarMultVartime(&R, &hReduced, &A, &b)
+
+	var checkR [32]byte
+	R.ToBytes(&checkR)
+	return subtle.ConstantTimeCompare(sig[:32], checkR[:]) == 1
+}
+
+// VerifyEdwards verifies a message 'hash' using the given public keys and signature.
+func VerifyEdwards(pub *edwards.PublicKey, hash []byte, r, s *big.Int, hashFunc func() hash.Hash) bool {
+	if pub == nil || hash == nil || r == nil || s == nil {
+		return false
+	}
+
+	pubBytes := pub.Serialize()
+	sig := &edwards.Signature{r, s}
+	sigBytes := sig.Serialize()
+	pubArray := CopyBytes(pubBytes)
+	sigArray := CopyBytes64(sigBytes)
+	return VerifyED25519(pubArray, hash, sigArray, hashFunc)
 }

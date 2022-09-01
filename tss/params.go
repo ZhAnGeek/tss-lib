@@ -8,7 +8,9 @@ package tss
 
 import (
 	"crypto/elliptic"
+	"crypto/sha512"
 	"errors"
+	"hash"
 	"time"
 )
 
@@ -22,6 +24,7 @@ type (
 		safePrimeGenTimeout time.Duration
 		needsIdentifaction  bool
 		nonce               int
+		hashFunc            func() hash.Hash
 	}
 
 	ReSharingParameters struct {
@@ -90,6 +93,17 @@ func (params *Parameters) NeedsIdentifaction() bool {
 
 func (params *Parameters) Nonce() int {
 	return params.nonce
+}
+
+func (params *Parameters) SetHashFunc(hashFunc func() hash.Hash) {
+	params.hashFunc = hashFunc
+}
+
+func (params *Parameters) HashFunc() hash.Hash {
+	if params.hashFunc == nil {
+		return sha512.New()
+	}
+	return params.hashFunc()
 }
 
 // ----- //
