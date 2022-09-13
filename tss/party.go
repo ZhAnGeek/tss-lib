@@ -307,13 +307,13 @@ func BaseUpdatePool(p Party, msg ParsedMessage, task string) (ok bool, err *Erro
 	}
 	p.lock()
 	if msg.Content().RoundNumber() > p.ExpectMsgRound() {
-		common.Logger.Debugf("party %v: %s will pool msg %d", p.round().Params().PartyID(), task, p.ExpectMsgRound())
+		common.Logger.Debugf("party %s: %s will pool msg %d", p, task, msg.Content().RoundNumber())
 		p.PushMsgToPool(msg)
 		return r(true, nil)
 	}
 	if msg.Content().RoundNumber() < p.ExpectMsgRound() {
 		// drop message
-		common.Logger.Debugf("party %v: %s will drop msg %d", p.round().Params().PartyID(), task, msg.Content().RoundNumber())
+		common.Logger.Debugf("party %s: %s will drop msg %d", p, task, msg.Content().RoundNumber())
 		return r(true, nil)
 	}
 
