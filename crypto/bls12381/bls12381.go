@@ -167,7 +167,7 @@ func Verify(publicKey PublicKey, message, sig []byte) bool {
 	return r1.Equal(r2)
 }
 
-func VerifyDecryptShare(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.PointG1) error {
+func VerifyDecryptShare(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.PointG1, H *bls.PointG1) error {
 	g2 := bls.NewG2()
 	g1 := bls.NewG1()
 	fst := bls.NewPairingEngine()
@@ -191,7 +191,7 @@ func VerifyDecryptShare(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.Po
 	snd2 := bls.NewPairingEngine()
 
 	fst2.AddPair(W, Yi)
-	snd2.AddPair(Wi, g2.One())
+	snd2.AddPair(H, Ui)
 
 	if !fst2.Result().Equal(snd2.Result()) {
 		return errors.New("Y verification failed, please recheck Y integrity")
@@ -202,12 +202,16 @@ func VerifyDecryptShare(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.Po
 
 func Decrypt(shares [][]byte, cipherText []byte, yi []*bls.PointG2) ([]byte, error) {
 	U, V, W := getUVWFromCipherText(cipherText)
-	if err := VerifyCipherText(U, V, W); err != nil {
+	H, err := hashToGroup(U, V)
+	if err != nil {
+		return nil, err
+	}
+	if err = VerifyCipherText(U, V, W); err != nil {
 		return nil, err
 	}
 
 	for i, share := range shares {
-		if err := VerifyDecryptShare(share, yi[i], U, W); err != nil {
+		if err := VerifyDecryptShare(share, yi[i], U, W, H); err != nil {
 			return nil, err
 		}
 	}
@@ -336,10 +340,15 @@ func hashToGroup(point *bls.PointG2, message []byte) (*bls.PointG1, error) {
 	g2Hash := g2ToBytes(point)
 	g2HashFirst4 := g2Hash[:4]
 	concatStr := append(g2HashFirst4, message...)
-	finalHash := sha256.Sum256(concatStr)
-	finalHashBytes := PadToLengthBytesInPlace(finalHash[:], 48)
+	h := sha512.Sum512(concatStr)
+	messageDigest := make([]byte, 48)
+	copy(messageDigest, h[:48])
+
+	h1 := new(big.Int).SetBytes(messageDigest)
+	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 32 bytes
+
 	g1 := bls.NewG1()
-	g1Point, err := g1.MapToCurve(finalHashBytes[:48])
+	g1Point, err := g1.MapToCurve(md.Bytes())
 	if err != nil {
 		return nil, err
 	}

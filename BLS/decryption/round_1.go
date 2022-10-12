@@ -42,7 +42,6 @@ func (round *round1) Start() *tss.Error {
 		return round.WrapError(err)
 	}
 	round.temp.shares[i] = new(big.Int).SetBytes(share)
-
 	r1msg := NewDecryptionRound1Message(round.PartyID(), new(big.Int).SetBytes(share))
 
 	round.temp.decryptionRound1Messages[i] = r1msg

@@ -29,7 +29,9 @@ func (round *round2) Start() *tss.Error {
 	shareDecryptBytes := make([][]byte, 0)
 
 	for _, i := range round.temp.shares {
-		shareDecryptBytes = append(shareDecryptBytes, i.Bytes())
+		iBytes := make([]byte, 288)
+		iBytes = i.FillBytes(iBytes)
+		shareDecryptBytes = append(shareDecryptBytes, iBytes)
 	}
 
 	subPubKeys := make([]*bls.PointG2, 0)
@@ -48,5 +50,18 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	round.end <- DecryptedData{ClearText: clearTextBytes}
+	return nil
+}
+
+func (round *round2) Update() (bool, *tss.Error) {
+	return true, nil
+}
+
+func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
+	return true
+}
+
+func (round *round2) NextRound() tss.Round {
+	round.started = false
 	return nil
 }
