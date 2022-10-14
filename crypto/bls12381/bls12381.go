@@ -7,6 +7,7 @@ package bls12381
 import (
 	"crypto"
 	"crypto/aes"
+	"crypto/cipher"
 	cryptorand "crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
@@ -201,6 +202,8 @@ func VerifyDecryptShare(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.Po
 }
 
 func Decrypt(shares [][]byte, cipherText []byte, yi []*bls.PointG2) ([]byte, error) {
+	iv := cipherText[:aes.BlockSize]
+	cipherText = cipherText[aes.BlockSize:]
 	U, V, W := getUVWFromCipherText(cipherText)
 	H, err := hashToGroup(U, V)
 	if err != nil {
@@ -229,12 +232,14 @@ func Decrypt(shares [][]byte, cipherText []byte, yi []*bls.PointG2) ([]byte, err
 
 	aesKey := combinedSha256
 	encrypedMessage := cipherText[PointG2Size+PointG1Size+Sha256SumSize:]
-	cipher, err := aes.NewCipher(aesKey)
+	aesCipher, err := aes.NewCipher(aesKey)
 	if err != nil {
 		return nil, err
 	}
 	message := make([]byte, len(encrypedMessage))
-	cipher.Decrypt(message, encrypedMessage)
+	decrypter := cipher.NewCBCDecrypter(aesCipher, iv)
+	decrypter.CryptBlocks(message, encrypedMessage)
+	message = RemovePadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
 	return message, nil
 }
 
@@ -274,6 +279,7 @@ func VerifyCipherText(U *bls.PointG2, V []byte, W *bls.PointG1) error {
 }
 
 func DecryptShare(privateKey PrivateKey, cipherText []byte) ([]byte, error) {
+	cipherText = cipherText[aes.BlockSize:]
 	U, V, W := getUVWFromCipherText(cipherText)
 	if err := VerifyCipherText(U, V, W); err != nil {
 		return nil, err
@@ -294,8 +300,8 @@ func DecryptShare(privateKey PrivateKey, cipherText []byte) ([]byte, error) {
 }
 
 func Encrypt(publicKey PublicKey, message []byte) ([]byte, error) {
-	message = PadToLengthBytesInPlace(message, aes.BlockSize)
-	encryptedMessage := make([]byte, PointG2Size+PointG1Size+Sha256SumSize+len(message))
+	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
+	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message))
 	err := encrypt(encryptedMessage, publicKey, message)
 	return encryptedMessage, err
 }
@@ -318,16 +324,21 @@ func getUVWFromCipherText(cipherText []byte) (*bls.PointG2, []byte, *bls.PointG1
 	return UPoint, VBytes, WPoint
 }
 
-func encryptWithAes(message []byte) ([]byte, []byte) {
+func encryptWithAes(message []byte) ([]byte, []byte, []byte) {
 	aesKey, err := common.GetRandomBytes(AesKeySize)
 	if err != nil {
 		panic("aes key gen failed")
 	}
 	aesCipher, err := aes.NewCipher(aesKey)
+	iv, err := common.GetRandomBytes(aes.BlockSize)
+	if err != nil {
+		panic("aes key gen failed")
+	}
+	encrypter := cipher.NewCBCEncrypter(aesCipher, iv)
 
 	out := make([]byte, len(message))
-	aesCipher.Encrypt(out, message)
-	return aesKey, out
+	encrypter.CryptBlocks(out, message)
+	return aesKey, out, iv
 }
 
 func g2ToBytes(point *bls.PointG2) []byte {
@@ -414,14 +425,15 @@ func encryptAesKey(publicKey PublicKey, message []byte) ([]byte, error) {
 }
 
 func encrypt(cipherText, publicKey, message []byte) error {
-	aesKey, encryptedMessage := encryptWithAes(message)
+	aesKey, encryptedMessage, iv := encryptWithAes(message)
 	encryptedAes, err := encryptAesKey(publicKey, aesKey)
 	if err != nil {
 		return err
 	}
 
-	copy(cipherText, encryptedAes)
-	copy(cipherText[PointG2Size+Sha256SumSize+PointG1Size:], encryptedMessage)
+	copy(cipherText, iv)
+	copy(cipherText[aes.BlockSize:], encryptedAes)
+	copy(cipherText[aes.BlockSize+PointG2Size+Sha256SumSize+PointG1Size:], encryptedMessage)
 	return nil
 }
 
@@ -430,6 +442,41 @@ func PadToLengthBytesInPlace(src []byte, length int) []byte {
 	if oriLen < length {
 		for i := 0; i < length-oriLen; i++ {
 			src = append([]byte{0}, src...)
+		}
+	}
+	return src
+}
+
+// PadToLengthBytesInPlacePKCSS7
+// ref: https://stackoverflow.com/questions/13572253/what-kind-of-padding-should-aes-use
+func PadToLengthBytesInPlacePKCSS7(src []byte, length int) []byte {
+	oriLen := len(src)
+	oriLenLeft := oriLen % length
+	if oriLenLeft == 0 {
+		return src
+	}
+	padded := byte(length - oriLenLeft)
+	paddedBytes := make([]byte, int(padded))
+	for i := range paddedBytes {
+		paddedBytes[i] = padded
+	}
+	return append(src, paddedBytes...)
+}
+
+// RemovePadToLengthBytesInPlacePKCSS7
+// 255 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15  -> 255
+// ref: https://stackoverflow.com/questions/13572253/what-kind-of-padding-should-aes-use
+func RemovePadToLengthBytesInPlacePKCSS7(src []byte, length int) []byte {
+	for i := len(src) - 1; i >= len(src)-length; i-- {
+		if i < len(src)-1 && src[i] != src[i+1] {
+			break
+		}
+		if int(src[i]) == len(src)-i {
+			return src[:i]
+		}
+
+		if int(src[i]) < len(src)-i {
+			break
 		}
 	}
 	return src
