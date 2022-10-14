@@ -58,7 +58,8 @@ func TestE2EConcurrent(t *testing.T) {
 	totalPK := make([]byte, 192)
 	copy(totalPK[:96], keys[0].PubKey.X().Bytes())
 	copy(totalPK[96:], keys[0].PubKey.Y().Bytes())
-	msg, err := bls12381.Encrypt(totalPK, big.NewInt(200).Bytes())
+	text := new(big.Int).SetBytes([]byte("Hello World World World World"))
+	msg, err := bls12381.Encrypt(totalPK, text.Bytes())
 	if err != nil {
 		t.FailNow()
 	}
@@ -105,7 +106,7 @@ decryption:
 			if atomic.LoadInt32(&ended) == int32(len(ePIDS)) {
 				t.Logf("Done. Received save data from %d participants", ended)
 				t.Logf("res %v", new(big.Int).SetBytes(res.ClearText))
-				assert.Equal(t, new(big.Int).SetBytes(res.ClearText).Cmp(big.NewInt(200)), 0)
+				assert.Equal(t, string(res.ClearText), "Hello World World World World")
 				break decryption
 			}
 		}
