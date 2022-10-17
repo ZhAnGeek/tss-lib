@@ -47,7 +47,6 @@ type BaseParty struct {
 	mtx        sync.Mutex
 	rnd        Round
 	msgPool    []*ParsedMessage
-	poolMtx    sync.Mutex
 	FirstRound Round
 }
 
@@ -97,8 +96,6 @@ func (p *BaseParty) ExpectMsgRound() int {
 }
 
 func (p *BaseParty) PushMsgToPool(msg ParsedMessage) bool {
-	p.poolMtx.Lock()
-	defer p.poolMtx.Unlock()
 	p.msgPool = append(p.msgPool, &msg)
 	maxIdx := len(p.msgPool) - 2
 	for i := maxIdx; i >= 0; i-- {
@@ -112,8 +109,6 @@ func (p *BaseParty) PushMsgToPool(msg ParsedMessage) bool {
 }
 
 func (p *BaseParty) PopMsgFromPool() (ok bool, pMsg *ParsedMessage) {
-	p.poolMtx.Lock()
-	defer p.poolMtx.Unlock()
 	if len(p.msgPool) == 0 {
 		return false, nil
 	}
@@ -123,8 +118,6 @@ func (p *BaseParty) PopMsgFromPool() (ok bool, pMsg *ParsedMessage) {
 }
 
 func (p *BaseParty) TopMsgOfPool() (ok bool, pMsg *ParsedMessage) {
-	p.poolMtx.Lock()
-	defer p.poolMtx.Unlock()
 	if len(p.msgPool) == 0 {
 		return false, nil
 	}
@@ -263,15 +256,15 @@ func BaseUpdate(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 func BaseUpdateNR(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	// fast-fail on an invalid message; do not lock the mutex yet
 	if _, err := p.ValidateMessage(msg); err != nil {
+		common.Logger.Errorf("party %s: %s got invalid msg %d", p, task, msg.Content().RoundNumber())
 		return false, err
 	}
-	p.lock() // data is written to P state below
-	defer p.unlock()
 	common.Logger.Debugf("party %v received message: %s", p.PartyID(), msg.String())
 	if p.round() != nil {
 		common.Logger.Debugf("party %v round %d update: %s", p.PartyID(), p.round().RoundNumber(), msg.String())
 	}
 	if ok, err := p.StoreMessage(msg); err != nil || !ok {
+		common.Logger.Errorf("party %s: %s store msg %d with error", p, task, msg.Content().RoundNumber())
 		return false, err
 	}
 	if p.round() != nil {
@@ -292,6 +285,8 @@ func BaseUpdateNR(p Party, msg ParsedMessage, task string) (ok bool, err *Error)
 				// finished! the round implementation will have sent the data through the `end` channel.
 				common.Logger.Infof("party %v: %s finished!", p.PartyID(), task)
 			}
+		} else {
+			common.Logger.Debugf("party %s: %s round %d cannot advance, still waiting for msg", p, task)
 		}
 	}
 	return true, nil
@@ -299,34 +294,30 @@ func BaseUpdateNR(p Party, msg ParsedMessage, task string) (ok bool, err *Error)
 
 func BaseUpdatePool(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	if _, err := p.ValidateMessage(msg); err != nil {
+		common.Logger.Errorf("party %s: %s got invalid msg %d", p, task, msg.Content().RoundNumber())
 		return false, err
 	}
-	r := func(ok bool, err *Error) (bool, *Error) {
-		p.unlock()
-		return ok, err
-	}
 	p.lock()
+	defer p.unlock()
 	if msg.Content().RoundNumber() > p.ExpectMsgRound() {
 		common.Logger.Debugf("party %s: %s will pool msg %d", p, task, msg.Content().RoundNumber())
 		p.PushMsgToPool(msg)
-		return r(true, nil)
+		return true, nil
 	}
 	if msg.Content().RoundNumber() < p.ExpectMsgRound() {
 		// drop message
 		common.Logger.Debugf("party %s: %s will drop msg %d", p, task, msg.Content().RoundNumber())
-		return r(true, nil)
+		return true, nil
 	}
 
-	p.unlock()
 	ok, err = BaseUpdateNR(p, msg, task)
 	if !ok {
-		return r(ok, err)
+		return ok, err
 	}
-	p.lock()
 	for {
 		ok, hMsg := p.TopMsgOfPool()
 		if !ok {
-			common.Logger.Debugf("party %v: %s accessing empty pool", p.PartyID(), task)
+			common.Logger.Debugf("party %v: %s no msg remains in pool", p.PartyID(), task)
 			break
 		}
 		hRnd := (*hMsg).Content().RoundNumber()
@@ -339,14 +330,13 @@ func BaseUpdatePool(p Party, msg ParsedMessage, task string) (ok bool, err *Erro
 			break
 		}
 		if hRnd == p.ExpectMsgRound() {
-			p.unlock()
+			common.Logger.Debugf("party %s: %s update msg in message pool", p.PartyID(), task)
 			ok, err = BaseUpdateNR(p, *hMsg, task)
 			if !ok {
 				return ok, err
 			}
-			p.lock()
 		}
 	}
 
-	return r(true, nil)
+	return true, nil
 }
