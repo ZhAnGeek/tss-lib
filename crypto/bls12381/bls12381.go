@@ -124,12 +124,12 @@ func sign(signature, privateKey, message []byte) {
 	g1 := bls.NewG1()
 	h := sha512.Sum512(message)
 	messageDigest := make([]byte, 48)
-	copy(messageDigest, h[:48])
 
-	h1 := new(big.Int).SetBytes(messageDigest)
-	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 32 bytes
+	h1 := new(big.Int).SetBytes(h[:48])
+	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 48 bytes
+	md.FillBytes(messageDigest)
 
-	dig, err := g1.MapToCurve(md.Bytes())
+	dig, err := g1.MapToCurve(messageDigest)
 	if err != nil {
 		panic("bls12381: invalid message hashing into G1")
 	}
@@ -148,12 +148,12 @@ func Verify(publicKey PublicKey, message, sig []byte) bool {
 	g1 := bls.NewG1()
 	h := sha512.Sum512(message)
 	messageDigest := make([]byte, 48)
-	copy(messageDigest, h[:48])
 
-	h1 := new(big.Int).SetBytes(messageDigest)
-	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 32 bytes
+	h1 := new(big.Int).SetBytes(h[:48])
+	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 48 bytes
+	md.FillBytes(messageDigest)
 
-	dig, _ := g1.MapToCurve(md.Bytes())
+	dig, _ := g1.MapToCurve(messageDigest)
 	sig = PadToLengthBytesInPlace(sig, 96)
 	signature, _ := g1.FromBytes(sig)
 
@@ -353,13 +353,13 @@ func hashToGroup(point *bls.PointG2, message []byte) (*bls.PointG1, error) {
 	concatStr := append(g2HashFirst4, message...)
 	h := sha512.Sum512(concatStr)
 	messageDigest := make([]byte, 48)
-	copy(messageDigest, h[:48])
 
-	h1 := new(big.Int).SetBytes(messageDigest)
-	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 32 bytes
+	h1 := new(big.Int).SetBytes(h[:48])
+	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 48 bytes
+	md.FillBytes(messageDigest)
 
 	g1 := bls.NewG1()
-	g1Point, err := g1.MapToCurve(md.Bytes())
+	g1Point, err := g1.MapToCurve(messageDigest)
 	if err != nil {
 		return nil, err
 	}
@@ -425,6 +425,19 @@ func encryptAesKey(publicKey PublicKey, message []byte) ([]byte, error) {
 }
 
 func encrypt(cipherText, publicKey, message []byte) error {
+	aesKey, encryptedMessage, iv := encryptWithAes(message)
+	encryptedAes, err := encryptAesKey(publicKey, aesKey)
+	if err != nil {
+		return err
+	}
+
+	copy(cipherText, iv)
+	copy(cipherText[aes.BlockSize:], encryptedAes)
+	copy(cipherText[aes.BlockSize+PointG2Size+Sha256SumSize+PointG1Size:], encryptedMessage)
+	return nil
+}
+
+func EncryptByGeneratedAes(cipherText, publicKey, message []byte) error {
 	aesKey, encryptedMessage, iv := encryptWithAes(message)
 	encryptedAes, err := encryptAesKey(publicKey, aesKey)
 	if err != nil {
