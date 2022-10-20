@@ -49,8 +49,8 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	totalPK := make([]byte, 192)
-	copy(totalPK[:96], round.key.PubKey.X().Bytes())
-	copy(totalPK[96:], round.key.PubKey.Y().Bytes())
+	round.key.PubKey.X().FillBytes(totalPK[:96])
+	round.key.PubKey.Y().FillBytes(totalPK[96:])
 
 	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
 		g2 := bls.NewG2()

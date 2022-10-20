@@ -11,7 +11,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
@@ -55,11 +55,8 @@ func TestE2EConcurrent(t *testing.T) {
 
 	updater := test.SharedPartyUpdater
 
-	totalPK := make([]byte, 192)
-	copy(totalPK[:96], keys[0].PubKey.X().Bytes())
-	copy(totalPK[96:], keys[0].PubKey.Y().Bytes())
 	text := new(big.Int).SetBytes([]byte("Hello World World World World"))
-	msg, err := bls12381.Encrypt(totalPK, text.Bytes())
+	msg, err := crypto.EncryptByECPoint(keys[0].PubKey, text.Bytes())
 	if err != nil {
 		t.FailNow()
 	}

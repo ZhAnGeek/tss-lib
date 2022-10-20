@@ -12,7 +12,7 @@ import (
 	"errors"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -34,10 +34,7 @@ func (round *round1) Start() *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
-	totalPK := make([]byte, 192)
-	copy(totalPK[:96], round.key.PubKey.X().Bytes())
-	copy(totalPK[96:], round.key.PubKey.Y().Bytes())
-	encryptedResult, err := bls12381.Encrypt(totalPK, round.temp.m.Bytes())
+	encryptedResult, err := crypto.EncryptByECPoint(round.key.PubKey, round.temp.m.Bytes())
 
 	if err != nil {
 		return round.WrapError(err)

@@ -7,10 +7,12 @@
 package crypto
 
 import (
+	"crypto/aes"
 	"fmt"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 )
 
 var (
@@ -28,4 +30,14 @@ func GenerateNTildei(safePrimes [2]*big.Int) (NTildei, h1i, h2i *big.Int, err er
 	h1 := common.GetRandomGeneratorOfTheQuadraticResidue(NTildei)
 	h2 := common.GetRandomGeneratorOfTheQuadraticResidue(NTildei)
 	return NTildei, h1, h2, nil
+}
+
+func EncryptByECPoint(pubKey *ECPoint, message []byte) ([]byte, error) {
+	totalPK := make([]byte, 192)
+	pubKey.X().FillBytes(totalPK[:96])
+	pubKey.Y().FillBytes(totalPK[96:])
+	message = bls12381.PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
+	encryptedMessage := make([]byte, aes.BlockSize+bls12381.PointG2Size+bls12381.PointG1Size+bls12381.Sha256SumSize+len(message))
+	err := bls12381.EncryptByGeneratedAes(encryptedMessage, totalPK, message)
+	return encryptedMessage, err
 }
