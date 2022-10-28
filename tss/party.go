@@ -301,7 +301,7 @@ func BaseUpdateNR(p Party, msg ParsedMessage, task string) (ok bool, err *Error)
 				common.Logger.Infof("party %v: %s finished!", p.PartyID(), task)
 			}
 		} else {
-			common.Logger.Debugf("party %s: %s round %d cannot advance, still waiting for msg", p, task)
+			common.Logger.Debugf("party %s: %s cannot advance, still waiting for msg", p, task)
 		}
 	}
 	return true, nil
