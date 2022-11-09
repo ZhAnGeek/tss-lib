@@ -162,6 +162,11 @@ func (p *BaseParty) unlock() {
 // ----- //
 
 func BaseStart(p Party, task string, prepare ...func(Round) *Error) *Error {
+	defer func() {
+		if err := recover(); err != nil {
+			common.Logger.Errorf("Error during BaseStart %s: %v", p, err)
+		}
+	}()
 	p.lock()
 	defer p.unlock()
 	if p.PartyID() == nil || !p.PartyID().ValidateBasic() {
@@ -192,6 +197,11 @@ func BaseStart(p Party, task string, prepare ...func(Round) *Error) *Error {
 }
 
 func BaseRestore(p Party, task string) *Error {
+	defer func() {
+		if err := recover(); err != nil {
+			common.Logger.Errorf("Error during BaseRestore %s: %v", p, err)
+		}
+	}()
 	p.lock()
 	defer p.unlock()
 	if p.PartyID() == nil || !p.PartyID().ValidateBasic() {
@@ -211,6 +221,11 @@ func BaseRestore(p Party, task string) *Error {
 
 // an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)
 func BaseUpdate(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
+	defer func() {
+		if err := recover(); err != nil {
+			common.Logger.Errorf("Error during BaseUpdate %s: %v", p, err)
+		}
+	}()
 	// fast-fail on an invalid message; do not lock the mutex yet
 	if _, err := p.ValidateMessage(msg); err != nil {
 		return false, err
@@ -286,13 +301,18 @@ func BaseUpdateNR(p Party, msg ParsedMessage, task string) (ok bool, err *Error)
 				common.Logger.Infof("party %v: %s finished!", p.PartyID(), task)
 			}
 		} else {
-			common.Logger.Debugf("party %s: %s round %d cannot advance, still waiting for msg", p, task)
+			common.Logger.Debugf("party %s: %s cannot advance, still waiting for msg", p, task)
 		}
 	}
 	return true, nil
 }
 
 func BaseUpdatePool(p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
+	defer func() {
+		if err := recover(); err != nil {
+			common.Logger.Errorf("Error during BaseUpdatePool %s: %v", p, err)
+		}
+	}()
 	if _, err := p.ValidateMessage(msg); err != nil {
 		common.Logger.Errorf("party %s: %s got invalid msg %d", p, task, msg.Content().RoundNumber())
 		return false, err

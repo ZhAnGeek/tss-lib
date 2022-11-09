@@ -55,7 +55,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	outCh := make(chan tss.Message, len(pIDs))
 	endCh := make(chan LocalPartySaveData, len(pIDs))
 
-	updater := test.SharedPartyUpdater
+	updater := test.SharedPartyUpdaterWithWg
 
 	startGR := runtime.NumGoroutine()
 
@@ -96,16 +96,14 @@ keygen:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
-					wg.Done()
+					go updater(P, msg, errCh, &wg)
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 					return
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
-				wg.Done()
+				go updater(parties[dest[0].Index], msg, errCh, &wg)
 			}
 
 		case save := <-endCh:
