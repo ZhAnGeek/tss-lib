@@ -122,6 +122,13 @@ func Verify(publicKey PublicKey, message, sig []byte) bool {
 	p2 := g2.One()
 	r2 := c2.AddPair(signature, p2).Result()
 
+	if !g2.InCorrectSubgroup(pk) {
+		return false
+	}
+	if !g1.InCorrectSubgroup(signature) {
+		return false
+	}
+
 	return r1.Equal(r2)
 }
 
