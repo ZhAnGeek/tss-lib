@@ -85,7 +85,10 @@ func AddOnSignature(sign []*big.Int) (*big.Int, error) {
 	res := g1.Zero()
 	for _, s := range sign {
 		tmp := bls12381.PadToLengthBytesInPlace(s.Bytes(), 96)
-		addPoint, _ := g1.FromBytes(tmp)
+		addPoint, err := g1.FromBytes(tmp)
+		if err != nil {
+			return nil, err
+		}
 		g1.Add(res, res, addPoint)
 	}
 	return new(big.Int).SetBytes(g1.ToBytes(res)), nil
