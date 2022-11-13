@@ -67,6 +67,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("de-commitment failed"), Pj)
 		}
+		if len(PjVs) != round.Threshold()+1 {
+			return round.WrapError(errors.New("de-commitment length not correct"), Pj)
+		}
 		for c := 0; c <= round.Threshold(); c++ {
 			Vc[c], err = Vc[c].Add(PjVs[c])
 			if err != nil {
