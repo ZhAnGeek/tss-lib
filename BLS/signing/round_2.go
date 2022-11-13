@@ -55,7 +55,10 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 
 	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
 		g2 := bls.NewG2()
-		totalPKPoint, _ := g2.FromBytes(totalPK)
+		totalPKPoint, err := g2.FromBytes(totalPK)
+		if err != nil {
+			return round.WrapError(err)
+		}
 		bytes := bls12381.PadToLengthBytesInPlace(round.temp.derivePubKey.Bytes(), 192)
 		tmpPoint, _ := g2.FromBytes(bytes)
 		g2.MulScalar(tmpPoint, tmpPoint, big.NewInt(int64(round.Threshold()+1)))
