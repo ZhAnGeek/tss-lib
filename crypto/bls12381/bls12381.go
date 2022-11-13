@@ -5,14 +5,11 @@
 package bls12381
 
 import (
-	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
-	cryptorand "crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
 	"errors"
-	"io"
 	"math/big"
 	"strconv"
 
@@ -50,7 +47,6 @@ const (
 	PublicKeySize  = 96
 	PrivateKeySize = 32
 	SignatureSize  = 48
-	SeedSize       = 32
 	AesKeySize     = 32
 	Sha256SumSize  = 32
 	PointG1Size    = 96
@@ -64,51 +60,6 @@ var (
 type PublicKey []byte
 
 type PrivateKey []byte
-
-func (priv PrivateKey) Public() crypto.PublicKey {
-	publicKey := make([]byte, PublicKeySize)
-	copy(publicKey, priv[32:])
-	return PublicKey(publicKey)
-}
-
-func GenerateKey(rand io.Reader) (PublicKey, PrivateKey, error) {
-	if rand == nil {
-		rand = cryptorand.Reader
-	}
-	seed := make([]byte, SeedSize)
-	if _, err := io.ReadFull(rand, seed); err != nil {
-		return nil, nil, err
-	}
-
-	privateKey := NewKeyFromSeed(seed)
-	publicKey := make([]byte, PublicKeySize)
-	copy(publicKey, privateKey[32:])
-
-	return publicKey, privateKey, nil
-}
-
-func NewKeyFromSeed(seed []byte) PrivateKey {
-	privateKey := make([]byte, PrivateKeySize)
-	newKeyFromSeed(privateKey, seed)
-	return privateKey
-}
-
-func newKeyFromSeed(privateKey, seed []byte) {
-	if l := len(seed); l != SeedSize {
-		panic("bls12381:bad seed length:" + strconv.Itoa(l))
-	}
-	h := sha256.Sum256(seed)
-	s := new(big.Int).SetBytes(h[:])
-	// h converted as big.int
-	g1 := bls.NewG1()
-	A := g1.MulScalar(&bls.PointG1{}, g1.One(), s)
-
-	publicKey := bls.NewG1().ToBytes(A)
-
-	copy(privateKey, seed)
-	copy(privateKey[32:], publicKey)
-
-}
 
 func Sign(privateKey PrivateKey, message []byte) []byte {
 	signature := make([]byte, SignatureSize*2)
