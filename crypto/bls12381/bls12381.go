@@ -104,9 +104,15 @@ func Verify(publicKey PublicKey, message, sig []byte) bool {
 	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 48 bytes
 	md.FillBytes(messageDigest)
 
-	dig, _ := g1.MapToCurve(messageDigest)
+	dig, err := g1.MapToCurve(messageDigest)
+	if err != nil {
+		return false
+	}
 	sig = PadToLengthBytesInPlace(sig, 96)
-	signature, _ := g1.FromBytes(sig)
+	signature, err := g1.FromBytes(sig)
+	if err != nil {
+		return false
+	}
 
 	c1 := bls.NewPairingEngine()
 	r1 := c1.AddPair(dig, pk).Result()
