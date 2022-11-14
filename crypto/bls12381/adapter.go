@@ -115,62 +115,6 @@ func (curve *BLS12_381Curves) IsOnG1(x *big.Int, y *big.Int) bool {
 	return g1.IsOnCurve(p1)
 }
 
-// return a point addition on elliptic group G1
-func (curve *BLS12_381Curves) AddOnG1(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
-	g1 := bls.NewG1()
-	p1, err := FromIntToPointG1(x1, y1)
-	if err != nil {
-		panic("bls12381: invalid coordinates input")
-	}
-	p2, err := FromIntToPointG1(x2, y2)
-	if err != nil {
-		panic("bls12381: invalid coordinates input")
-	}
-	r := g1.New()
-	g1.Add(r, p1, p2)
-
-	x, y = FromPointG1ToInt(r)
-	return
-}
-
-// return a point doubling on elliptic group G1
-func (curve *BLS12_381Curves) DoubleOnG1(x1, y1 *big.Int) (x, y *big.Int) {
-	g1 := bls.NewG1()
-	p1, err := FromIntToPointG1(x1, y1)
-	if err != nil {
-		panic("bls12381: invalid coordinates input")
-	}
-	r := g1.New()
-	g1.Double(r, p1)
-	x, y = FromPointG1ToInt(r)
-	return
-}
-
-// ScalarMult returns k*(x1,y1) on elliptic group G1 over BLS12_381
-func (curve *BLS12_381Curves) ScalarMultOnG1(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
-	s := new(big.Int).SetBytes(k)
-	g1 := bls.NewG1()
-	p, err := FromIntToPointG1(x1, y1)
-	if err != nil {
-		panic("bls12381: invalid coordinates input")
-	}
-	r := g1.New()
-	g1.MulScalar(r, p, s) // result r is in projective coordinates
-	r = g1.Affine(r)
-	x, y = FromPointG1ToInt(r)
-	return
-}
-
-// ScalarBaseMult returns k*basepoint on elliptic group G1 over BLS12_381
-func (curve *BLS12_381Curves) ScalarBaseMultOnG1(k []byte) (x, y *big.Int) {
-	s := new(big.Int).SetBytes(k)
-	g1 := bls.NewG1()
-	r := g1.One()
-	g1.MulScalar(r, r, s)
-	x, y = FromPointG1ToInt(r)
-	return
-}
-
 // initializes an instance of BLS12381 curve
 func (curve *BLS12_381Curves) initBLS12381() {
 	// Curve parameters taken from section[4.2.1] https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-pairing-friendly-curves-07#section-2.1

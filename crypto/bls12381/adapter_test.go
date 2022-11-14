@@ -26,14 +26,4 @@ func TestAdapter(t *testing.T) {
 	xx, yy := p.ScalarBaseMult(sk)
 	assert.Equal(t, x, xx)
 	assert.Equal(t, y, yy)
-
-	g1 := bls.NewG1()
-	pkPrime := g1.MulScalar(&bls.PointG1{}, g1.One(), new(big.Int).SetBytes(sk))
-	xPrime, yPrime := FromPointG1ToInt(pkPrime)
-	assert.Equal(t, true, p.IsOnG1(xPrime, yPrime))
-
-	xxPrime, yyPrime := p.ScalarBaseMultOnG1(sk)
-	assert.Equal(t, xPrime, xxPrime)
-	assert.Equal(t, yPrime, yyPrime)
-
 }
