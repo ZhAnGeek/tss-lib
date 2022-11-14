@@ -7,12 +7,12 @@
 package keygen
 
 import (
-	"context"
 	"encoding/hex"
+	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -44,7 +44,7 @@ func NewLocalPartySaveData(partyCount int) (saveData LocalPartySaveData) {
 }
 
 // BuildLocalSaveDataSubset re-creates the LocalPartySaveData to contain data for only the list of signing parties.
-func BuildLocalSaveDataSubset(ctx context.Context, sourceData LocalPartySaveData, sortedIDs tss.SortedPartyIDs) LocalPartySaveData {
+func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.SortedPartyIDs) LocalPartySaveData {
 	keysToIndices := make(map[string]int, len(sourceData.Ks))
 	for j, kj := range sourceData.Ks {
 		keysToIndices[hex.EncodeToString(kj.Bytes())] = j
@@ -55,7 +55,7 @@ func BuildLocalSaveDataSubset(ctx context.Context, sourceData LocalPartySaveData
 	for j, id := range sortedIDs {
 		savedIdx, ok := keysToIndices[hex.EncodeToString(id.Key)]
 		if !ok {
-			log.Warn(ctx, "BuildLocalSaveDataSubset: unable to find a signer party in the local save data", id)
+			panic(errors.New(fmt.Sprintf("BuildLocalSaveDataSubset: unable to find a signer party in the local save data %s", id)))
 		}
 		newData.Ks[j] = sourceData.Ks[savedIdx]
 		newData.BigXj[j] = sourceData.BigXj[savedIdx]
