@@ -62,6 +62,17 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		}
 		vjc[j] = vj
 
+		proof, err := r3msg2.UnmarshalZKProof(round.EC())
+		if err != nil {
+			return round.WrapError(err, round.Parties().IDs()[j])
+		}
+
+		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
+		ok = proof.Verify(ctx, ContextJ, vj[0])
+		if !ok {
+			return round.WrapError(errors.New("failed to verify schnorr proof"), round.Parties().IDs()[j])
+		}
+
 		r3msg1 := round.temp.dgRound3Message1s[j].Content().(*DGRound3Message1)
 		sharej := &vss.Share{
 			Threshold: round.NewThreshold(),

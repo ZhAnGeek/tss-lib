@@ -13,7 +13,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round3) Start(ctx context.Context) *tss.Error {
+func (round *round3) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -42,7 +42,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	vDeCmt := round.temp.VD
 	r3msg2 := NewDGRound3Message2(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		vDeCmt)
+		vDeCmt, round.temp.proof)
 	round.temp.dgRound3Message2s[i] = r3msg2
 	round.out <- r3msg2
 
