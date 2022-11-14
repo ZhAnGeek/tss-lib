@@ -95,26 +95,6 @@ func (curve *BLS12_381Curves) ScalarBaseMult(k []byte) (x, y *big.Int) {
 	return x, y
 }
 
-// BLS is a curve that contains two elliptic point group, a bls signature scheme assembles key pairs in additive group G2, with plaintext space G1
-// IsOnG1 returns bool to say if the point (x,y) is on elliptic group G1
-func (curve *BLS12_381Curves) IsOnG1(x *big.Int, y *big.Int) bool {
-	if len(x.Bytes()) != 48 || len(y.Bytes()) != 48 {
-		return false
-	}
-	g1 := bls.NewG1()
-	pIn := make([]byte, PublicKeySize)
-
-	copy(x.Bytes(), pIn[:48])
-	copy(y.Bytes(), pIn[48:])
-
-	p1, err := g1.FromBytes(pIn)
-
-	if err != nil {
-		panic("bls12381: invalid coordinates input")
-	}
-	return g1.IsOnCurve(p1)
-}
-
 // initializes an instance of BLS12381 curve
 func (curve *BLS12_381Curves) initBLS12381() {
 	// Curve parameters taken from section[4.2.1] https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-pairing-friendly-curves-07#section-2.1
