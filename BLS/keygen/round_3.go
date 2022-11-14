@@ -124,7 +124,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
+func (round *round3) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }
@@ -136,13 +136,4 @@ func (round *round3) Update() (bool, *tss.Error) {
 
 func (round *round3) NextRound() tss.Round {
 	return nil // finished!
-}
-
-// get ssid from local params
-func (round *base) getSSID(ctx context.Context) ([]byte, error) {
-	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
-	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                         // parties
-	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
-
-	return ssid, nil
 }
