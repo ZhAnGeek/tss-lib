@@ -86,7 +86,7 @@ func sign(signature, privateKey, message []byte) {
 	}
 	sk := new(big.Int).SetBytes(privateKey)
 
-	g1.MulScalar(dig, dig, sk)
+	G1MulScalarMont(dig, dig, sk)
 	copy(signature[:SignatureSize*2], g1.ToBytes(dig))
 }
 
@@ -254,8 +254,8 @@ func DecryptShare(privateKey PrivateKey, cipherText []byte) ([]byte, error) {
 	var share *bls.PointG2 = new(bls.PointG2)
 	var wi *bls.PointG1 = new(bls.PointG1)
 	secret := new(big.Int).SetBytes(privateKey)
-	share = g2.MulScalar(share, U, secret)
-	wi = g1.MulScalar(wi, W, secret)
+	share = G2MulScalarMont(share, U, secret)
+	wi = G1MulScalarMont(wi, W, secret)
 
 	bytes := make([]byte, 0)
 	bytes = append(bytes, g2.ToBytes(share)...)
@@ -351,8 +351,8 @@ func encryptAesKey(publicKey PublicKey, message []byte) ([]byte, error) {
 	var V []byte = make([]byte, Sha256SumSize)
 	g2 := bls.NewG2()
 	U = g2.One()
-	U = g2.MulScalar(U, U, r)
-	Y = g2.MulScalar(Y, pk, r)
+	U = G2MulScalarMont(U, U, r)
+	Y = G2MulScalarMont(Y, pk, r)
 
 	// Y's hash to 256-bit sha256 sum
 	rPksBytes := g2ToBytes(Y)
@@ -373,7 +373,7 @@ func encryptAesKey(publicKey PublicKey, message []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	W = g1.MulScalar(W, H, r)
+	W = G1MulScalarMont(W, H, r)
 
 	// cipher bytes first 192 bytes U, denotes r * P
 	// cipher bytes second 32 bytes V, denotes G(r * pk * P) ^ aes
@@ -457,4 +457,46 @@ func RemovePadToLengthBytesInPlacePKCSS7(src []byte, length int) []byte {
 		}
 	}
 	return src
+}
+
+// G2MulScalarMont multiplies a point by given scalar value in big.Int and assigns the result to point at first argument.
+func G2MulScalarMont(c, p *bls.PointG2, e *big.Int) *bls.PointG2 {
+	g := bls.NewG2()
+	R0 := g.Zero()
+	R1 := &bls.PointG2{}
+	R1.Set(p)
+	l := e.BitLen()
+	for i := l - 1; i >= 0; i-- {
+		if e.Bit(i) == 0 {
+			g.Add(R1, R0, R1)
+			g.Add(R0, R0, R0)
+		} else {
+			g.Add(R0, R0, R1)
+			g.Add(R1, R1, R1)
+		}
+	}
+	c.Set(R0)
+
+	return R0
+}
+
+// G1MulScalarMont multiplies a point by given scalar value in big.Int and assigns the result to point at first argument.
+func G1MulScalarMont(c, p *bls.PointG1, e *big.Int) *bls.PointG1 {
+	g := bls.NewG1()
+	R0 := g.Zero()
+	R1 := &bls.PointG1{}
+	R1.Set(p)
+	l := e.BitLen()
+	for i := l - 1; i >= 0; i-- {
+		if e.Bit(i) == 0 {
+			g.Add(R1, R0, R1)
+			g.Add(R0, R0, R0)
+		} else {
+			g.Add(R0, R0, R1)
+			g.Add(R1, R1, R1)
+		}
+	}
+	c.Set(R0)
+
+	return R0
 }

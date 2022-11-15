@@ -47,7 +47,7 @@ func (round *round2) Start(_ context.Context) *tss.Error {
 		}
 		g2 := bls.NewG2()
 		if round.temp.KeyDerivationDelta.Cmp(big.NewInt(0)) != 0 {
-			pkDelta := g2.MulScalar(&bls.PointG2{}, g2.One(), round.temp.KeyDerivationDelta)
+			pkDelta := bls12381.G2MulScalarMont(&bls.PointG2{}, g2.One(), round.temp.KeyDerivationDelta)
 			g2.Add(pkPoint, pkPoint, pkDelta)
 		}
 		PKj := bls.NewG2().ToBytes(pkPoint)
@@ -77,7 +77,7 @@ func (round *round2) Start(_ context.Context) *tss.Error {
 		if err != nil {
 			return round.WrapError(err)
 		}
-		g2.MulScalar(tmpPoint, tmpPoint, big.NewInt(int64(round.Threshold()+1)))
+		bls12381.G2MulScalarMont(tmpPoint, tmpPoint, big.NewInt(int64(round.Threshold()+1)))
 		g2.Add(totalPKPoint, totalPKPoint, tmpPoint)
 		totalPK = g2.ToBytes(totalPKPoint)
 	}

@@ -21,7 +21,7 @@ func TestSignAndVerify(t *testing.T) {
 	g2 := bls.NewG2()
 	m := big.NewInt(200).Bytes()
 	sk := big.NewInt(2).Bytes()
-	pk := g2.MulScalar(&bls.PointG2{}, g2.One(), new(big.Int).SetBytes(sk))
+	pk := G2MulScalarMont(&bls.PointG2{}, g2.One(), new(big.Int).SetBytes(sk))
 
 	publicKey := bls.NewG2().ToBytes(pk)
 
@@ -36,7 +36,7 @@ func TestEncryptAndDecrypt(t *testing.T) {
 	g2 := bls.NewG2()
 	m := big.NewInt(200).Bytes()
 	sk := big.NewInt(2).Bytes()
-	pk := g2.MulScalar(&bls.PointG2{}, g2.One(), new(big.Int).SetBytes(sk))
+	pk := G2MulScalarMont(&bls.PointG2{}, g2.One(), new(big.Int).SetBytes(sk))
 
 	publicKey := bls.NewG2().ToBytes(pk)
 

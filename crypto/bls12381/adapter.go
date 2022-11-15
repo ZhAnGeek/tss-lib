@@ -79,7 +79,7 @@ func (curve *BLS12_381Curves) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.I
 		panic("bls12381: invalid coordinates input")
 	}
 	r := g2.New()
-	g2.MulScalar(r, p, s) // r result r is represented in projective coordinates
+	G2MulScalarMont(r, p, s)
 	x, y = FromPointG2ToInt(r)
 	return x, y
 }
@@ -89,7 +89,7 @@ func (curve *BLS12_381Curves) ScalarBaseMult(k []byte) (x, y *big.Int) {
 	s := new(big.Int).SetBytes(k)
 	g2 := bls.NewG2()
 	r := g2.One()
-	g2.MulScalar(r, r, s)
+	G2MulScalarMont(r, r, s)
 	x, y = FromPointG2ToInt(r)
 	return x, y
 }

@@ -46,7 +46,7 @@ func (round *round1) Start(_ context.Context) *tss.Error {
 		round.temp.wi = modQ.Add(round.temp.wi, round.temp.KeyDerivationDelta)
 		g2 := bls.NewG2()
 		p := g2.Zero()
-		g2.MulScalar(p, g2.One(), round.temp.KeyDerivationDelta)
+		bls12381.G2MulScalarMont(p, g2.One(), round.temp.KeyDerivationDelta)
 		round.temp.derivePubKey = new(big.Int).SetBytes(g2.ToBytes(p))
 	}
 

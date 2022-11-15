@@ -17,7 +17,7 @@ import (
 func TestG2Convert(t *testing.T) {
 	g2 := bls.NewG2()
 	point := bls.PointG2{}
-	g2.MulScalar(&point, g2.One(), big.NewInt(666777))
+	G2MulScalarMont(&point, g2.One(), big.NewInt(666777))
 	x, y := FromPointG2ToInt(&point)
 
 	var point2 *bls.PointG2
