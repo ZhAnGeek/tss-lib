@@ -57,12 +57,12 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 
 	// 1. PrepareForSigning() -> w_i
-	xi, ks := round.input.Xi, round.input.Ks
+	xi, ks, bigXj := round.input.Xi, round.input.Ks, round.input.BigXj
 	if round.Threshold()+1 > len(ks) {
 		return round.WrapError(fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks)), round.PartyID())
 	}
 	newKs := round.NewParties().IDs().Keys()
-	wi := signing.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks)
+	wi, _ := signing.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks, bigXj)
 
 	// 2.
 	vi, shares, err := vss.Create(round.Params().EC(), round.NewThreshold(), wi, newKs)

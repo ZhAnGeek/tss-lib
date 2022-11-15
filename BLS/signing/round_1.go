@@ -27,7 +27,7 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, data *com
 		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start(ctx context.Context) *tss.Error {
+func (round *round1) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -91,13 +91,15 @@ func (round *round1) prepare() error {
 
 	xi := round.key.Xi
 	ks := round.key.Ks
+	BigXs := round.key.BigXj
 
 	if round.Threshold()+1 > len(ks) {
 		// TODO: this should not panic
 		return fmt.Errorf("t+1=%d is not consistent with the key count %d", round.Threshold()+1, len(ks))
 	}
-	wi := PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks)
+	wi, BigWs := PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, BigXs)
 
 	round.temp.wi = wi
+	round.temp.BigWs = BigWs
 	return nil
 }

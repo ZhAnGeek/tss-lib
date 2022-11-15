@@ -90,7 +90,6 @@ func (curve *BLS12_381Curves) ScalarBaseMult(k []byte) (x, y *big.Int) {
 	g2 := bls.NewG2()
 	r := g2.One()
 	g2.MulScalar(r, r, s)
-	g2.Affine(r)
 	x, y = FromPointG2ToInt(r)
 	return x, y
 }

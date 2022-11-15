@@ -19,11 +19,10 @@ import (
 )
 
 var (
-	ErrNumSharesBelowThreshold = fmt.Errorf("not enough shares to satisfy the threshold")
-	zero                       = big.NewInt(0)
+	zero = big.NewInt(0)
 )
 
-func (round *round2) Start(ctx context.Context) *tss.Error {
+func (round *round2) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -41,6 +40,20 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 		}
 		r1msg := msg.Content().(*SignRound1Message)
 		round.temp.sig[j] = r1msg.UnmarshalSignature()
+
+		pkPoint, err := bls12381.FromIntToPointG2(round.temp.BigWs[j].X(), round.temp.BigWs[j].Y())
+		if err != nil {
+			return round.WrapError(err, round.PartyID())
+		}
+		g2 := bls.NewG2()
+		if round.temp.KeyDerivationDelta.Cmp(big.NewInt(0)) != 0 {
+			pkDelta := g2.MulScalar(&bls.PointG2{}, g2.One(), round.temp.KeyDerivationDelta)
+			g2.Add(pkPoint, pkPoint, pkDelta)
+		}
+		PKj := bls.NewG2().ToBytes(pkPoint)
+		if ok := bls12381.Verify(PKj, round.temp.m, round.temp.sig[j].Bytes()); !ok {
+			return round.WrapError(errors.New("Partial message failed to verify"), round.Parties().IDs()[j])
+		}
 	}
 
 	totalSign, err := AddOnSignature(round.temp.sig)
