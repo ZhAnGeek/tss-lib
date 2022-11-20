@@ -7,6 +7,7 @@
 package tss
 
 import (
+	"bytes"
 	"crypto/elliptic"
 	"errors"
 	"reflect"
@@ -20,11 +21,12 @@ import (
 type CurveName string
 
 const (
-	Secp256k1 CurveName = "secp256k1"
-	Nist256p1 CurveName = "nist256p1" // a.k.a secp256r1
-	Ed25519   CurveName = "ed25519"
-	BLS12381  CurveName = "bls12381"
-	PAllas    CurveName = "pallas"
+	Secp256k1  CurveName = "secp256k1"
+	Nist256p1  CurveName = "nist256p1" // a.k.a secp256r1
+	Ed25519    CurveName = "ed25519"
+	BLS12381G2 CurveName = "bls12381g2"
+	BLS12381G1 CurveName = "bls12381g1"
+	PAllas     CurveName = "pallas"
 )
 
 var (
@@ -40,7 +42,8 @@ func init() {
 	registry[Secp256k1] = s256k1.S256()
 	registry[Nist256p1] = elliptic.P256()
 	registry[Ed25519] = edwards.Edwards()
-	registry[BLS12381] = bls12381.BLS12381()
+	registry[BLS12381G2] = bls12381.G2Curve()
+	registry[BLS12381G1] = bls12381.G1Curve()
 	registry[PAllas] = curves.Pallas()
 }
 
@@ -91,8 +94,19 @@ func Edwards() elliptic.Curve {
 	return edwards.Edwards()
 }
 
-func Bls12381() elliptic.Curve {
-	return bls12381.BLS12381()
+func Bls12381G2() elliptic.Curve {
+	return bls12381.G2Curve()
+}
+
+func Bls12381G1() elliptic.Curve {
+	return bls12381.G1Curve()
+}
+
+func GetBLSCurveBySuite(suite []byte) elliptic.Curve {
+	if bytes.Compare(suite, bls12381.GetBLSSignatureSuiteG1()) == 0 {
+		return Bls12381G2()
+	}
+	return Bls12381G1()
 }
 
 func Pallas() elliptic.Curve {

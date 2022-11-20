@@ -45,10 +45,14 @@ type (
 	localTempData struct {
 		localMessageStore
 
+		suite         []byte
+		PublicKeySize int
+		SignatureSize int
+
 		wi                 *big.Int
 		BigWs              []*crypto.ECPoint
 		KeyDerivationDelta *big.Int
-		derivePubKey       *big.Int
+		pkDelta            *crypto.ECPoint
 
 		m   []byte
 		sig []*big.Int

@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
@@ -26,6 +27,11 @@ import (
 const (
 	testParticipants = TestParticipants
 	testThreshold    = TestThreshold
+)
+
+var (
+	suite = bls12381.GetBLSSignatureSuiteG1()
+	ec    = tss.GetBLSCurveBySuite(suite)
 )
 
 func setUp(level log.Level) {
@@ -65,7 +71,7 @@ func E2EKeyGen(b *testing.B) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.Bls12381G2(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 
 		parties = append(parties, P)
@@ -134,17 +140,17 @@ keygen:
 						}
 						pShares = append(pShares, shareStruct)
 					}
-					uj, err := pShares[:threshold+1].ReConstruct(tss.Bls12381())
+					uj, err := pShares[:threshold+1].ReConstruct(tss.Bls12381G2())
 					assert.NoError(b, err, "vss.ReConstruct should not throw error")
 
 					// uG test: u*G[j] == V[0]
 					assert.Equal(b, uj, Pj.temp.ui)
-					uG := crypto.ScalarBaseMult(tss.Bls12381(), uj)
+					uG := crypto.ScalarBaseMult(tss.Bls12381G2(), uj)
 					assert.True(b, uG.Equals(Pj.temp.vs[0]), "ensure u*G[j] == V_0")
 
 					// xj tests: BigXj == xj*G
 					xj := Pj.data.Xi
-					gXj := crypto.ScalarBaseMult(tss.Bls12381(), xj)
+					gXj := crypto.ScalarBaseMult(tss.Bls12381G2(), xj)
 					BigXj := Pj.data.BigXj[j]
 					assert.True(b, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 
@@ -152,21 +158,21 @@ keygen:
 					{
 						badShares := pShares[:threshold]
 						badShares[len(badShares)-1].Share.Set(big.NewInt(0))
-						uj, err := pShares[:threshold].ReConstruct(tss.Bls12381())
+						uj, err := pShares[:threshold].ReConstruct(tss.Bls12381G2())
 						assert.NoError(b, err)
 						assert.NotEqual(b, parties[j].temp.ui, uj)
-						BigXjX, BigXjY := tss.Bls12381().ScalarBaseMult(uj.Bytes())
+						BigXjX, BigXjY := tss.Bls12381G2().ScalarBaseMult(uj.Bytes())
 						assert.NotEqual(b, BigXjX, Pj.temp.vs[0].X())
 						assert.NotEqual(b, BigXjY, Pj.temp.vs[0].Y())
 					}
 					u = new(big.Int).Add(u, uj)
 				}
-				u = new(big.Int).Mod(u, tss.Bls12381().Params().N)
+				u = new(big.Int).Mod(u, tss.Bls12381G2().Params().N)
 				pkX, pkY := save.PubKey.X(), save.PubKey.Y()
 
 				// public key tests
 				assert.NotZero(b, u, "u should not be zero")
-				ourPkX, ourPkY := tss.Bls12381().ScalarBaseMult(u.Bytes())
+				ourPkX, ourPkY := tss.Bls12381G2().ScalarBaseMult(u.Bytes())
 				assert.Equal(b, pkX, ourPkX, "pkX should match expected pk derived from u")
 				assert.Equal(b, pkY, ourPkY, "pkY should match expected pk derived from u")
 				b.Log("Public key tests done.")
@@ -206,7 +212,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(ec, p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 
 		parties = append(parties, P)
@@ -272,17 +278,17 @@ keygen:
 						}
 						pShares = append(pShares, shareStruct)
 					}
-					uj, err := pShares[:threshold+1].ReConstruct(tss.Bls12381())
+					uj, err := pShares[:threshold+1].ReConstruct(tss.Bls12381G2())
 					assert.NoError(t, err, "vss.ReConstruct should not throw error")
 
 					// uG test: u*G[j] == V[0]
 					assert.Equal(t, uj, Pj.temp.ui)
-					uG := crypto.ScalarBaseMult(tss.Bls12381(), uj)
+					uG := crypto.ScalarBaseMult(ec, uj)
 					assert.True(t, uG.Equals(Pj.temp.vs[0]), "ensure u*G[j] == V_0")
 
 					// xj tests: BigXj == xj*G
 					xj := Pj.data.Xi
-					gXj := crypto.ScalarBaseMult(tss.Bls12381(), xj)
+					gXj := crypto.ScalarBaseMult(ec, xj)
 					BigXj := Pj.data.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 
@@ -290,21 +296,21 @@ keygen:
 					{
 						badShares := pShares[:threshold]
 						badShares[len(badShares)-1].Share.Set(big.NewInt(0))
-						uj, err := pShares[:threshold].ReConstruct(tss.Bls12381())
+						uj, err := pShares[:threshold].ReConstruct(ec)
 						assert.NoError(t, err)
 						assert.NotEqual(t, parties[j].temp.ui, uj)
-						BigXjX, BigXjY := tss.Bls12381().ScalarBaseMult(uj.Bytes())
+						BigXjX, BigXjY := ec.ScalarBaseMult(uj.Bytes())
 						assert.NotEqual(t, BigXjX, Pj.temp.vs[0].X())
 						assert.NotEqual(t, BigXjY, Pj.temp.vs[0].Y())
 					}
 					u = new(big.Int).Add(u, uj)
 				}
-				u = new(big.Int).Mod(u, tss.Bls12381().Params().N)
+				u = new(big.Int).Mod(u, ec.Params().N)
 				pkX, pkY := save.PubKey.X(), save.PubKey.Y()
 
 				// public key tests
 				assert.NotZero(t, u, "u should not be zero")
-				ourPkX, ourPkY := tss.Bls12381().ScalarBaseMult(u.Bytes())
+				ourPkX, ourPkY := ec.ScalarBaseMult(u.Bytes())
 				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
 				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")

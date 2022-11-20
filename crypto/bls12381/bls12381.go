@@ -1,10 +1,11 @@
 //
-// These functions are compatible with the “BLS12381” function defined in IETF-draft
+// These functions are compatible with the “G2Curve” function defined in IETF-draft
 // https://tools.ietf.org/pdf/draft-irtf-cfrg-bls-signature-04.pdf.
 
 package bls12381
 
 import (
+	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/sha256"
@@ -44,13 +45,15 @@ func (fe *fe) bytes() []byte {
 }
 
 const (
-	PublicKeySize  = 96
-	PrivateKeySize = 32
-	SignatureSize  = 48
-	AesKeySize     = 32
-	Sha256SumSize  = 32
-	PointG1Size    = 96
-	PointG2Size    = 192
+	PublicKeySizeG2 = 96
+	PublicKeySizeG1 = 48
+	PrivateKeySize  = 32
+	SignatureSizeG1 = 48
+	SignatureSizeG2 = 96
+	AesKeySize      = 32
+	Sha256SumSize   = 32
+	PointG1Size     = 96
+	PointG2Size     = 192
 )
 
 var (
@@ -61,54 +64,76 @@ type PublicKey []byte
 
 type PrivateKey []byte
 
-func Sign(privateKey PrivateKey, message []byte) []byte {
-	signature := make([]byte, SignatureSize*2)
-	sign(signature, privateKey, message)
-	return signature
+func Sign(suite []byte, privateKey PrivateKey, message []byte) []byte {
+	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+		size := SignatureSizeG1 * 2
+		signature := make([]byte, size)
+		signG1(signature, privateKey, message)
+		return signature
+	}
+	if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+		size := SignatureSizeG2 * 2
+		signature := make([]byte, size)
+		signG2(signature, privateKey, message)
+		return signature
+	}
+	return nil
 }
 
-func sign(signature, privateKey, message []byte) {
-	privateKey = PadToLengthBytesInPlace(privateKey, 32)
+func signG1(signature, privateKey, message []byte) {
+	privateKey = PadToLengthBytesInPlace(privateKey, PrivateKeySize)
 	if l := len(privateKey); l != PrivateKeySize {
 		panic("bls12381:bad private key length" + strconv.Itoa(l))
 	}
 	g1 := bls.NewG1()
-	h := sha512.Sum512(message)
-	messageDigest := make([]byte, 48)
-
-	h1 := new(big.Int).SetBytes(h[:48])
-	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 48 bytes
-	md.FillBytes(messageDigest)
-
-	dig, err := g1.MapToCurve(messageDigest)
-	if err != nil {
-		panic("bls12381: invalid message hashing into G1")
-	}
 	sk := new(big.Int).SetBytes(privateKey)
+	dig, err := HashToPointG1(message)
+	if err != nil {
+		panic("bls12381: invalid message hashing into G1Curve")
+	}
 
 	G1MulScalarMont(dig, dig, sk)
-	copy(signature[:SignatureSize*2], g1.ToBytes(dig))
+	copy(signature[:SignatureSizeG1*2], g1.ToBytes(dig))
 }
 
-func Verify(publicKey PublicKey, message, sig []byte) bool {
+func signG2(signature, privateKey, message []byte) {
+	privateKey = PadToLengthBytesInPlace(privateKey, PrivateKeySize)
+	if l := len(privateKey); l != PrivateKeySize {
+		panic("bls12381:bad private key length" + strconv.Itoa(l))
+	}
+	g2 := bls.NewG2()
+	sk := new(big.Int).SetBytes(privateKey)
+	dig, err := HashToPointG2(message)
+	if err != nil {
+		panic("bls12381: invalid message hashing into G2Curve")
+	}
+
+	G2MulScalarMont(dig, dig, sk)
+	copy(signature[:SignatureSizeG2*2], g2.ToBytes(dig))
+}
+
+func Verify(suite []byte, publicKey PublicKey, message, sig []byte) bool {
+	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+		return verifyG1(publicKey, message, sig)
+	}
+	if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+		return verifyG2(publicKey, message, sig)
+	}
+	return false
+}
+
+func verifyG1(publicKey PublicKey, message, sig []byte) bool {
 	pk, err := bls.NewG2().FromBytes(publicKey)
 	if err != nil {
 		return false
 	}
 
 	g1 := bls.NewG1()
-	h := sha512.Sum512(message)
-	messageDigest := make([]byte, 48)
-
-	h1 := new(big.Int).SetBytes(h[:48])
-	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 48 bytes
-	md.FillBytes(messageDigest)
-
-	dig, err := g1.MapToCurve(messageDigest)
+	dig, err := HashToPointG1(message)
 	if err != nil {
-		return false
+		panic("bls12381: invalid message hashing into G1Curve")
 	}
-	sig = PadToLengthBytesInPlace(sig, 96)
+	sig = PadToLengthBytesInPlace(sig, PublicKeySizeG1*2)
 	signature, err := g1.FromBytes(sig)
 	if err != nil {
 		return false
@@ -126,6 +151,41 @@ func Verify(publicKey PublicKey, message, sig []byte) bool {
 		return false
 	}
 	if !g1.InCorrectSubgroup(signature) {
+		return false
+	}
+
+	return r1.Equal(r2)
+}
+
+func verifyG2(publicKey PublicKey, message, sig []byte) bool {
+	pk, err := bls.NewG1().FromBytes(publicKey)
+	if err != nil {
+		return false
+	}
+
+	g2 := bls.NewG2()
+	dig, err := HashToPointG2(message)
+	if err != nil {
+		panic("bls12381: invalid message hashing into G2Curve")
+	}
+	sig = PadToLengthBytesInPlace(sig, PublicKeySizeG2*2)
+	signature, err := g2.FromBytes(sig)
+	if err != nil {
+		return false
+	}
+
+	c1 := bls.NewPairingEngine()
+	r1 := c1.AddPair(pk, dig).Result()
+
+	c2 := bls.NewPairingEngine()
+	g1 := bls.NewG1()
+	p2 := g1.One()
+	r2 := c2.AddPair(p2, signature).Result()
+
+	if !g1.InCorrectSubgroup(pk) {
+		return false
+	}
+	if !g2.InCorrectSubgroup(signature) {
 		return false
 	}
 
@@ -257,10 +317,10 @@ func DecryptShare(privateKey PrivateKey, cipherText []byte) ([]byte, error) {
 	share = G2MulScalarMont(share, U, secret)
 	wi = G1MulScalarMont(wi, W, secret)
 
-	bytes := make([]byte, 0)
-	bytes = append(bytes, g2.ToBytes(share)...)
-	bytes = append(bytes, g1.ToBytes(wi)...)
-	return bytes, nil
+	bts := make([]byte, 0)
+	bts = append(bts, g2.ToBytes(share)...)
+	bts = append(bts, g1.ToBytes(wi)...)
+	return bts, nil
 }
 
 func Encrypt(publicKey PublicKey, message []byte) ([]byte, error) {

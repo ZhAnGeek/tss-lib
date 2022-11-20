@@ -17,13 +17,13 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// round 1 represents round 1 of the signing part of the pairing-based threshold signature spec on BLS12381
+// round 1 represents round 1 of the signing part of the pairing-based threshold signature spec on BLS12381G2
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, end chan<- EncryptedData) tss.Round {
 	return &round1{
 		&base{params, key, temp, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start(ctx context.Context) *tss.Error {
+func (round *round1) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -49,7 +49,7 @@ func (round *round1) Update() (bool, *tss.Error) {
 	return true, nil
 }
 
-func (round *round1) CanAccept(msg tss.ParsedMessage) bool {
+func (round *round1) CanAccept(_ tss.ParsedMessage) bool {
 	return true
 }
 

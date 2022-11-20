@@ -30,7 +30,7 @@ func setUp(level log.Level) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
-	tss.Bls12381()
+	tss.Bls12381G2()
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -64,7 +64,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(ePIDS); i++ {
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, ePIDS[i], len(ePIDS), threshold, false, 0)
+		params := tss.NewParameters(tss.Bls12381G2(), p2pCtx, ePIDS[i], len(ePIDS), threshold, false, 0)
 		P := NewLocalParty(ctx, msg, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {

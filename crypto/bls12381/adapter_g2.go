@@ -1,3 +1,9 @@
+// Copyright © 2019-2021 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
 package bls12381
 
 import (
@@ -8,7 +14,7 @@ import (
 	bls "github.com/ethereum/go-ethereum/crypto/bls12381"
 )
 
-// Efficient cofactor of G1
+// Efficient cofactor of G2Curve
 var cofactorEFFG1 = bigFromHex("0xd201000000010001")
 
 // Efficient cofactor of G2
@@ -18,37 +24,36 @@ func bigFromHex(hex string) *big.Int {
 	return new(big.Int).SetBytes(common.FromHex(hex))
 }
 
-type BLS12_381Curves struct {
+type G2Curves struct {
 	*elliptic.CurveParams
-	Hg1 *big.Int // cofactor of elliptic group G1
 	Hg2 *big.Int // cofactor of elliptic group G2
 }
 
-func (curve BLS12_381Curves) Params() *elliptic.CurveParams {
+func (curve *G2Curves) Params() *elliptic.CurveParams {
 	return curve.CurveParams
 }
 
 // IsOnCurve returns bool to say if the point (x,y) is on elliptic group G2
 // x,y should be 96 bytes
-func (curve *BLS12_381Curves) IsOnCurve(x *big.Int, y *big.Int) bool {
+func (curve *G2Curves) IsOnCurve(x *big.Int, y *big.Int) bool {
 	g2 := bls.NewG2()
 	p, err := FromIntToPointG2(x, y)
 	if err != nil {
-		panic("bls12381: invalid coordinates input")
+		panic("bls12381g2: invalid coordinates input")
 	}
 	return g2.IsOnCurve(p)
 }
 
-// return a point addition on elliptic group G2
-func (curve *BLS12_381Curves) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
+// Add return a point addition on elliptic group G2
+func (curve *G2Curves) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
 	g2 := bls.NewG2()
 	p1, err := FromIntToPointG2(x1, y1)
 	if err != nil {
-		panic("bls12381: invalid coordinates input")
+		panic("bls12381g2: invalid coordinates input")
 	}
 	p2, err := FromIntToPointG2(x2, y2)
 	if err != nil {
-		panic("bls12381: invalid coordinates input")
+		panic("bls12381g2: invalid coordinates input")
 	}
 	r := g2.New()
 	g2.Add(r, p1, p2)
@@ -57,12 +62,12 @@ func (curve *BLS12_381Curves) Add(x1, y1, x2, y2 *big.Int) (x, y *big.Int) {
 	return
 }
 
-// return a point doubling on elliptic group G2
-func (curve *BLS12_381Curves) Double(x1, y1 *big.Int) (x, y *big.Int) {
+// Double return a point doubling on elliptic group G2
+func (curve *G2Curves) Double(x1, y1 *big.Int) (x, y *big.Int) {
 	g2 := bls.NewG2()
 	p1, err := FromIntToPointG2(x1, y1)
 	if err != nil {
-		panic("bls12381: invalid coordinates input")
+		panic("bls12381g2: invalid coordinates input")
 	}
 	r := g2.New()
 	g2.Double(r, p1)
@@ -71,31 +76,33 @@ func (curve *BLS12_381Curves) Double(x1, y1 *big.Int) (x, y *big.Int) {
 }
 
 // ScalarMult returns k*(x1,y1) on elliptic group G2 over BLS12_381
-func (curve *BLS12_381Curves) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
+func (curve *G2Curves) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 	s := new(big.Int).SetBytes(k)
 	g2 := bls.NewG2()
 	p, err := FromIntToPointG2(x1, y1)
 	if err != nil {
-		panic("bls12381: invalid coordinates input")
+		panic("bls12381g2: invalid coordinates input")
 	}
 	r := g2.New()
+	// g2.MulScalar(r, p, s) // r result r is represented in projective coordinates
 	G2MulScalarMont(r, p, s)
 	x, y = FromPointG2ToInt(r)
 	return x, y
 }
 
-// ScalarBaseMult returns k*basepoint on elliptic group G2 over BLS12_381
-func (curve *BLS12_381Curves) ScalarBaseMult(k []byte) (x, y *big.Int) {
+// ScalarBaseMult returns k*basePoint on elliptic group G2 over BLS12_381
+func (curve *G2Curves) ScalarBaseMult(k []byte) (x, y *big.Int) {
 	s := new(big.Int).SetBytes(k)
 	g2 := bls.NewG2()
 	r := g2.One()
+	// g2.MulScalar(r, r, s)
 	G2MulScalarMont(r, r, s)
 	x, y = FromPointG2ToInt(r)
 	return x, y
 }
 
-// initializes an instance of BLS12381 curve
-func (curve *BLS12_381Curves) initBLS12381() {
+// initializes an instance of G2Curve curve
+func (curve *G2Curves) init() {
 	// Curve parameters taken from section[4.2.1] https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-pairing-friendly-curves-07#section-2.1
 	curve.CurveParams = new(elliptic.CurveParams)
 
@@ -109,14 +116,13 @@ func (curve *BLS12_381Curves) initBLS12381() {
 	curve.Gx = x
 	curve.Gy = y
 
-	curve.Hg1 = cofactorEFFG1
 	curve.Hg2 = cofactorEFFG2
 	curve.BitSize = 256
 }
 
-// Bls12381 returns a Curve which implements bls12381.
-func BLS12381() *BLS12_381Curves {
-	c := new(BLS12_381Curves)
-	c.initBLS12381()
+// G2Curve returns a Curve which implements bls12381.
+func G2Curve() *G2Curves {
+	c := new(G2Curves)
+	c.init()
 	return c
 }

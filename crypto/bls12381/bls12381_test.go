@@ -2,20 +2,12 @@ package bls12381
 
 import (
 	"crypto/aes"
-	"crypto/rand"
 	"math/big"
 	"testing"
 
 	bls "github.com/ethereum/go-ethereum/crypto/bls12381"
 	"github.com/stretchr/testify/assert"
 )
-
-var fuz = 10
-
-func randScalar(max *big.Int) *big.Int {
-	a, _ := rand.Int(rand.Reader, max)
-	return a
-}
 
 func TestSignAndVerify(t *testing.T) {
 	g2 := bls.NewG2()
@@ -27,9 +19,9 @@ func TestSignAndVerify(t *testing.T) {
 
 	sk = PadToLengthBytesInPlace(sk, PrivateKeySize)
 
-	signature := Sign(sk, m)
+	signature := Sign(GetBLSSignatureSuiteG1(), sk, m)
 
-	assert.Equal(t, true, Verify(publicKey, m, signature))
+	assert.Equal(t, true, Verify(GetBLSSignatureSuiteG1(), publicKey, m, signature))
 }
 
 func TestEncryptAndDecrypt(t *testing.T) {

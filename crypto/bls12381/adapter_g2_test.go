@@ -15,7 +15,7 @@ import (
 )
 
 func TestAdapter(t *testing.T) {
-	p := BLS12381()
+	p := G2Curve()
 
 	g2 := bls.NewG2()
 	sk := big.NewInt(20).Bytes()

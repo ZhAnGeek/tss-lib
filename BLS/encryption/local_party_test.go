@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
@@ -29,7 +30,6 @@ func setUp(level log.Level) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
-	tss.Bls12381()
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -54,11 +54,13 @@ func TestE2EConcurrent(t *testing.T) {
 	endCh := make(chan EncryptedData, len(ePIDs))
 
 	updater := test.SharedPartyUpdater
+	suite := bls12381.GetBLSSignatureSuiteG2()
+	ec := tss.GetBLSCurveBySuite(suite)
 
 	msg := big.NewInt(200)
 	// init the parties
 	for i := 0; i < len(ePIDs); i++ {
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, ePIDs[i], len(ePIDs), threshold, false, 0)
+		params := tss.NewParameters(ec, p2pCtx, ePIDs[i], len(ePIDs), threshold, false, 0)
 		P := NewLocalParty(ctx, msg, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
