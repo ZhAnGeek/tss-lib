@@ -15,6 +15,7 @@ import (
 	"runtime"
 	"sort"
 
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/test"
@@ -28,8 +29,9 @@ const (
 	TestThreshold    = test.TestThreshold
 )
 const (
-	testFixtureDirFormat  = "%s/../../test/_schnorr_fixtures_%d_%d"
-	testFixtureFileFormat = "keygen_data_%d.json"
+	testFixtureDirFormat      = "%s/../../test/_schnorr_fixtures_%d_%d"
+	testFixtureDirFormatECDSA = "%s/../../test/_ecdsa_fixtures_%d_%d"
+	testFixtureFileFormat     = "keygen_data_%d.json"
 )
 
 func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
@@ -57,6 +59,50 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 		}
 		key.PubKey.SetCurve(tss.S256())
 		keys = append(keys, key)
+	}
+	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
+	for i, key := range keys {
+		pMoniker := fmt.Sprintf("%d", i+start+1)
+		partyIDs[i] = tss.NewPartyID(pMoniker, pMoniker, key.ShareID)
+	}
+	sortedPIDs := tss.SortPartyIDs(partyIDs)
+	return keys, sortedPIDs, nil
+}
+
+func LoadKeygenTestFixturesFromECDSA(qty int, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
+	keys := make([]LocalPartySaveData, 0, qty)
+	start := 0
+	if 0 < len(optionalStart) {
+		start = optionalStart[0]
+	}
+	for i := start; i < qty; i++ {
+		fixtureFilePath := makeTestFixtureFilePathFromECDSA(i)
+		bz, err := ioutil.ReadFile(fixtureFilePath)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err,
+				"could not open the test fixture for party %d in the expected location: %s. run keygen tests first.",
+				i, fixtureFilePath)
+		}
+		var key keygen.LocalPartySaveData
+		if err = json.Unmarshal(bz, &key); err != nil {
+			return nil, nil, errors.Wrapf(err,
+				"could not unmarshal fixture data for party %d located at: %s",
+				i, fixtureFilePath)
+		}
+		for _, kbxj := range key.BigXj {
+			kbxj.SetCurve(tss.S256())
+		}
+		key.ECDSAPub.SetCurve(tss.S256())
+		keySchnorr := LocalPartySaveData{
+			LocalSecrets: LocalSecrets{
+				Xi:      key.LocalSecrets.Xi,
+				ShareID: key.LocalSecrets.ShareID,
+			},
+			Ks:     key.Ks,
+			BigXj:  key.BigXj,
+			PubKey: key.ECDSAPub,
+		}
+		keys = append(keys, keySchnorr)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
 	for i, key := range keys {
@@ -107,6 +153,13 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 	sortedPIDs := tss.SortPartyIDs(partyIDs)
 	sort.Slice(keys, func(i, j int) bool { return keys[i].ShareID.Cmp(keys[j].ShareID) == -1 })
 	return keys, sortedPIDs, nil
+}
+
+func makeTestFixtureFilePathFromECDSA(partyIndex int) string {
+	_, callerFileName, _, _ := runtime.Caller(0)
+	srcDirName := filepath.Dir(callerFileName)
+	fixtureDirName := fmt.Sprintf(testFixtureDirFormatECDSA, srcDirName, test.TestThreshold, test.TestParticipants)
+	return fmt.Sprintf("%s/"+testFixtureFileFormat, fixtureDirName, partyIndex)
 }
 
 func makeTestFixtureFilePath(partyIndex int) string {
