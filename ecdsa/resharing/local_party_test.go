@@ -58,7 +58,7 @@ func TestE2EConcurrent(t *testing.T) {
 	// init the new parties; re-use the fixture pre-params for speed
 	fixtures, _, err := keygen.LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
-		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
+		log.Info(ctx, "No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 	}
 	newPIDs := tss.GenerateTestPartyIDs(testParticipants)
 	newP2PCtx := tss.NewPeerContext(newPIDs)

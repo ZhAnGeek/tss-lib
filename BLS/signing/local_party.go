@@ -14,6 +14,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
 	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -123,7 +124,7 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 		p.temp.signRound1Messages[fromPIdx] = msg
 
 	default: // unrecognised message, just ignore!
-		common.Logger.Warningf("unrecognised message ignored: %v", msg)
+		log.Warn(ctx, "unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

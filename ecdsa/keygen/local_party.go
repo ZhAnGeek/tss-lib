@@ -12,13 +12,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
 	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -211,7 +211,7 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 		p.temp.r4msgpfsch[fromPIdx] = proof
 
 	default: // unrecognised message, just ignore!
-		common.Logger.Warnf("unrecognised message ignored: %v", msg)
+		log.Warn(ctx, "unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

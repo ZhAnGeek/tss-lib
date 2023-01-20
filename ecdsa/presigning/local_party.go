@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
 	zkpdec "github.com/Safulet/tss-lib-private/crypto/zkp/dec"
@@ -20,6 +19,7 @@ import (
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
 	zkpmul "github.com/Safulet/tss-lib-private/crypto/zkp/mul"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -330,7 +330,7 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 		}
 		p.temp.R5msgProofDec[fromPIdx] = proofDec
 	default: // unrecognised message, just ignore!
-		common.Logger.Warnf("unrecognised message ignored: %v", msg)
+		log.Warn(ctx, "unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

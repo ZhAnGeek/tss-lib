@@ -12,6 +12,7 @@ import (
 	"math/big"
 
 	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
+	"github.com/Safulet/tss-lib-private/log"
 	errors2 "github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -58,7 +59,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
 		if ok := proofPrm.Verify(ContextJ, H1, H2, Nj); !ok {
 			culprits = append(culprits, Pj)
-			common.Logger.Warnf("proofPrm verify failed for party %s", Pj)
+			log.Warn(ctx, "proofPrm verify failed for party %s", Pj)
 			continue
 		}
 		round.save.NTildej[j] = Nj
@@ -72,7 +73,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		}
 		if ok := proofMod.Verify(ContextJ, round.save.NTildej[j]); !ok {
 			culprits = append(culprits, Pj)
-			common.Logger.Warnf("proofMod verify failed for party %s", Pj)
+			log.Warn(ctx, "proofMod verify failed for party %s", Pj)
 			continue
 		}
 	}

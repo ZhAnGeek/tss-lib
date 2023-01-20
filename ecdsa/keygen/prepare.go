@@ -15,6 +15,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto/paillier"
+	"github.com/Safulet/tss-lib-private/log"
 )
 
 const (
@@ -42,7 +43,7 @@ func GeneratePreParams(ctx context.Context, timeout time.Duration, optionalConcu
 		concurrency = 1
 	}
 
-	common.Logger.Info("generating the safe primes for the signing proofs, please wait...")
+	log.Info(ctx, "generating the safe primes for the signing proofs, please wait...")
 	start := time.Now()
 	sgps, err := common.GetRandomSafePrimesConcurrent(SafeBitLen, 2, timeout, concurrency)
 	if err != nil {

@@ -19,6 +19,7 @@ import (
 	zkpmulstar "github.com/Safulet/tss-lib-private/crypto/zkp/mulstar"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -278,7 +279,7 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 		p.temp.R5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
 		p.temp.R5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
 	default: // unrecognised message, just ignore!
-		common.Logger.Warnf("unrecognised message ignored: %v", msg)
+		log.Warn(ctx, "unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil
