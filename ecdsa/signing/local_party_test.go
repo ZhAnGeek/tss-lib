@@ -7,6 +7,7 @@
 package signing_test
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"runtime"
@@ -37,6 +38,7 @@ func setUp(level string) {
 }
 
 func TestE2EConcurrent(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 	threshold := testThreshold
 
@@ -70,7 +72,7 @@ func TestE2EConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func(P *presigning.LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -98,13 +100,13 @@ presigning:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case predata := <-endCh:
@@ -144,7 +146,7 @@ signing:
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -167,13 +169,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, errCh)
+				go updater(ctx, signParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-sigCh:
@@ -188,6 +190,7 @@ signing:
 }
 
 func TestE2EConcurrentWithIdentification(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 	threshold := testThreshold
 
@@ -221,7 +224,7 @@ func TestE2EConcurrentWithIdentification(t *testing.T) {
 		wg.Add(1)
 		go func(P *presigning.LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -249,13 +252,13 @@ presigning:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case predata := <-endCh:
@@ -295,7 +298,7 @@ signing:
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -331,13 +334,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, errCh)
+				go updater(ctx, signParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-sigCh:
@@ -350,7 +353,7 @@ identification:
 		fmt.Printf("Party%2d sign identification]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
-		P, err := RestoreLocalParty(preSigDatas[i], params, keys[i], signDumps[i], outCh, sigCh, sdumpCh)
+		P, err := RestoreLocalParty(ctx, preSigDatas[i], params, keys[i], signDumps[i], outCh, sigCh, sdumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -361,7 +364,7 @@ identification:
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -385,13 +388,13 @@ identification:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(identificationParties[dest[0].Index], msg, errCh)
+				go updater(ctx, identificationParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-sdumpCh:

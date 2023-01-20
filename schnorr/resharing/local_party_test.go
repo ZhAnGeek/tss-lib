@@ -7,6 +7,7 @@
 package resharing_test
 
 import (
+	"context"
 	"math/big"
 	"sync/atomic"
 	"testing"
@@ -38,6 +39,7 @@ func setUp(level string) {
 }
 
 func TestE2EConcurrent(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 
 	threshold, newThreshold := testThreshold, testThreshold
@@ -83,7 +85,7 @@ func TestE2EConcurrent(t *testing.T) {
 	// start the new parties; they will wait for messages
 	for _, P := range newCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -91,7 +93,7 @@ func TestE2EConcurrent(t *testing.T) {
 	// start the old parties; they will send messages
 	for _, P := range oldCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -114,12 +116,12 @@ func TestE2EConcurrent(t *testing.T) {
 			}
 			if msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest[:len(oldCommittee)] {
-					go updater(oldCommittee[destP.Index], msg, errCh)
+					go updater(ctx, oldCommittee[destP.Index], msg, errCh)
 				}
 			}
 			if !msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest {
-					go updater(newCommittee[destP.Index], msg, errCh)
+					go updater(ctx, newCommittee[destP.Index], msg, errCh)
 				}
 			}
 
@@ -167,7 +169,7 @@ signing:
 		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				signErrCh <- err
 			}
 		}(P)
@@ -188,13 +190,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, signErrCh)
+					go updater(ctx, P, msg, signErrCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, signErrCh)
+				go updater(ctx, signParties[dest[0].Index], msg, signErrCh)
 			}
 
 		// case signData := <-signEndCh:

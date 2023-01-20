@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"encoding/json"
 	"math/big"
 	"os"
@@ -41,6 +42,7 @@ func BenchmarkE2EKeyGen(b *testing.B) {
 }
 
 func E2EKeyGen(b *testing.B) {
+	ctx := context.Background()
 
 	setUp("error")
 	b.StopTimer()
@@ -69,7 +71,7 @@ func E2EKeyGen(b *testing.B) {
 
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -92,14 +94,14 @@ keygen:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
 					b.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 					return
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case save := <-endCh:
@@ -183,6 +185,7 @@ keygen:
 }
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 
 	threshold := testThreshold
@@ -209,7 +212,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -232,14 +235,14 @@ keygen:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 					return
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case save := <-endCh:

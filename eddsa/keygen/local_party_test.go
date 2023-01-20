@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -41,6 +42,7 @@ func setUp(level string) {
 }
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 
 	threshold := testThreshold
@@ -72,7 +74,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 		}
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -98,14 +100,14 @@ keygen:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh, &wg)
+					go updater(ctx, P, msg, errCh, &wg)
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 					return
 				}
-				go updater(parties[dest[0].Index], msg, errCh, &wg)
+				go updater(ctx, parties[dest[0].Index], msg, errCh, &wg)
 			}
 
 		case save := <-endCh:

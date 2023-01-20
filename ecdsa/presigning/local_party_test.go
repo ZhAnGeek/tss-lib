@@ -7,6 +7,7 @@
 package presigning_test
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"math/big"
@@ -38,9 +39,9 @@ func setUp(level string) {
 	}
 }
 
-func updatePartiesByMessages(parties []*LocalParty,
+func updatePartiesByMessages(ctx context.Context, parties []*LocalParty,
 	msgs []tss.Message,
-	updater func(party tss.Party, msg tss.Message, errCh chan<- *tss.Error),
+	updater func(ctx context.Context, party tss.Party, msg tss.Message, errCh chan<- *tss.Error),
 	errCh chan *tss.Error) error {
 	for i, msg := range msgs {
 		dest := msg.GetTo()
@@ -49,19 +50,21 @@ func updatePartiesByMessages(parties []*LocalParty,
 				if P.PartyID().Index == msg.GetFrom().Index {
 					continue
 				}
-				go updater(P, msg, errCh)
+				go updater(ctx, P, msg, errCh)
 			}
 		} else {
 			if dest[0].Index == msg.GetFrom().Index {
 				return fmt.Errorf("party %d tried to send a message(%d) to itself (%d)", dest[0].Index, i, msg.GetFrom().Index)
 			}
-			go updater(parties[dest[0].Index], msg, errCh)
+			go updater(ctx, parties[dest[0].Index], msg, errCh)
 		}
 	}
 	return nil
 }
 
-func fetchingMessages(dumpCh chan *LocalDumpPB,
+func fetchingMessages(
+	ctx context.Context,
+	dumpCh chan *LocalDumpPB,
 	dumps []*LocalDumpPB,
 	N int,
 	errCh chan *tss.Error,
@@ -72,7 +75,7 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 	sigCh chan common.SignatureData,
 	signOutCh chan tss.Message,
 	signParties []*sign.LocalParty,
-	updater func(party tss.Party, msg tss.Message, errCh chan<- *tss.Error),
+	updater func(ctx context.Context, party tss.Party, msg tss.Message, errCh chan<- *tss.Error),
 	numMsgPerRound int,
 ) error {
 	var ended1, ended2 int32
@@ -125,13 +128,13 @@ func fetchingMessages(dumpCh chan *LocalDumpPB,
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					return fmt.Errorf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, errCh)
+				go updater(ctx, signParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-sigCh:
@@ -152,6 +155,7 @@ func BenchmarkE2E(b *testing.B) {
 }
 
 func E2E(b *testing.B) {
+	ctx := context.Background()
 	b.StopTimer()
 	setUp("error")
 	threshold := testThreshold
@@ -183,7 +187,7 @@ func E2E(b *testing.B) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -208,10 +212,10 @@ presigning:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 		case predata := <-endCh:
 			atomic.AddInt32(&presignEnded, 1)
@@ -249,7 +253,7 @@ signing:
 		wg.Add(1)
 		go func(P *sign.LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -270,10 +274,10 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
-				go updater(signParties[dest[0].Index], msg, errCh)
+				go updater(ctx, signParties[dest[0].Index], msg, errCh)
 			}
 		case <-sigCh:
 			atomic.AddInt32(&signEnded, 1)
@@ -285,6 +289,7 @@ signing:
 }
 
 func TestE2EConcurrent(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 	threshold := testThreshold
 
@@ -318,7 +323,7 @@ func TestE2EConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -346,13 +351,13 @@ presigning:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case predata := <-endCh:
@@ -392,7 +397,7 @@ signing:
 		wg.Add(1)
 		go func(P *sign.LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -415,13 +420,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, errCh)
+				go updater(ctx, signParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-sigCh:
@@ -436,6 +441,7 @@ signing:
 }
 
 func TestR2RConcurrent(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 	threshold := testThreshold
 
@@ -490,7 +496,7 @@ func TestR2RConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -499,7 +505,7 @@ func TestR2RConcurrent(t *testing.T) {
 	wg.Wait()
 
 	// Fetching messages produced by Presign 1
-	if err := fetchingMessages(preDumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil, 2); err != nil {
+	if err := fetchingMessages(ctx, preDumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil, 2); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 1 all done. Received dump data from %d participants\n", N)
@@ -510,7 +516,7 @@ func TestR2RConcurrent(t *testing.T) {
 		fmt.Printf("Party%2d [presign 2]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
-		P, err := RestoreLocalParty(params, keys[i], r1dumps[i], outCh, preSigCh, preDumpCh)
+		P, err := RestoreLocalParty(ctx, params, keys[i], r1dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -519,12 +525,12 @@ func TestR2RConcurrent(t *testing.T) {
 
 	// Update parties@Presign2 by r1msgs
 	fmt.Printf("Parties consuming r1msgs and run... \n")
-	if err := updatePartiesByMessages(preSign2Parties, r1msgs, updater, errCh); err != nil {
+	if err := updatePartiesByMessages(ctx, preSign2Parties, r1msgs, updater, errCh); err != nil {
 		t.Error(err)
 	}
 
 	// Fetching messages produced by Presign 2
-	if err := fetchingMessages(preDumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
+	if err := fetchingMessages(ctx, preDumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 2 all done. Received dump data from %d participants\n", N)
@@ -535,7 +541,7 @@ func TestR2RConcurrent(t *testing.T) {
 		fmt.Printf("Party%2d [presign 3]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
-		P, err := RestoreLocalParty(params, keys[i], r2dumps[i], outCh, preSigCh, preDumpCh)
+		P, err := RestoreLocalParty(ctx, params, keys[i], r2dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -544,12 +550,12 @@ func TestR2RConcurrent(t *testing.T) {
 
 	// Update parties@Presign3 by r2msgs
 	fmt.Printf("Parties consuming r2msgs and run... \n")
-	if err := updatePartiesByMessages(preSign3Parties, r2msgs, updater, errCh); err != nil {
+	if err := updatePartiesByMessages(ctx, preSign3Parties, r2msgs, updater, errCh); err != nil {
 		t.Error(err)
 	}
 
 	// Fetching messages produced by Presign 3
-	if err := fetchingMessages(preDumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
+	if err := fetchingMessages(ctx, preDumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 3 all done. Received dump data from %d participants\n", N)
@@ -560,7 +566,7 @@ func TestR2RConcurrent(t *testing.T) {
 		fmt.Printf("Party%2d [presign out]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], N, threshold, false, 0)
 
-		P, err := RestoreLocalParty(params, keys[i], r3dumps[i], outCh, preSigCh, preDumpCh)
+		P, err := RestoreLocalParty(ctx, params, keys[i], r3dumps[i], outCh, preSigCh, preDumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -569,11 +575,11 @@ func TestR2RConcurrent(t *testing.T) {
 
 	// Update parties@PresignOut by r3msgs
 	fmt.Printf("Parties consuming r3msgs and run... \n")
-	if err := updatePartiesByMessages(preSignOutParties, r3msgs, updater, errCh); err != nil {
+	if err := updatePartiesByMessages(ctx, preSignOutParties, r3msgs, updater, errCh); err != nil {
 		t.Error(err)
 	}
 	// Fetching messages produced by PresignOut
-	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, preSigCh, preSigs, nil, nil, nil, nil, 1); err != nil {
+	if err := fetchingMessages(ctx, nil, nil, N, errCh, nil, nil, preSigCh, preSigs, nil, nil, nil, nil, 1); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("PresignOut all done. Received preSig data from %d participants\n", N)
@@ -592,7 +598,7 @@ func TestR2RConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func(P *sign.LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -601,12 +607,13 @@ func TestR2RConcurrent(t *testing.T) {
 	wg.Wait()
 
 	// Processing messages produced by signing
-	if err := fetchingMessages(nil, nil, N, errCh, nil, nil, nil, nil, sigCh, outCh, signParties, updater, 1); err != nil {
+	if err := fetchingMessages(ctx, nil, nil, N, errCh, nil, nil, nil, nil, sigCh, outCh, signParties, updater, 1); err != nil {
 		t.Error(err)
 	}
 }
 
 func TestR2RWithIdentification(t *testing.T) {
+	ctx := context.Background()
 	setUp("error")
 	threshold := testThreshold
 
@@ -658,7 +665,7 @@ func TestR2RWithIdentification(t *testing.T) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -667,7 +674,7 @@ func TestR2RWithIdentification(t *testing.T) {
 	wg.Wait()
 
 	// Fetching messages produced by Presign 1
-	if err := fetchingMessages(dumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil, 2); err != nil {
+	if err := fetchingMessages(ctx, dumpCh, r1dumps, N, errCh, outCh, &r1msgs, nil, nil, nil, nil, nil, nil, 2); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 1 all done. Received dump data from %d participants\n", N)
@@ -678,7 +685,7 @@ func TestR2RWithIdentification(t *testing.T) {
 		fmt.Printf("Party%2d [presign 2]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
-		P, err := RestoreLocalParty(params, keys[i], r1dumps[i], outCh, preSigCh, dumpCh)
+		P, err := RestoreLocalParty(ctx, params, keys[i], r1dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -687,12 +694,12 @@ func TestR2RWithIdentification(t *testing.T) {
 
 	// Update parties@Presign2 by r1msgs
 	fmt.Printf("Parties consuming r1msgs and run... \n")
-	if err := updatePartiesByMessages(preSign2Parties, r1msgs, updater, errCh); err != nil {
+	if err := updatePartiesByMessages(ctx, preSign2Parties, r1msgs, updater, errCh); err != nil {
 		t.Error(err)
 	}
 
 	// Fetching messages produced by Presign 2
-	if err := fetchingMessages(dumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
+	if err := fetchingMessages(ctx, dumpCh, r2dumps, N, errCh, outCh, &r2msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 2 all done. Received dump data from %d participants\n", N)
@@ -703,7 +710,7 @@ func TestR2RWithIdentification(t *testing.T) {
 		fmt.Printf("Party%2d [presign 3]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
-		P, err := RestoreLocalParty(params, keys[i], r2dumps[i], outCh, preSigCh, dumpCh)
+		P, err := RestoreLocalParty(ctx, params, keys[i], r2dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -712,12 +719,12 @@ func TestR2RWithIdentification(t *testing.T) {
 
 	// Update parties@Presign3 by r2msgs
 	fmt.Printf("Parties consuming r2msgs and run... \n")
-	if err := updatePartiesByMessages(preSign3Parties, r2msgs, updater, errCh); err != nil {
+	if err := updatePartiesByMessages(ctx, preSign3Parties, r2msgs, updater, errCh); err != nil {
 		t.Error(err)
 	}
 
 	// Fetching messages produced by Presign 3
-	if err := fetchingMessages(dumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
+	if err := fetchingMessages(ctx, dumpCh, r3dumps, N, errCh, outCh, &r3msgs, nil, nil, nil, nil, nil, nil, 1); err != nil {
 		t.Error(err)
 	}
 	fmt.Printf("Presign 3 all done. Received dump data from %d participants\n", N)
@@ -728,7 +735,7 @@ func TestR2RWithIdentification(t *testing.T) {
 		fmt.Printf("Party%2d [presign out]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
-		P, err := RestoreLocalParty(params, keys[i], r3dumps[i], outCh, preSigCh, dumpCh)
+		P, err := RestoreLocalParty(ctx, params, keys[i], r3dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -737,7 +744,7 @@ func TestR2RWithIdentification(t *testing.T) {
 
 	// Update parties@PresignOut by r3msgs
 	fmt.Printf("Parties consuming r3msgs and run... \n")
-	if err := updatePartiesByMessages(preSignOutParties, r3msgs, updater, errCh); err != nil {
+	if err := updatePartiesByMessages(ctx, preSignOutParties, r3msgs, updater, errCh); err != nil {
 		t.Error(err)
 	}
 
@@ -775,7 +782,7 @@ identification:
 		fmt.Printf("Party%2d [presign identification]: restored \n", i)
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
-		P, err := RestoreLocalParty(params, keys[i], r4dumps[i], outCh, preSigCh, dumpCh)
+		P, err := RestoreLocalParty(ctx, params, keys[i], r4dumps[i], outCh, preSigCh, dumpCh)
 		if err != nil {
 			assert.FailNow(t, err.Error())
 		}
@@ -783,7 +790,7 @@ identification:
 	}
 	for i, party := range presignIdentificationParties {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -806,13 +813,13 @@ identification:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(presignIdentificationParties[dest[0].Index], msg, errCh)
+				go updater(ctx, presignIdentificationParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-dumpCh:
@@ -827,6 +834,7 @@ identification:
 }
 
 func TestE2EConcurrentHD(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 	threshold := testThreshold
 
@@ -861,7 +869,7 @@ func TestE2EConcurrentHD(t *testing.T) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -889,13 +897,13 @@ presigning:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case predata := <-endCh:
@@ -944,7 +952,7 @@ signing:
 		wg.Add(1)
 		go func(P *sign.LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -967,13 +975,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, errCh)
+				go updater(ctx, signParties[dest[0].Index], msg, errCh)
 			}
 
 		case <-sigCh:

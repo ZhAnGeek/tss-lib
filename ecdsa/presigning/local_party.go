@@ -7,6 +7,7 @@
 package presigning
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -177,6 +178,7 @@ func NewLocalParty(
 }
 
 func RestoreLocalParty(
+	ctx context.Context,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
 	du *LocalDumpPB,
@@ -200,7 +202,7 @@ func RestoreLocalParty(
 	}
 	p.temp = *dtemp
 
-	errb := tss.BaseRestore(p, TaskName)
+	errb := tss.BaseRestore(ctx, p, TaskName)
 	if errb != nil {
 		return nil, errb
 	}
@@ -212,9 +214,9 @@ func (p *LocalParty) FirstRound() tss.Round {
 	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *localTempData, chan<- tss.Message, chan<- *PreSignatureData, chan<- *LocalDumpPB) tss.Round)(p.params, &p.keys, &p.temp, p.out, p.end, p.dump)
 }
 
-func (p *LocalParty) Start() *tss.Error {
+func (p *LocalParty) Start(ctx context.Context) *tss.Error {
 	if p.startRndNum == 1 {
-		return tss.BaseStart(p, TaskName, func(round tss.Round) *tss.Error {
+		return tss.BaseStart(ctx, p, TaskName, func(round tss.Round) *tss.Error {
 			round1, ok := round.(*presign1)
 			if !ok {
 				return round.WrapError(errors.New("unable to Start(). party is in an unexpected round"))
@@ -225,19 +227,19 @@ func (p *LocalParty) Start() *tss.Error {
 			return nil
 		})
 	}
-	return tss.BaseStart(p, TaskName)
+	return tss.BaseStart(ctx, p, TaskName)
 }
 
-func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdatePool(p, msg, TaskName)
+func (p *LocalParty) Update(ctx context.Context, msg tss.ParsedMessage) (ok bool, err *tss.Error) {
+	return tss.BaseUpdatePool(ctx, p, msg, TaskName)
 }
 
-func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
+func (p *LocalParty) UpdateFromBytes(ctx context.Context, wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
 	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
 	if err != nil {
 		return false, p.WrapError(err)
 	}
-	return p.Update(msg)
+	return p.Update(ctx, msg)
 }
 
 func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
@@ -252,7 +254,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	return true, nil
 }
 
-func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
+func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (bool, *tss.Error) {
 	// ValidateBasic is cheap; double-check the message here in case the public StoreMessage was called externally
 	if ok, err := p.ValidateMessage(msg); !ok || err != nil {
 		return ok, err

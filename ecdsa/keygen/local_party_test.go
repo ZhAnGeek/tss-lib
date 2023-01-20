@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/json"
@@ -41,6 +42,7 @@ func setUp(level string) {
 }
 
 func TestStartRound1Paillier(t *testing.T) {
+	ctx := context.Background()
 	setUp("debug")
 
 	pIDs := tss.GenerateTestPartyIDs(1)
@@ -61,7 +63,7 @@ func TestStartRound1Paillier(t *testing.T) {
 	} else {
 		lp = NewLocalParty(params, out, nil).(*LocalParty)
 	}
-	if err := lp.Start(); err != nil {
+	if err := lp.Start(ctx); err != nil {
 		assert.FailNow(t, err.Error())
 	}
 	<-out
@@ -81,6 +83,7 @@ func TestStartRound1Paillier(t *testing.T) {
 }
 
 func TestFinishAndSaveH1H2(t *testing.T) {
+	ctx := context.Background()
 	setUp("debug")
 
 	pIDs := tss.GenerateTestPartyIDs(1)
@@ -101,7 +104,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	} else {
 		lp = NewLocalParty(params, out, nil).(*LocalParty)
 	}
-	if err := lp.Start(); err != nil {
+	if err := lp.Start(ctx); err != nil {
 		assert.FailNow(t, err.Error())
 	}
 
@@ -129,6 +132,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 }
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 
 	// tss.SetCurve(elliptic.P256())
@@ -167,7 +171,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -192,14 +196,14 @@ keygen:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 					return
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case save := <-endCh:

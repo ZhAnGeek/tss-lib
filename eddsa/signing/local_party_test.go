@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"fmt"
 	"hash"
 	"math/big"
@@ -40,6 +41,7 @@ func setUp(level string) {
 }
 
 func TestE2EConcurrent(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 
 	threshold := testThreshold
@@ -69,7 +71,7 @@ func TestE2EConcurrent(t *testing.T) {
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -91,13 +93,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case <-endCh:
@@ -162,6 +164,7 @@ signing:
 }
 
 func TestE2EConcurrentBlake2b(t *testing.T) {
+	ctx := context.Background()
 	setUp("info")
 
 	threshold := testThreshold
@@ -194,7 +197,7 @@ func TestE2EConcurrentBlake2b(t *testing.T) {
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -214,13 +217,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 		case <-endCh:
 			atomic.AddInt32(&ended, 1)
