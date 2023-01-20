@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-var mpcLogTag = zap.String("library", tssLib)
+var mpcLogTag = zap.String("library", TSSLib)
 
 type defaultLogger struct {
 	zapLogger *zap.Logger

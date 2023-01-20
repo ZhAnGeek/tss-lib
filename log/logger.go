@@ -3,7 +3,7 @@ package log
 import "context"
 
 const (
-	tssLib string = "tss-lib-private"
+	TSSLib string = "tss-lib-private"
 )
 
 var logger ILogger
