@@ -935,7 +935,7 @@ signing:
 	max32b := new(big.Int).Lsh(new(big.Int).SetUint64(1), 256)
 	max32b = new(big.Int).Sub(max32b, new(big.Int).SetUint64(1))
 	common.GetRandomPositiveInt(max32b).FillBytes(chainCode)
-	il, _, errorDerivation := DerivingPubkeyFromPath(keys[0].ECDSAPub, chainCode, []uint32{12, 209, 3}, tss.S256())
+	il, _, errorDerivation := DerivingPubkeyFromPath(ctx, keys[0].ECDSAPub, chainCode, []uint32{12, 209, 3}, tss.S256())
 	assert.NoErrorf(t, errorDerivation, "there should not be an error deriving the child public key")
 	keyDerivationDelta := il
 

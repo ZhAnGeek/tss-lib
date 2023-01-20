@@ -53,6 +53,7 @@ type (
 )
 
 func NewLocalParty(
+	ctx context.Context,
 	msg []byte,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
@@ -64,7 +65,7 @@ func NewLocalParty(
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
 		params:    params,
-		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		keys:      keygen.BuildLocalSaveDataSubset(ctx, key, params.Parties().IDs()),
 		temp:      localTempData{},
 		data:      common.SignatureData{},
 		out:       out,

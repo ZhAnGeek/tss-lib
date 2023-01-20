@@ -3,6 +3,7 @@
 package presigning
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"math/big"
@@ -63,7 +64,7 @@ func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, e
 	return nil
 }
 
-func DerivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []uint32, ec elliptic.Curve) (*big.Int, *ckd.ExtendedKey, error) {
+func DerivingPubkeyFromPath(ctx context.Context, masterPub *crypto.ECPoint, chainCode []byte, path []uint32, ec elliptic.Curve) (*big.Int, *ckd.ExtendedKey, error) {
 	// build ecdsa key pair
 	pk, err := crypto.NewECPoint(ec, masterPub.X(), masterPub.Y())
 	if err != nil {
@@ -80,5 +81,5 @@ func DerivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []
 		Version:    net.HDPrivateKeyID[:],
 	}
 
-	return ckd.DeriveChildKeyFromHierarchy(path, extendedParentPk, ec.Params().N, ec)
+	return ckd.DeriveChildKeyFromHierarchy(ctx, path, extendedParentPk, ec.Params().N, ec)
 }

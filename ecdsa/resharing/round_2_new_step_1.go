@@ -64,7 +64,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 		preParams = &round.save.LocalPreParams
 	} else {
 		var err error
-		preParams, err = keygen.GeneratePreParams(round.SafePrimeGenTimeout())
+		preParams, err = keygen.GeneratePreParams(ctx, round.SafePrimeGenTimeout())
 		if err != nil {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}

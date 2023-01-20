@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"encoding/hex"
 	"math/big"
 
@@ -43,7 +44,7 @@ func NewLocalPartySaveData(partyCount int) (saveData LocalPartySaveData) {
 }
 
 // BuildLocalSaveDataSubset re-creates the LocalPartySaveData to contain data for only the list of signing parties.
-func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.SortedPartyIDs) LocalPartySaveData {
+func BuildLocalSaveDataSubset(ctx context.Context, sourceData LocalPartySaveData, sortedIDs tss.SortedPartyIDs) LocalPartySaveData {
 	keysToIndices := make(map[string]int, len(sourceData.Ks))
 	for j, kj := range sourceData.Ks {
 		keysToIndices[hex.EncodeToString(kj.Bytes())] = j

@@ -7,6 +7,7 @@
 package zkpprm_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -22,7 +23,8 @@ var (
 )
 
 func TestPrm(test *testing.T) {
-	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
+	ctx := context.Background()
+	preParams, err := keygen.GeneratePreParams(ctx, time.Minute*10, 8)
 	assert.NoError(test, err)
 
 	s, t, lambda, P, Q, N := preParams.H1i, preParams.H2i, preParams.Beta, preParams.P, preParams.Q, preParams.NTildei
@@ -42,7 +44,8 @@ func TestPrm(test *testing.T) {
 
 // TOB-BIN-8
 func TestPrmForgery(test *testing.T) {
-	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
+	ctx := context.Background()
+	preParams, err := keygen.GeneratePreParams(ctx, time.Minute*10, 8)
 	assert.NoError(test, err)
 	s, _, _, _, _, N := preParams.H1i, preParams.H2i, preParams.Beta, preParams.P,
 		preParams.Q, preParams.NTildei

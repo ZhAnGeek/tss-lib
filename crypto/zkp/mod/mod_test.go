@@ -7,6 +7,7 @@
 package zkpmod_test
 
 import (
+	"context"
 	"crypto/rand"
 	"io"
 	"math/big"
@@ -24,7 +25,8 @@ var (
 )
 
 func TestMod(test *testing.T) {
-	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
+	ctx := context.Background()
+	preParams, err := keygen.GeneratePreParams(ctx, time.Minute*10, 8)
 	assert.NoError(test, err)
 
 	p, q, N := preParams.P, preParams.Q, preParams.NTildei
@@ -105,7 +107,8 @@ func TestForged(test *testing.T) {
 }
 
 func TestSmallA(test *testing.T) {
-	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
+	ctx := context.Background()
+	preParams, err := keygen.GeneratePreParams(ctx, time.Minute*10, 8)
 	assert.NoError(test, err)
 	p, q, N := preParams.P, preParams.Q, preParams.NTildei
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)

@@ -61,7 +61,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.save.LocalPreParams.Validate() {
 		preParams = &round.save.LocalPreParams
 	} else {
-		preParams, err = GeneratePreParams(round.SafePrimeGenTimeout())
+		preParams, err = GeneratePreParams(ctx, round.SafePrimeGenTimeout())
 		if err != nil {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}

@@ -4,6 +4,7 @@ package ckd
 
 import (
 	"bytes"
+	"context"
 	"crypto/elliptic"
 	"crypto/hmac"
 	"crypto/rand"
@@ -188,13 +189,13 @@ func serializeCompressed(publicKeyX *big.Int, publicKeyY *big.Int) []byte {
 	return paddedAppend(b, 32, publicKeyX.Bytes())
 }
 
-func DeriveChildKeyFromHierarchy(indicesHierarchy []uint32, pk *ExtendedKey, mod *big.Int, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
+func DeriveChildKeyFromHierarchy(ctx context.Context, indicesHierarchy []uint32, pk *ExtendedKey, mod *big.Int, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
 	var k = pk
 	var err error
 	var childKey *ExtendedKey
 	mod_ := common.ModInt(mod)
 	ilNum := big.NewInt(0)
-	var deriveFunc func(uint32, *ExtendedKey, elliptic.Curve) (*big.Int, *ExtendedKey, error)
+	var deriveFunc func(context.Context, uint32, *ExtendedKey, elliptic.Curve) (*big.Int, *ExtendedKey, error)
 	cname, ok := tss.GetCurveName(curve)
 	if !ok {
 		return nil, nil, errors.New("get curve name failed")
@@ -207,7 +208,7 @@ func DeriveChildKeyFromHierarchy(indicesHierarchy []uint32, pk *ExtendedKey, mod
 
 	for index := range indicesHierarchy {
 		ilNumOld := ilNum
-		ilNum, childKey, err = deriveFunc(indicesHierarchy[index], k, curve)
+		ilNum, childKey, err = deriveFunc(ctx, indicesHierarchy[index], k, curve)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -219,7 +220,7 @@ func DeriveChildKeyFromHierarchy(indicesHierarchy []uint32, pk *ExtendedKey, mod
 
 // DeriveChildKeyOfEcdsa Derive a child key from the given parent key. The function returns "IL" ("I left"), per BIP-32 spec. It also
 // returns the derived child key.
-func DeriveChildKeyOfEcdsa(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
+func DeriveChildKeyOfEcdsa(ctx context.Context, index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
 	if index >= HardenedKeyStart {
 		return nil, nil, errors.New("the index must be non-hardened")
 	}
@@ -273,7 +274,7 @@ func DeriveChildKeyOfEcdsa(index uint32, pk *ExtendedKey, curve elliptic.Curve) 
 	return ilNum, childPk, nil
 }
 
-func DeriveChildKeyOfEddsa(index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
+func DeriveChildKeyOfEddsa(ctx context.Context, index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
 	if index >= HardenedKeyStart {
 		return nil, nil, errors.New("the index must be non-hardened")
 	}

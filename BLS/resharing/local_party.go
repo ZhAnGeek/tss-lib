@@ -65,6 +65,7 @@ type (
 // You may optionally generate and set the LocalPreParams if you would like to use pre-generated safe primes and Paillier secret.
 // (This is similar to providing the `optionalPreParams` to `keygen.LocalParty`).
 func NewLocalParty(
+	ctx context.Context,
 	params *tss.ReSharingParameters,
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
@@ -73,7 +74,7 @@ func NewLocalParty(
 	oldPartyCount := len(params.OldParties().IDs())
 	subset := key
 	if params.IsOldCommittee() {
-		subset = keygen.BuildLocalSaveDataSubset(key, params.OldParties().IDs())
+		subset = keygen.BuildLocalSaveDataSubset(ctx, key, params.OldParties().IDs())
 	}
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),

@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"runtime"
@@ -27,7 +28,7 @@ var (
 // GeneratePreParams finds two safe primes and computes the Paillier secret required for the protocol.
 // This can be a time consuming process so it is recommended to do it out-of-band.
 // If not specified, a concurrency value equal to the number of available CPU cores will be used.
-func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*LocalPreParams, error) {
+func GeneratePreParams(ctx context.Context, timeout time.Duration, optionalConcurrency ...int) (*LocalPreParams, error) {
 	var concurrency int
 	if 0 < len(optionalConcurrency) {
 		if 1 < len(optionalConcurrency) {

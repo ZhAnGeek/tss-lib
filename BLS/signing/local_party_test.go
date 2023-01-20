@@ -61,7 +61,7 @@ func TestE2EConcurrent(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.Bls12381(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		keyDerivationDelta := big.NewInt(42)
-		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
+		P := NewLocalParty(ctx, msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(ctx); err != nil {
@@ -143,7 +143,7 @@ func E2ESigning(b *testing.B) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.Bls12381(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		keyDerivationDelta := big.NewInt(10)
-		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
+		P := NewLocalParty(ctx, msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(ctx); err != nil {
