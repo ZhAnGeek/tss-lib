@@ -49,7 +49,7 @@ func GeneratePreParams(ctx context.Context, timeout time.Duration, optionalConcu
 	if err != nil {
 		return nil, err
 	}
-	common.Logger.Infof("safe primes generated. took %s\n", time.Since(start))
+	log.Info(ctx, "safe primes generated. took %s\n", time.Since(start))
 
 	if sgps == nil || sgps[0] == nil || sgps[1] == nil ||
 		!sgps[0].Prime().ProbablyPrime(30) || !sgps[1].Prime().ProbablyPrime(30) ||

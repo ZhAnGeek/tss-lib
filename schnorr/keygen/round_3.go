@@ -15,6 +15,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -135,7 +136,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 
 	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), PubKey)
+	log.Debug(ctx, "%s public key: %x", round.PartyID(), PubKey)
 
 	round.end <- *round.save
 	return nil

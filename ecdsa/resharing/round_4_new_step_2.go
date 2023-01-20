@@ -65,7 +65,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		round.save.NTildej[j] = Nj
 		round.save.H1j[j] = H1
 		round.save.H2j[j] = H2
-		common.Logger.Debugf("paillier verify passed for party %s", Pj)
+		log.Debug(ctx, "paillier verify passed for party %s", Pj)
 
 		proofMod, err := r2msg1.UnmarshalProofMod()
 		if err != nil {

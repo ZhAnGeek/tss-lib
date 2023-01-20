@@ -1,20 +1,26 @@
+// Copyright © 2023 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
 package log
 
 import "context"
 
-// LogLevel log level
+// Level log level
 type Level int
 
 const (
-	// Fatal error log level
+	// FatalLevel error log level
 	FatalLevel Level = iota + 1
-	// Error error log level
+	// ErrorLevel error log level
 	ErrorLevel
-	// Warn warn log level
+	// WarnLevel warn log level
 	WarnLevel
-	// Info info log level
+	// InfoLevel info log level
 	InfoLevel
-	// Debug debug log level
+	// DebugLevel debug log level
 	DebugLevel
 )
 

@@ -11,8 +11,8 @@ import (
 	"encoding/hex"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -55,7 +55,7 @@ func BuildLocalSaveDataSubset(ctx context.Context, sourceData LocalPartySaveData
 	for j, id := range sortedIDs {
 		savedIdx, ok := keysToIndices[hex.EncodeToString(id.Key)]
 		if !ok {
-			common.Logger.Warning("BuildLocalSaveDataSubset: unable to find a signer party in the local save data", id)
+			log.Warn(ctx, "BuildLocalSaveDataSubset: unable to find a signer party in the local save data", id)
 		}
 		newData.Ks[j] = sourceData.Ks[savedIdx]
 		newData.BigXj[j] = sourceData.BigXj[savedIdx]

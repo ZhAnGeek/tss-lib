@@ -16,6 +16,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -144,7 +145,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 	round.save.ECDSAPub = ecdsaPubKey
 
 	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), ecdsaPubKey)
+	log.Debug(ctx, "%s public key: %x", round.PartyID(), ecdsaPubKey)
 
 	ContextI := append(round.temp.RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
 	// proof, err := zkpsch.NewProof(ctx, ContextI, round.save.BigXj[i], round.save.Xi)

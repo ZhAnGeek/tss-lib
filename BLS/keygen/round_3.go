@@ -11,6 +11,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/Safulet/tss-lib-private/log"
 	errors2 "github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -114,7 +115,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 	round.save.PubKey = PubKey
 	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), PubKey)
+	log.Debug(ctx, "%s public key: %x", round.PartyID(), PubKey)
 	round.end <- *round.save
 
 	return nil

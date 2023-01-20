@@ -11,6 +11,7 @@ import (
 	"errors"
 	"math/big"
 
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/hashicorp/go-multierror"
 	errors2 "github.com/pkg/errors"
 
@@ -194,7 +195,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	round.save.EDDSAPub = eddsaPubKey
 
 	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), eddsaPubKey)
+	log.Debug(ctx, "%s public key: %x", round.PartyID(), eddsaPubKey)
 
 	round.end <- *round.save
 	return nil

@@ -1,3 +1,9 @@
+// Copyright © 2023 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
 package log
 
 import (
@@ -40,8 +46,8 @@ func initZap(logLevel zapcore.Level) (*zap.Logger, error) {
 		OutputPaths:      []string{"stdout"},
 		ErrorOutputPaths: []string{"stdout"},
 	}
-	logger, err := zapConfig.Build(zap.AddCallerSkip(2))
-	return logger, err
+	zapLogger, err := zapConfig.Build(zap.AddCallerSkip(2))
+	return zapLogger, err
 }
 
 func newDefaultLogger() *defaultLogger {
