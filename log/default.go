@@ -9,6 +9,7 @@ package log
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.uber.org/zap"
@@ -19,6 +20,7 @@ var mpcLogTag = zap.String("library", tssLib)
 
 type defaultLogger struct {
 	zapLogger *zap.Logger
+	rwLock    sync.RWMutex
 }
 
 func initZap(logLevel zapcore.Level) (*zap.Logger, error) {
@@ -76,30 +78,44 @@ func (d *defaultLogger) SetLogLevel(level Level) error {
 	if err != nil {
 		return err
 	}
+	d.rwLock.Lock()
+	defer d.rwLock.Unlock()
 	d.zapLogger = zapLogger
 	return nil
 }
 
 func (d *defaultLogger) Debug(ctx context.Context, msg string, any ...interface{}) {
+	d.rwLock.RLock()
+	defer d.rwLock.RUnlock()
 	d.zapLogger.Debug(fmt.Sprintf(msg, any...), mpcLogTag)
 }
 
 func (d *defaultLogger) Info(ctx context.Context, msg string, any ...interface{}) {
+	d.rwLock.RLock()
+	defer d.rwLock.RUnlock()
 	d.zapLogger.Info(fmt.Sprintf(msg, any...), mpcLogTag)
 }
 
 func (d *defaultLogger) Warn(ctx context.Context, msg string, any ...interface{}) {
+	d.rwLock.RLock()
+	defer d.rwLock.RUnlock()
 	d.zapLogger.Warn(fmt.Sprintf(msg, any...), mpcLogTag)
 }
 
 func (d *defaultLogger) Error(ctx context.Context, msg string, any ...interface{}) {
+	d.rwLock.RLock()
+	defer d.rwLock.RUnlock()
 	d.zapLogger.Error(fmt.Sprintf(msg, any...), mpcLogTag)
 }
 
 func (d *defaultLogger) Fatal(ctx context.Context, msg string, any ...interface{}) {
+	d.rwLock.RLock()
+	defer d.rwLock.RUnlock()
 	d.zapLogger.Fatal(fmt.Sprintf(msg, any...), mpcLogTag)
 }
 
 func (d *defaultLogger) Sync(ctx context.Context) error {
+	d.rwLock.RLock()
+	defer d.rwLock.RUnlock()
 	return d.zapLogger.Sync()
 }
