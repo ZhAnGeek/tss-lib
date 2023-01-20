@@ -38,7 +38,7 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			ok := round.temp.r4msgpfsch[j].Verify(ContextJ, round.save.BigXj[j])
+			ok := round.temp.r4msgpfsch[j].Verify(ctx, ContextJ, round.save.BigXj[j])
 			if !ok || !round.temp.r4msgpfsch[j].A.Equals(round.temp.r2msgAs[j]) {
 				errChs <- round.WrapError(errors.New("proofSch verify failed"), Pj)
 			}

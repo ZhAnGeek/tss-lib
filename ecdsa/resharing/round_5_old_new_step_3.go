@@ -42,7 +42,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 			if err != nil {
 				return round.WrapError(errors.New("proofFac failed"), Pj)
 			}
-			if ok := proofFac.Verify(ContextI, round.EC(), round.save.NTildej[j],
+			if ok := proofFac.Verify(ctx, ContextI, round.EC(), round.save.NTildej[j],
 				round.save.NTildei, round.save.H1i, round.save.H2i); !ok {
 				culprits = append(culprits, Pj)
 				log.Warn(ctx, "proofFac verify failed for party %s", Pj)

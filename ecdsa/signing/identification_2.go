@@ -53,7 +53,7 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 
 			proofMulstar := round.temp.R5msgProofMulstar[j]
 			g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
-			ok := proofMulstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], g, round.temp.BigWs[j], round.temp.R1msgK[j], round.temp.R5msgH[j], round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			ok := proofMulstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], g, round.temp.BigWs[j], round.temp.R1msgK[j], round.temp.R5msgH[j], round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)
 				return
@@ -116,7 +116,7 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 			}
 
 			proofDec := round.temp.R5msgProofDec[j]
-			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], SigmaShareEnc, round.temp.R4msgSigmaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok = proofDec.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], SigmaShareEnc, round.temp.R4msgSigmaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofdec verify failed"), Pj)
 				return

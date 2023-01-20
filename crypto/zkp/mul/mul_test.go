@@ -7,6 +7,7 @@
 package zkpmul_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -29,6 +30,7 @@ var (
 )
 
 func TestMul(test *testing.T) {
+	ctx := context.Background()
 	ec := tss.EC()
 	q := ec.Params().N
 
@@ -46,10 +48,10 @@ func TestMul(test *testing.T) {
 	C, rho, err := pk.HomoMultObfuscate(x, Y)
 	assert.NoError(test, err)
 
-	proof, err := NewProof(Session, ec, pk, X, Y, C, x, rho, rhox)
+	proof, err := NewProof(ctx, Session, ec, pk, X, Y, C, x, rho, rhox)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, ec, pk, X, Y, C)
+	ok := proof.Verify(ctx, Session, ec, pk, X, Y, C)
 	assert.True(test, ok, "proof must verify")
 }
 
@@ -64,6 +66,7 @@ func NewProofForged() (*ProofMul, error) {
 }
 
 func TestMulForged(test *testing.T) {
+	ctx := context.Background()
 	ec := tss.EC()
 	q := ec.Params().N
 	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
@@ -79,6 +82,6 @@ func TestMulForged(test *testing.T) {
 	// no arguments needed
 	proof, err := NewProofForged()
 	assert.NoError(test, err)
-	ok := proof.Verify(Session, ec, pk, X, Y, C)
+	ok := proof.Verify(ctx, Session, ec, pk, X, Y, C)
 	assert.False(test, ok, "proof must verify")
 }

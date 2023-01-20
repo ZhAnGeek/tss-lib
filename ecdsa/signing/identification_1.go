@@ -44,7 +44,7 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
-	proofH, err := zkpmulstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, g, round.temp.BigWs[i], round.temp.K, H, round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.w, rho)
+	proofH, err := zkpmulstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, g, round.temp.BigWs[i], round.temp.K, H, round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.w, rho)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -114,7 +114,7 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 			continue
 		}
 
-		proofDec, err := zkpdec.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, SigmaShareEnc, round.temp.SigmaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], SigmaShare2, nonce)
+		proofDec, err := zkpdec.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, SigmaShareEnc, round.temp.SigmaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], SigmaShare2, nonce)
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}

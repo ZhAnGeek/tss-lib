@@ -17,6 +17,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil/base58"
@@ -246,20 +247,20 @@ func DeriveChildKeyOfEcdsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 	if ilNum.Cmp(curve.Params().N) >= 0 || ilNum.Sign() == 0 {
 		// falling outside the valid range for curve private keys
 		err := errors.New("invalid derived key")
-		common.Logger.Error("error deriving child key")
+		log.Error(ctx, "error deriving child key")
 		return nil, nil, err
 	}
 
 	deltaG := crypto.ScalarBaseMult(curve, ilNum)
 	if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 {
 		err := errors.New("invalid child")
-		common.Logger.Error("error invalid child")
+		log.Error(ctx, "error invalid child")
 		return nil, nil, err
 	}
 
 	childCryptoPk, err := pk.PublicKey.Add(deltaG)
 	if err != nil {
-		common.Logger.Error("error adding delta G to parent key")
+		log.Error(ctx, "error adding delta G to parent key")
 		return nil, nil, err
 	}
 
@@ -284,7 +285,7 @@ func DeriveChildKeyOfEddsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 
 	cryptoPk, err := crypto.NewECPoint(curve, pk.PublicKey.X(), pk.PublicKey.Y())
 	if err != nil {
-		common.Logger.Error("error getting pubkey from extendedkey")
+		log.Error(ctx, "error getting pubkey from extendedkey")
 		return nil, nil, err
 	}
 
@@ -311,12 +312,12 @@ func DeriveChildKeyOfEddsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 
 	if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 || ilNum.Cmp(curve.Params().N) >= 0 {
 		err = errors.New("invalid child")
-		common.Logger.Error("error invalid child")
+		log.Error(ctx, "error invalid child")
 		return nil, nil, err
 	}
 	childCryptoPk, err := cryptoPk.Add(deltaG)
 	if err != nil {
-		common.Logger.Error("error adding delta G to parent key")
+		log.Error(ctx, "error adding delta G to parent key")
 		return nil, nil, err
 	}
 

@@ -7,6 +7,7 @@
 package zkpmulstar_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -30,6 +31,7 @@ var (
 )
 
 func TestMulstar(test *testing.T) {
+	ctx := context.Background()
 	ec := tss.EC()
 	q := ec.Params().N
 
@@ -51,9 +53,9 @@ func TestMulstar(test *testing.T) {
 	D, rho, err := pk.HomoMultObfuscate(x, C)
 	assert.NoError(test, err)
 
-	proof, err := NewProof(Session, ec, pk, g, X, C, D, NCap, s, t, x, rho)
+	proof, err := NewProof(ctx, Session, ec, pk, g, X, C, D, NCap, s, t, x, rho)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, ec, pk, g, X, C, D, NCap, s, t)
+	ok := proof.Verify(ctx, Session, ec, pk, g, X, C, D, NCap, s, t)
 	assert.True(test, ok, "proof must verify")
 }

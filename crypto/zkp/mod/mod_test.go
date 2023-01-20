@@ -34,19 +34,19 @@ func TestMod(test *testing.T) {
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2, big.NewInt(1))
 
-	proof, err := NewProof(Session, N, P, Q)
+	proof, err := NewProof(ctx, Session, N, P, Q)
 	assert.NoError(test, err)
 
 	proofBzs := proof.Bytes()
 	proof, err = NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, N)
+	ok := proof.Verify(ctx, Session, N)
 	assert.True(test, ok, "proof must verify")
 }
 
 // NewProofForged from TOB-BIN-7
-func NewProofForged(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
+func NewProofForged(ctx context.Context, Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 	zero := big.NewInt(0)
 	one := big.NewInt(1)
 	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
@@ -54,7 +54,7 @@ func NewProofForged(Session []byte, N, P, Q *big.Int) (*ProofMod, error) {
 	W := zero
 	Y := [Iterations]*big.Int{}
 	for i := range Y {
-		ei := common.SHA512_256i_TAGGED(Session, append([]*big.Int{W, N}, Y[:i]...)...)
+		ei := common.SHA512_256i_TAGGED(ctx, Session, append([]*big.Int{W, N}, Y[:i]...)...)
 		Y[i] = common.RejectionSample(N, ei)
 	}
 	modN := common.ModInt(N)
@@ -97,12 +97,13 @@ func genPrime() *big.Int {
 }
 
 func TestForged(test *testing.T) {
+	ctx := context.Background()
 	P := genPrime()
 	Q := genPrime()
 	N := new(big.Int).Mul(P, Q)
-	proof, err := NewProofForged(Session, N, P, Q)
+	proof, err := NewProofForged(ctx, Session, N, P, Q)
 	assert.NoError(test, err)
-	ok := proof.Verify(Session, N)
+	ok := proof.Verify(ctx, Session, N)
 	assert.False(test, ok, "proof must verify")
 }
 
@@ -114,13 +115,13 @@ func TestSmallA(test *testing.T) {
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2,
 		big.NewInt(1))
-	proof, err := NewProof(Session, N, P, Q)
+	proof, err := NewProof(ctx, Session, N, P, Q)
 	assert.NoError(test, err)
 
 	var Abz []byte
 	Abz = append(Abz, byte(255))
 	proof.A = new(big.Int).SetBytes(Abz)
 
-	ok := proof.Verify(Session, N)
+	ok := proof.Verify(ctx, Session, N)
 	assert.False(test, ok, "proof must verify")
 }

@@ -93,7 +93,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				ch <- vssOut{errors.New("failed to unmarshal Schnorr proof"), nil}
 				return
 			}
-			ok = proof.Verify(ContextJ, PjVs[0])
+			ok = proof.Verify(ctx, ContextJ, PjVs[0])
 			if !ok {
 				ch <- vssOut{errors.New("failed to prove Schnorr proof"), nil}
 				return

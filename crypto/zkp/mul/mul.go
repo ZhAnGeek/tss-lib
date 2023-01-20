@@ -7,6 +7,7 @@
 package zkpmul
 
 import (
+	"context"
 	"crypto/elliptic"
 	"errors"
 	"fmt"
@@ -31,7 +32,7 @@ var (
 )
 
 // NewProof implements proofmul
-func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rho, rhox *big.Int) (*ProofMul, error) {
+func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rho, rhox *big.Int) (*ProofMul, error) {
 	if pk == nil || X == nil || Y == nil || C == nil || rho == nil || rhox == nil {
 		return nil, errors.New("ProveMul constructor received nil value(s)")
 	}
@@ -52,7 +53,7 @@ func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C
 	// Fig 28.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), X, Y, C, A, B)...)
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), X, Y, C, A, B)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -83,7 +84,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMul, error) {
 	}, nil
 }
 
-func (pf *ProofMul) Verify(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *big.Int) bool {
+func (pf *ProofMul) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || X == nil || Y == nil || C == nil {
 		return false
 	}
@@ -122,7 +123,7 @@ func (pf *ProofMul) Verify(Session []byte, ec elliptic.Curve, pk *paillier.Publi
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), X, Y, C, pf.A, pf.B)...)
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), X, Y, C, pf.A, pf.B)...)
 		e = common.RejectionSample(q, eHash)
 	}
 

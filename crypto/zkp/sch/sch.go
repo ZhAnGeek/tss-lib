@@ -7,6 +7,7 @@
 package zkpsch
 
 import (
+	"context"
 	"crypto/elliptic"
 	"errors"
 	"fmt"
@@ -28,7 +29,7 @@ type (
 )
 
 // NewProof implements proofsch
-func NewProof(Session []byte, X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
+func NewProof(ctx context.Context, Session []byte, X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
 	if x == nil || X == nil || !X.ValidateBasic() {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
@@ -43,7 +44,7 @@ func NewProof(Session []byte, X *crypto.ECPoint, x *big.Int) (*ProofSch, error) 
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, ec.Params().B, ec.Params().N, ec.Params().P,
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, ec.Params().B, ec.Params().N, ec.Params().P,
 			X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
 		e = common.RejectionSample(q, eHash)
 	}
@@ -67,7 +68,7 @@ func NewAlpha(ec elliptic.Curve) (*big.Int, *crypto.ECPoint) {
 }
 
 // NewProof implements proofsch
-func NewProofWithAlpha(Session []byte, X, A *crypto.ECPoint, alpha, x *big.Int) (*ProofSch, error) {
+func NewProofWithAlpha(ctx context.Context, Session []byte, X, A *crypto.ECPoint, alpha, x *big.Int) (*ProofSch, error) {
 	if x == nil || X == nil || !X.ValidateBasic() {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
@@ -78,7 +79,7 @@ func NewProofWithAlpha(Session []byte, X, A *crypto.ECPoint, alpha, x *big.Int) 
 	// Fig 22.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, ec.Params().B, ec.Params().N, ec.Params().P,
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, ec.Params().B, ec.Params().N, ec.Params().P,
 			X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
 		e = common.RejectionSample(q, eHash)
 	}
@@ -106,7 +107,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofSch, error) {
 	}, nil
 }
 
-func (pf *ProofSch) Verify(Session []byte, X *crypto.ECPoint) bool {
+func (pf *ProofSch) Verify(ctx context.Context, Session []byte, X *crypto.ECPoint) bool {
 	if pf == nil || !pf.ValidateBasic() || X == nil {
 		return false
 	}
@@ -116,7 +117,7 @@ func (pf *ProofSch) Verify(Session []byte, X *crypto.ECPoint) bool {
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, ec.Params().B, ec.Params().N, ec.Params().P,
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, ec.Params().B, ec.Params().N, ec.Params().P,
 			X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y())
 		e = common.RejectionSample(q, eHash)
 	}

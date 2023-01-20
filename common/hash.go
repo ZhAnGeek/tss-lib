@@ -19,7 +19,7 @@ const (
 
 // SHA512_256 SHA-512/256 is protected against length extension attacks and is more performant than SHA-256 on 64-bit architectures.
 // https://en.wikipedia.org/wiki/Template:Comparison_of_SHA_functions
-func SHA512_256(in ...[]byte) []byte {
+func SHA512_256(ctx context.Context, in ...[]byte) []byte {
 	var data []byte
 	state := crypto.SHA512_256.New()
 	inLen := len(in)
@@ -52,7 +52,7 @@ func SHA512_256(in ...[]byte) []byte {
 
 // SHA512_256_TAGGED Tagged version of SHA512_256
 func SHA512_256_TAGGED(ctx context.Context, tag []byte, in ...[]byte) []byte {
-	tagBz := SHA512_256(tag)
+	tagBz := SHA512_256(ctx, tag)
 	var data []byte
 	state := crypto.SHA512_256.New()
 	state.Write(tagBz)
@@ -120,8 +120,8 @@ func SHA512_256i(ctx context.Context, in ...*big.Int) *big.Int {
 }
 
 // SHA512_256i_TAGGED tagged version of SHA512_256i
-func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
-	tagBz := SHA512_256(tag)
+func SHA512_256i_TAGGED(ctx context.Context, tag []byte, in ...*big.Int) *big.Int {
+	tagBz := SHA512_256(ctx, tag)
 	var data []byte
 	state := crypto.SHA512_256.New()
 	state.Write(tagBz)

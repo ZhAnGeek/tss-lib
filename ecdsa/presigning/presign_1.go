@@ -70,7 +70,7 @@ func (round *presign1) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proof, err := zkpenc.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
+			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pi)
 				return

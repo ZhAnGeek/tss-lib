@@ -7,6 +7,7 @@
 package zkpdec_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -30,6 +31,7 @@ var (
 )
 
 func TestDec(test *testing.T) {
+	ctx := context.Background()
 	ec := tss.EC()
 	q := ec.Params().N
 
@@ -51,9 +53,9 @@ func TestDec(test *testing.T) {
 	assert.NoError(test, err)
 	assert.Equal(test, 0, rho2.Cmp(rho))
 
-	proof, err := NewProof(Session, ec, pk, C, x, NCap, s, t, y, rho2)
+	proof, err := NewProof(ctx, Session, ec, pk, C, x, NCap, s, t, y, rho2)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, ec, pk, C, x, NCap, s, t)
+	ok := proof.Verify(ctx, Session, ec, pk, C, x, NCap, s, t)
 	assert.True(test, ok, "proof must verify")
 }

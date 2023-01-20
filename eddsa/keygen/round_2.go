@@ -49,7 +49,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	}
 
 	// 5. compute Schnorr prove
-	pii, err := zkpsch.NewProof(ContextI, round.temp.vs[0], round.temp.ui)
+	pii, err := zkpsch.NewProof(ctx, ContextI, round.temp.vs[0], round.temp.ui)
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewZKProof(ui, vi0)"))
 	}

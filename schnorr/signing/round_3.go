@@ -74,7 +74,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("failed to unmarshal Dj proof"), Pj)
 				return
 			}
-			ok = proofD.Verify(ContextJ, pointDj)
+			ok = proofD.Verify(ctx, ContextJ, pointDj)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to prove Dj"), Pj)
 				return
@@ -91,7 +91,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("failed to unmarshal Ej proof"), Pj)
 				return
 			}
-			ok = proofE.Verify(ContextJ, pointEj)
+			ok = proofE.Verify(ctx, ContextJ, pointEj)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to prove Ej"), Pj)
 				return
@@ -126,7 +126,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	DEFlat = append(BIndexes, EjFlat...)  // i, Ei
 
 	for j, Pj := range round.Parties().IDs() {
-		rho := common.SHA512_256i_TAGGED([]byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
+		rho := common.SHA512_256i_TAGGED(ctx, []byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
 		Rj, err := round.temp.Djs[j].Add(round.temp.Ejs[j].ScalarMult(rho))
 		if err != nil {
 			return round.WrapError(errors.New("error in computing Ri"), Pj)

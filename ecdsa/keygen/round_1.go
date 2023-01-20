@@ -75,7 +75,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	// Fig 6. Round 1. preparams
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
-	proofPrm, err := zkpprm.NewProof(ContextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
+	proofPrm, err := zkpprm.NewProof(ctx, ContextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
 	}

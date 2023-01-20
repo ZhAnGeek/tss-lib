@@ -77,7 +77,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	// ProofPrm
 	ContextI := append(SSID, big.NewInt(int64(i)).Bytes()...)
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(preParams.P, 1), new(big.Int).Lsh(preParams.Q, 1))
-	proofPrm, err := zkpprm.NewProof(ContextI, preParams.H1i, preParams.H2i, preParams.NTildei, Phi, preParams.Beta)
+	proofPrm, err := zkpprm.NewProof(ctx, ContextI, preParams.H1i, preParams.H2i, preParams.NTildei, Phi, preParams.Beta)
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
 	}
@@ -85,7 +85,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	// ProofMod
 	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
-	proofMod, err := zkpmod.NewProof(ContextI, round.save.NTildei, SP, SQ)
+	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.NTildei, SP, SQ)
 	if err != nil {
 		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}

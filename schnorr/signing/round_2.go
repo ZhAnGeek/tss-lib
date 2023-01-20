@@ -41,11 +41,11 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	proofD, err := zkpsch.NewProof(ContextI, round.temp.pointDi, round.temp.di)
+	proofD, err := zkpsch.NewProof(ctx, ContextI, round.temp.pointDi, round.temp.di)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	proofE, err := zkpsch.NewProof(ContextI, round.temp.pointEi, round.temp.ei)
+	proofE, err := zkpsch.NewProof(ctx, ContextI, round.temp.pointEi, round.temp.ei)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

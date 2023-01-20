@@ -46,7 +46,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			if round.save.NTildej[j].BitLen() != SafeBitLen*2 {
 				errChs <- round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
 			}
-			if ok := round.temp.r2msgpfprm[j].Verify(contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
+			if ok := round.temp.r2msgpfprm[j].Verify(ctx, contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
 				errChs <- round.WrapError(errors.New("proofPrm verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -92,7 +92,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
 
 	ContextI := append(RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
-	proofMod, err := zkpmod.NewProof(ContextI, round.save.NTildei, SP, SQ)
+	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.NTildei, SP, SQ)
 	if err != nil {
 		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}
@@ -107,7 +107,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proofFac, err := zkpfac.NewProof(ContextI, round.EC(), round.save.NTildei, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+			proofFac, err := zkpfac.NewProof(ctx, ContextI, round.EC(), round.save.NTildei, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("create proofFac failed"), Pi)
 			}

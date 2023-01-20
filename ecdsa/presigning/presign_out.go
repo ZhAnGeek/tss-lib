@@ -50,7 +50,7 @@ func (round *presignout) Start(ctx context.Context) *tss.Error {
 			BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
 			proofLogstar := round.temp.R3msgProofLogstar[j]
 
-			ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok := proofLogstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("proof verify failed"), Pj)
 				return

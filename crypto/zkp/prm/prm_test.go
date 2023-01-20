@@ -31,14 +31,14 @@ func TestPrm(test *testing.T) {
 	P2, Q2 := new(big.Int).Lsh(P, 1), new(big.Int).Lsh(Q, 1)
 	Phi := new(big.Int).Mul(P2, Q2)
 
-	proof, err := NewProof(Session, s, t, N, Phi, lambda)
+	proof, err := NewProof(ctx, Session, s, t, N, Phi, lambda)
 	assert.NoError(test, err)
 
 	proofBzs := proof.Bytes()
 	proof, err = NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, s, t, N)
+	ok := proof.Verify(ctx, Session, s, t, N)
 	assert.True(test, ok, "proof must verify")
 }
 
@@ -63,6 +63,6 @@ func TestPrmForgery(test *testing.T) {
 	}
 	proof, err := NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
-	ok := proof.Verify(Session, s, big.NewInt(0), N)
+	ok := proof.Verify(ctx, Session, s, big.NewInt(0), N)
 	assert.False(test, ok, "proof must verify")
 }

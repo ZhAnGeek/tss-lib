@@ -57,7 +57,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(errors.New("proofPrm failed"), Pj)
 		}
 		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
-		if ok := proofPrm.Verify(ContextJ, H1, H2, Nj); !ok {
+		if ok := proofPrm.Verify(ctx, ContextJ, H1, H2, Nj); !ok {
 			culprits = append(culprits, Pj)
 			log.Warn(ctx, "proofPrm verify failed for party %s", Pj)
 			continue
@@ -71,7 +71,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("proofMod failed"), Pj)
 		}
-		if ok := proofMod.Verify(ContextJ, round.save.NTildej[j]); !ok {
+		if ok := proofMod.Verify(ctx, ContextJ, round.save.NTildej[j]); !ok {
 			culprits = append(culprits, Pj)
 			log.Warn(ctx, "proofMod verify failed for party %s", Pj)
 			continue
@@ -90,7 +90,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
 		SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
 		SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
-		proofFac, err := zkpfac.NewProof(ContextJ, round.EC(), round.save.LocalPreParams.NTildei,
+		proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.NTildei,
 			round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
 		if err != nil {
 			return round.WrapError(errors.New("create proofFac failed"), Pi)
