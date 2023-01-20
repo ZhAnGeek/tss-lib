@@ -16,7 +16,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg"
 )
 
-func UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
+func UpdatePublicKeyAndAdjustBigXj(ctx context.Context, keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
 	var err error
 	gDelta := crypto.ScalarBaseMult(ec, keyDerivationDelta)
 	for k := range keys {
@@ -39,7 +39,7 @@ func UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta *big.Int, keys []keygen.Lo
 	return nil
 }
 
-func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
+func UpdateKeys(ctx context.Context, keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
 	var err error
 	modN := common.ModInt(ec.Params().N)
 	gDelta := crypto.ScalarBaseMult(ec, keyDerivationDelta)
