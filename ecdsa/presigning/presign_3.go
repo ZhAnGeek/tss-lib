@@ -7,6 +7,7 @@
 package presigning
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"sync"
@@ -23,7 +24,7 @@ func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 3}}}}
 }
 
-func (round *presign3) Start() *tss.Error {
+func (round *presign3) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -55,7 +56,7 @@ func (round *presign3) Start() *tss.Error {
 			DeltaD := round.temp.R2msgDeltaD[j]
 			DeltaF := round.temp.R2msgDeltaF[j]
 			proofAffgDelta := round.temp.R2msgDeltaProof[j]
-			ok := proofAffgDelta.Verify(ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, BigGammaSharej)
+			ok := proofAffgDelta.Verify(ctx, ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, DeltaD, DeltaF, BigGammaSharej)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg delta"), Pj)
 				return
@@ -70,7 +71,7 @@ func (round *presign3) Start() *tss.Error {
 			ChiD := round.temp.R2msgChiD[j]
 			ChiF := round.temp.R2msgChiF[j]
 			proofAffgChi := round.temp.R2msgChiProof[j]
-			ok = proofAffgChi.Verify(ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
+			ok = proofAffgChi.Verify(ctx, ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, round.temp.K, ChiD, ChiF, round.temp.BigWs[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg chi"), Pj)
 				return
@@ -84,7 +85,7 @@ func (round *presign3) Start() *tss.Error {
 
 			proofLogstar := round.temp.R2msgProofLogstar[j]
 			Gj := round.temp.R1msgG[j]
-			ok = proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Gj, BigGammaSharej, g, round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok = proofLogstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], Gj, BigGammaSharej, g, round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify logstar"), Pj)
 				return
@@ -141,7 +142,7 @@ func (round *presign3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			ProofLogstar, err := zkplogstar.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
+			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigDeltaShare, BigGamma, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proofLogStar generation failed"), Pi)
 				return

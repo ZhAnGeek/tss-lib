@@ -7,12 +7,14 @@
 package signing
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
 	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -52,6 +54,7 @@ type (
 )
 
 func NewLocalParty(
+	ctx context.Context,
 	msg []byte,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
@@ -63,7 +66,7 @@ func NewLocalParty(
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
 		params:    params,
-		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		keys:      keygen.BuildLocalSaveDataSubset(ctx, key, params.Parties().IDs()),
 		temp:      localTempData{},
 		data:      common.SignatureData{},
 		out:       out,
@@ -82,8 +85,8 @@ func (p *LocalParty) FirstRound() tss.Round {
 	return newRound1(p.params, &p.keys, &p.data, &p.temp, p.out, p.end)
 }
 
-func (p *LocalParty) Start() *tss.Error {
-	return tss.BaseStart(p, TaskName, func(round tss.Round) *tss.Error {
+func (p *LocalParty) Start(ctx context.Context) *tss.Error {
+	return tss.BaseStart(ctx, p, TaskName, func(round tss.Round) *tss.Error {
 		round1, ok := round.(*round1)
 		if !ok {
 			return round.WrapError(errors.New("unable to Start(). party is in an unexpected round"))
@@ -95,19 +98,19 @@ func (p *LocalParty) Start() *tss.Error {
 	})
 }
 
-func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(p, msg, TaskName)
+func (p *LocalParty) Update(ctx context.Context, msg tss.ParsedMessage) (ok bool, err *tss.Error) {
+	return tss.BaseUpdate(ctx, p, msg, TaskName)
 }
 
-func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
+func (p *LocalParty) UpdateFromBytes(ctx context.Context, wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
 	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
 	if err != nil {
 		return false, p.WrapError(err)
 	}
-	return p.Update(msg)
+	return p.Update(ctx, msg)
 }
 
-func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
+func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (bool, *tss.Error) {
 	// ValidateBasic is cheap; double-check the message here in case the public StoreMessage was called externally
 	if ok, err := p.ValidateMessage(msg); !ok || err != nil {
 		return ok, err
@@ -121,7 +124,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		p.temp.signRound1Messages[fromPIdx] = msg
 
 	default: // unrecognised message, just ignore!
-		common.Logger.Warningf("unrecognised message ignored: %v", msg)
+		log.Warn(ctx, "unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

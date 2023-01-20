@@ -7,6 +7,7 @@
 package zkpprm
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -29,7 +30,7 @@ var (
 	one = big.NewInt(1)
 )
 
-func NewProof(Session []byte, s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
+func NewProof(ctx context.Context, Session []byte, s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
 	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
 
 	// Fig 17.1
@@ -41,7 +42,7 @@ func NewProof(Session []byte, s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) 
 	}
 
 	// Fig 17.2
-	e := common.SHA512_256i_TAGGED(Session, append([]*big.Int{s, t, N}, A[:]...)...)
+	e := common.SHA512_256i_TAGGED(ctx, Session, append([]*big.Int{s, t, N}, A[:]...)...)
 
 	// Fig 17.3
 	Z := [Iterations]*big.Int{}
@@ -72,7 +73,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofPrm, error) {
 	}, nil
 }
 
-func (pf *ProofPrm) Verify(Session []byte, s, t, N *big.Int) bool {
+func (pf *ProofPrm) Verify(ctx context.Context, Session []byte, s, t, N *big.Int) bool {
 	if pf == nil || !pf.ValidateBasic() {
 		return false
 	}
@@ -80,7 +81,7 @@ func (pf *ProofPrm) Verify(Session []byte, s, t, N *big.Int) bool {
 		return false
 	}
 	modN := common.ModInt(N)
-	e := common.SHA512_256i_TAGGED(Session, append([]*big.Int{s, t, N}, pf.A[:]...)...)
+	e := common.SHA512_256i_TAGGED(ctx, Session, append([]*big.Int{s, t, N}, pf.A[:]...)...)
 	s_ := new(big.Int).Mod(s, N)
 	if s_.Cmp(one) != 1 || s_.Cmp(N) != -1 {
 		return false

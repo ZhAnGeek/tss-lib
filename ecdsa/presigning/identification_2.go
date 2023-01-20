@@ -7,6 +7,7 @@
 package presigning
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	sync "sync"
@@ -21,7 +22,7 @@ func newRound6(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 6}}}}}}
 }
 
-func (round *identification2) Start() *tss.Error {
+func (round *identification2) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -49,7 +50,7 @@ func (round *identification2) Start() *tss.Error {
 			defer wg.Done()
 
 			proofMul := round.temp.R5msgProofMul[j]
-			ok := proofMul.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.R1msgK[j], round.temp.R1msgG[j], round.temp.R5msgH[j])
+			ok := proofMul.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.R1msgK[j], round.temp.R1msgG[j], round.temp.R5msgH[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)
 				return
@@ -95,7 +96,7 @@ func (round *identification2) Start() *tss.Error {
 				}
 			}
 			proofDec := round.temp.R5msgProofDec[j]
-			ok = proofDec.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], DeltaShareEnc, round.temp.R3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok = proofDec.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], DeltaShareEnc, round.temp.R3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofdec verify failed"), Pj)
 				return

@@ -7,6 +7,7 @@
 package presigning
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -23,7 +24,7 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *presign1) Start() *tss.Error {
+func (round *presign1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -38,7 +39,7 @@ func (round *presign1) Start() *tss.Error {
 
 	// Fig 7. Round 1. generate ssid #TODO missing run_id & pre_data idx as input
 	round.temp.SsidNonce = new(big.Int).SetInt64(int64(round.Params().Nonce()))
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -69,7 +70,7 @@ func (round *presign1) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proof, err := zkpenc.NewProof(ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
+			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pi)
 				return

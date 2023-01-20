@@ -7,6 +7,7 @@
 package zkpmulstar
 
 import (
+	"context"
 	"crypto/elliptic"
 	"errors"
 	"fmt"
@@ -28,7 +29,7 @@ type (
 )
 
 // NewProof implements proofmulstar
-func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, g, X *crypto.ECPoint, C, D, NCap, s, t, x, rho *big.Int) (*ProofMulstar, error) {
+func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, g, X *crypto.ECPoint, C, D, NCap, s, t, x, rho *big.Int) (*ProofMulstar, error) {
 	if ec == nil || pk == nil || g == nil || X == nil || C == nil || D == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
 		return nil, errors.New("ProveMulstar constructor received nil value(s)")
 	}
@@ -61,7 +62,7 @@ func NewProof(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, g, X *c
 	// Fig 31.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P, g.X(), g.Y(), X.X(), X.Y(), C, D, NCap, s, t, A, B.X(), B.Y(), E, S)...)
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P, g.X(), g.Y(), X.X(), X.Y(), C, D, NCap, s, t, A, B.X(), B.Y(), E, S)...)
 		e = common.RejectionSample(q, eHash)
 	}
 
@@ -95,7 +96,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMulstar, error) {
 	}, nil
 }
 
-func (pf *ProofMulstar) Verify(Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, g, X *crypto.ECPoint, C, D, NCap, s, t *big.Int) bool {
+func (pf *ProofMulstar) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, g, X *crypto.ECPoint, C, D, NCap, s, t *big.Int) bool {
 	if ec == nil || pk == nil || g == nil || X == nil || C == nil || D == nil || NCap == nil || s == nil || t == nil {
 		return false
 	}
@@ -106,7 +107,7 @@ func (pf *ProofMulstar) Verify(Session []byte, ec elliptic.Curve, pk *paillier.P
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P, g.X(), g.Y(), X.X(), X.Y(), C, D, NCap, s, t, pf.A, pf.Bx, pf.By, pf.E, pf.S)...)
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P, g.X(), g.Y(), X.X(), X.Y(), C, D, NCap, s, t, pf.A, pf.Bx, pf.By, pf.E, pf.S)...)
 		e = common.RejectionSample(q, eHash)
 	}
 

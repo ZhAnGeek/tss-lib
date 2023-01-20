@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"runtime"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto/paillier"
+	"github.com/Safulet/tss-lib-private/log"
 )
 
 const (
@@ -27,7 +29,7 @@ var (
 // GeneratePreParams finds two safe primes and computes the Paillier secret required for the protocol.
 // This can be a time consuming process so it is recommended to do it out-of-band.
 // If not specified, a concurrency value equal to the number of available CPU cores will be used.
-func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*LocalPreParams, error) {
+func GeneratePreParams(ctx context.Context, timeout time.Duration, optionalConcurrency ...int) (*LocalPreParams, error) {
 	var concurrency int
 	if 0 < len(optionalConcurrency) {
 		if 1 < len(optionalConcurrency) {
@@ -41,13 +43,13 @@ func GeneratePreParams(timeout time.Duration, optionalConcurrency ...int) (*Loca
 		concurrency = 1
 	}
 
-	common.Logger.Info("generating the safe primes for the signing proofs, please wait...")
+	log.Info(ctx, "generating the safe primes for the signing proofs, please wait...")
 	start := time.Now()
 	sgps, err := common.GetRandomSafePrimesConcurrent(SafeBitLen, 2, timeout, concurrency)
 	if err != nil {
 		return nil, err
 	}
-	common.Logger.Infof("safe primes generated. took %s\n", time.Since(start))
+	log.Info(ctx, "safe primes generated. took %s\n", time.Since(start))
 
 	if sgps == nil || sgps[0] == nil || sgps[1] == nil ||
 		!sgps[0].Prime().ProbablyPrime(30) || !sgps[1].Prime().ProbablyPrime(30) ||

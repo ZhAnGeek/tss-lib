@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -17,10 +18,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	"github.com/Safulet/tss-lib-private/test"
@@ -32,19 +32,20 @@ const (
 	testThreshold    = TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 }
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
-		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
+		log.Info(ctx, "No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
 
@@ -70,7 +71,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 		}
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -85,7 +86,7 @@ keygen:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break keygen
 
@@ -96,14 +97,14 @@ keygen:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh, &wg)
+					go updater(ctx, P, msg, errCh, &wg)
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 					return
 				}
-				go updater(parties[dest[0].Index], msg, errCh, &wg)
+				go updater(ctx, parties[dest[0].Index], msg, errCh, &wg)
 			}
 
 		case save := <-endCh:

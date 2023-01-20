@@ -9,6 +9,7 @@
 package encryption
 
 import (
+	"context"
 	"errors"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
@@ -22,7 +23,7 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 		&base{params, key, temp, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start() *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

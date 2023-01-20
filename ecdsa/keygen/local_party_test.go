@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/rand"
 	"encoding/json"
@@ -19,10 +20,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	"github.com/Safulet/tss-lib-private/test"
@@ -34,14 +34,15 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 }
 
 func TestStartRound1Paillier(t *testing.T) {
-	setUp("debug")
+	ctx := context.Background()
+	setUp(log.DebugLevel)
 
 	pIDs := tss.GenerateTestPartyIDs(1)
 	p2pCtx := tss.NewPeerContext(pIDs)
@@ -50,7 +51,7 @@ func TestStartRound1Paillier(t *testing.T) {
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
-		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
+		log.Info(ctx, "No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
 
@@ -61,7 +62,7 @@ func TestStartRound1Paillier(t *testing.T) {
 	} else {
 		lp = NewLocalParty(params, out, nil).(*LocalParty)
 	}
-	if err := lp.Start(); err != nil {
+	if err := lp.Start(ctx); err != nil {
 		assert.FailNow(t, err.Error())
 	}
 	<-out
@@ -81,7 +82,8 @@ func TestStartRound1Paillier(t *testing.T) {
 }
 
 func TestFinishAndSaveH1H2(t *testing.T) {
-	setUp("debug")
+	ctx := context.Background()
+	setUp(log.DebugLevel)
 
 	pIDs := tss.GenerateTestPartyIDs(1)
 	p2pCtx := tss.NewPeerContext(pIDs)
@@ -90,7 +92,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
-		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
+		log.Info(ctx, "No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
 
@@ -101,7 +103,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	} else {
 		lp = NewLocalParty(params, out, nil).(*LocalParty)
 	}
-	if err := lp.Start(); err != nil {
+	if err := lp.Start(ctx); err != nil {
 		assert.FailNow(t, err.Error())
 	}
 
@@ -129,14 +131,15 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 }
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	// tss.SetCurve(elliptic.P256())
 
 	threshold := testThreshold
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
-		common.Logger.Info("No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
+		log.Info(ctx, "No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
 	}
 
@@ -167,7 +170,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(party)
@@ -181,7 +184,7 @@ keygen:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break keygen
 
@@ -192,14 +195,14 @@ keygen:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 					return
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case save := <-endCh:

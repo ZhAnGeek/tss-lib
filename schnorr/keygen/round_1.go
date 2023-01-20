@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -23,7 +24,7 @@ func newRound1(params *tss.Parameters, save *LocalPartySaveData, temp *localTemp
 		&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start() *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -36,7 +37,7 @@ func (round *round1) Start() *tss.Error {
 	round.ok[i] = true
 
 	round.temp.ssidNonce = new(big.Int).SetInt64(int64(0))
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -59,7 +60,7 @@ func (round *round1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	cmt := cmts.NewHashCommitment(pGFlat...)
+	cmt := cmts.NewHashCommitment(ctx, pGFlat...)
 
 	round.save.ShareID = ids[i]
 	round.temp.vs = vs

@@ -7,14 +7,15 @@
 package resharing
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round5) Start() *tss.Error {
+func (round *round5) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -41,10 +42,10 @@ func (round *round5) Start() *tss.Error {
 			if err != nil {
 				return round.WrapError(errors.New("proofFac failed"), Pj)
 			}
-			if ok := proofFac.Verify(ContextI, round.EC(), round.save.NTildej[j],
+			if ok := proofFac.Verify(ctx, ContextI, round.EC(), round.save.NTildej[j],
 				round.save.NTildei, round.save.H1i, round.save.H2i); !ok {
 				culprits = append(culprits, Pj)
-				common.Logger.Warnf("proofFac verify failed for party %s", Pj)
+				log.Warn(ctx, "proofFac verify failed for party %s", Pj)
 				continue
 			}
 		}

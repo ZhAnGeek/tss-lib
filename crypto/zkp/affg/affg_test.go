@@ -7,6 +7,7 @@
 package zkpaffg_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -31,6 +32,7 @@ var (
 )
 
 func TestAffg(test *testing.T) {
+	ctx := context.Background()
 	ec := tss.EC()
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
@@ -68,28 +70,28 @@ func TestAffg(test *testing.T) {
 	D, err = pk0.HomoAdd(D, cw)
 	assert.NoError(test, err)
 
-	proof, err := NewProof(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
+	proof, err := NewProof(ctx, Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
+	ok := proof.Verify(ctx, Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
 	assert.True(test, ok, "proof must verify")
 
 	x = q3
-	proof, err = NewProof(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
+	proof, err = NewProof(ctx, Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
 	assert.NoError(test, err)
 
 	proofBz := proof.Bytes()
 	proof2, err := NewProofFromBytes(ec, proofBz[:])
 	assert.NoError(test, err)
 
-	ok = proof2.Verify(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
+	ok = proof2.Verify(ctx, Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
 	assert.False(test, ok, "proof must verify")
 
 	x = common.GetRandomPositiveInt(q)
 	y = q3
-	proof, err = NewProof(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
+	proof, err = NewProof(ctx, Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X, x, y, rho, rhoy)
 	assert.NoError(test, err)
 
-	ok = proof.Verify(Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
+	ok = proof.Verify(ctx, Session, ec, pk0, pk1, NCap, s, t, C, D, Y, X)
 	assert.False(test, ok, "proof must verify")
 }

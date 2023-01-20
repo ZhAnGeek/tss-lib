@@ -7,6 +7,7 @@
 package zkpenc_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -30,6 +31,7 @@ var (
 )
 
 func TestEnc(test *testing.T) {
+	ctx := context.Background()
 	ec := tss.EC()
 	q := ec.Params().N
 
@@ -43,14 +45,15 @@ func TestEnc(test *testing.T) {
 	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits), common.GetRandomPrimeInt(testSafePrimeBits)}
 	NCap, s, t, err := crypto.GenerateNTildei(primes)
 	assert.NoError(test, err)
-	proof, err := NewProof(Session, ec, pk, K, NCap, s, t, k, rho)
+	proof, err := NewProof(ctx, Session, ec, pk, K, NCap, s, t, k, rho)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, ec, pk, NCap, s, t, K)
+	ok := proof.Verify(ctx, Session, ec, pk, NCap, s, t, K)
 	assert.True(test, ok, "proof must verify")
 }
 
 func TestEncPoc(test *testing.T) {
+	ctx := context.Background()
 	ec := tss.EC()
 	q := ec.Params().N
 	sk, pk, err := paillier.GenerateKeyPair(testSafePrimeBits*2, time.Minute*10)
@@ -71,6 +74,6 @@ func TestEncPoc(test *testing.T) {
 	proof.Z1 = zero
 	proof.Z2 = zero
 	proof.Z3 = zero
-	ok := proof.Verify(Session, ec, pk, NCap, s, t, K)
+	ok := proof.Verify(ctx, Session, ec, pk, NCap, s, t, K)
 	assert.False(test, ok, "proof must verify")
 }

@@ -7,6 +7,7 @@
 package presigning
 
 import (
+	"context"
 	"crypto/elliptic"
 	"math/big"
 
@@ -25,7 +26,7 @@ type MtAOut struct {
 	Proofji *zkpaffg.ProofAffg
 }
 
-func NewMtA(Session []byte, ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.ECPoint, pkj *paillier.PublicKey, pki *paillier.PublicKey, NCap, s, t *big.Int) (*MtAOut, error) {
+func NewMtA(ctx context.Context, Session []byte, ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.ECPoint, pkj *paillier.PublicKey, pki *paillier.PublicKey, NCap, s, t *big.Int) (*MtAOut, error) {
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
@@ -51,7 +52,7 @@ func NewMtA(Session []byte, ec elliptic.Curve, Kj *big.Int, gammai *big.Int, Big
 		return nil, err
 	}
 
-	Psiji, err := zkpaffg.NewProof(Session, ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
+	Psiji, err := zkpaffg.NewProof(ctx, Session, ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
 	if err != nil {
 		return nil, err
 	}

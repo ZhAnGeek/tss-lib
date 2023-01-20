@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	sync "sync"
@@ -15,10 +16,11 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round4) Start() *tss.Error {
+func (round *round4) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -41,7 +43,7 @@ func (round *round4) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r3msgpfmod[j].Verify(ContextJ, round.save.NTildej[j]); !ok {
+			if ok := round.temp.r3msgpfmod[j].Verify(ctx, ContextJ, round.save.NTildej[j]); !ok {
 				errChs <- round.WrapError(errors.New("proofMod verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -49,7 +51,7 @@ func (round *round4) Start() *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r3msgpffac[j].Verify(ContextJ, round.EC(), round.save.NTildej[j], round.save.NTildei, round.save.H1i, round.save.H2i); !ok {
+			if ok := round.temp.r3msgpffac[j].Verify(ctx, ContextJ, round.EC(), round.save.NTildej[j], round.save.NTildei, round.save.H1i, round.save.H2i); !ok {
 				errChs <- round.WrapError(errors.New("proofFac verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -143,11 +145,11 @@ func (round *round4) Start() *tss.Error {
 	round.save.ECDSAPub = ecdsaPubKey
 
 	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), ecdsaPubKey)
+	log.Debug(ctx, "%s public key: %x", round.PartyID(), ecdsaPubKey)
 
 	ContextI := append(round.temp.RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
-	//proof, err := zkpsch.NewProof(ContextI, round.save.BigXj[i], round.save.Xi)
-	proof, err := zkpsch.NewProofWithAlpha(ContextI, round.save.BigXj[i], round.temp.Ai, round.temp.alphai, round.save.Xi)
+	// proof, err := zkpsch.NewProof(ctx, ContextI, round.save.BigXj[i], round.save.Xi)
+	proof, err := zkpsch.NewProofWithAlpha(ctx, ContextI, round.save.BigXj[i], round.temp.Ai, round.temp.alphai, round.save.Xi)
 	if err != nil {
 		return round.WrapError(err)
 	}

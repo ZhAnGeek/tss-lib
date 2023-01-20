@@ -7,6 +7,7 @@
 package presigning
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"sync"
@@ -22,7 +23,7 @@ func newRound4(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 4}}}}}
 }
 
-func (round *presignout) Start() *tss.Error {
+func (round *presignout) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -49,7 +50,7 @@ func (round *presignout) Start() *tss.Error {
 			BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
 			proofLogstar := round.temp.R3msgProofLogstar[j]
 
-			ok := proofLogstar.Verify(ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
+			ok := proofLogstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], Kj, BigDeltaSharej, round.temp.BigGamma, round.key.NTildei, round.key.H1i, round.key.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("proof verify failed"), Pj)
 				return

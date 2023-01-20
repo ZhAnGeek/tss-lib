@@ -7,17 +7,18 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
 	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -114,20 +115,20 @@ func (p *LocalParty) FirstRound() tss.Round {
 	return newRound1(p.params, &p.data, &p.temp, p.out, p.end)
 }
 
-func (p *LocalParty) Start() *tss.Error {
-	return tss.BaseStart(p, TaskName)
+func (p *LocalParty) Start(ctx context.Context) *tss.Error {
+	return tss.BaseStart(ctx, p, TaskName)
 }
 
-func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdatePool(p, msg, TaskName)
+func (p *LocalParty) Update(ctx context.Context, msg tss.ParsedMessage) (ok bool, err *tss.Error) {
+	return tss.BaseUpdatePool(ctx, p, msg, TaskName)
 }
 
-func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
+func (p *LocalParty) UpdateFromBytes(ctx context.Context, wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
 	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
 	if err != nil {
 		return false, p.WrapError(err)
 	}
-	return p.Update(msg)
+	return p.Update(ctx, msg)
 }
 
 func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
@@ -142,7 +143,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	return true, nil
 }
 
-func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
+func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (bool, *tss.Error) {
 	// ValidateBasic is cheap; double-check the message here in case the public StoreMessage was called externally
 	if ok, err := p.ValidateMessage(msg); !ok || err != nil {
 		return ok, err
@@ -210,7 +211,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		p.temp.r4msgpfsch[fromPIdx] = proof
 
 	default: // unrecognised message, just ignore!
-		common.Logger.Warnf("unrecognised message ignored: %v", msg)
+		log.Warn(ctx, "unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

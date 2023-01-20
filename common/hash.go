@@ -7,9 +7,12 @@
 package common
 
 import (
+	"context"
 	"crypto"
 	"encoding/binary"
 	"math/big"
+
+	"github.com/Safulet/tss-lib-private/log"
 )
 
 const (
@@ -18,7 +21,7 @@ const (
 
 // SHA512_256 SHA-512/256 is protected against length extension attacks and is more performant than SHA-256 on 64-bit architectures.
 // https://en.wikipedia.org/wiki/Template:Comparison_of_SHA_functions
-func SHA512_256(in ...[]byte) []byte {
+func SHA512_256(ctx context.Context, in ...[]byte) []byte {
 	var data []byte
 	state := crypto.SHA512_256.New()
 	inLen := len(in)
@@ -43,15 +46,15 @@ func SHA512_256(in ...[]byte) []byte {
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256 Write() failed: %v", err)
+		log.Error(ctx, "SHA512_256 Write() failed: %v", err)
 		return nil
 	}
 	return state.Sum(nil)
 }
 
 // SHA512_256_TAGGED Tagged version of SHA512_256
-func SHA512_256_TAGGED(tag []byte, in ...[]byte) []byte {
-	tagBz := SHA512_256(tag)
+func SHA512_256_TAGGED(ctx context.Context, tag []byte, in ...[]byte) []byte {
+	tagBz := SHA512_256(ctx, tag)
 	var data []byte
 	state := crypto.SHA512_256.New()
 	state.Write(tagBz)
@@ -78,14 +81,14 @@ func SHA512_256_TAGGED(tag []byte, in ...[]byte) []byte {
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256 Write() failed: %v", err)
+		log.Error(ctx, "SHA512_256 Write() failed: %v", err)
 		return nil
 	}
 	return state.Sum(nil)
 }
 
 // SHA512_256i hash for big.Int slice
-func SHA512_256i(in ...*big.Int) *big.Int {
+func SHA512_256i(ctx context.Context, in ...*big.Int) *big.Int {
 	var data []byte
 	state := crypto.SHA512_256.New()
 	inLen := len(in)
@@ -112,15 +115,15 @@ func SHA512_256i(in ...*big.Int) *big.Int {
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256i Write() failed: %v", err)
+		log.Error(ctx, "SHA512_256i Write() failed: %v", err)
 		return nil
 	}
 	return new(big.Int).SetBytes(state.Sum(nil))
 }
 
 // SHA512_256i_TAGGED tagged version of SHA512_256i
-func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
-	tagBz := SHA512_256(tag)
+func SHA512_256i_TAGGED(ctx context.Context, tag []byte, in ...*big.Int) *big.Int {
+	tagBz := SHA512_256(ctx, tag)
 	var data []byte
 	state := crypto.SHA512_256.New()
 	state.Write(tagBz)
@@ -153,7 +156,7 @@ func SHA512_256i_TAGGED(tag []byte, in ...*big.Int) *big.Int {
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
 	if _, err := state.Write(data); err != nil {
-		Logger.Errorf("SHA512_256i Write() failed: %v", err)
+		log.Error(ctx, "SHA512_256i Write() failed: %v", err)
 		return nil
 	}
 	return new(big.Int).SetBytes(state.Sum(nil))

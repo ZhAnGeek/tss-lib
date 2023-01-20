@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round2) Start() *tss.Error {
+func (round *round2) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -48,7 +49,7 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 5. compute Schnorr prove
-	pii, err := zkpsch.NewProof(ContextI, round.temp.vs[0], round.temp.ui)
+	pii, err := zkpsch.NewProof(ctx, ContextI, round.temp.vs[0], round.temp.ui)
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewZKProof(ui, vi0)"))
 	}

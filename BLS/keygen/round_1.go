@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -22,7 +23,7 @@ func newRound1(params *tss.Parameters, save *LocalPartySaveData, temp *localTemp
 		&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start() *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -34,7 +35,7 @@ func (round *round1) Start() *tss.Error {
 	i := Pi.Index
 	round.ok[i] = true
 
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -54,7 +55,7 @@ func (round *round1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	cmt := cmts.NewHashCommitment(pGFlat...)
+	cmt := cmts.NewHashCommitment(ctx, pGFlat...)
 
 	round.save.ShareID = ids[i]
 	round.temp.vs = vs

@@ -8,6 +8,7 @@ package signing
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -26,7 +27,7 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *
 	return &sign1{&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *sign1) Start() *tss.Error {
+func (round *sign1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -39,7 +40,7 @@ func (round *sign1) Start() *tss.Error {
 	round.ok[i] = true
 
 	round.temp.SsidNonce = round.predata.UnmarshalSsidNonce()
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}

@@ -10,6 +10,7 @@
 package commitments
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -29,13 +30,13 @@ type (
 	}
 )
 
-func NewHashCommitmentWithRandomness(r *big.Int, secrets ...*big.Int) *HashCommitDecommit {
+func NewHashCommitmentWithRandomness(ctx context.Context, r *big.Int, secrets ...*big.Int) *HashCommitDecommit {
 	parts := make([]*big.Int, len(secrets)+1)
 	parts[0] = r
 	for i := 1; i < len(parts); i++ {
 		parts[i] = secrets[i-1]
 	}
-	hash := common.SHA512_256i(parts...)
+	hash := common.SHA512_256i(ctx, parts...)
 
 	cmt := &HashCommitDecommit{}
 	cmt.C = hash
@@ -43,26 +44,26 @@ func NewHashCommitmentWithRandomness(r *big.Int, secrets ...*big.Int) *HashCommi
 	return cmt
 }
 
-func NewHashCommitment(secrets ...*big.Int) *HashCommitDecommit {
+func NewHashCommitment(ctx context.Context, secrets ...*big.Int) *HashCommitDecommit {
 	r := common.MustGetRandomInt(HashLength) // r
-	return NewHashCommitmentWithRandomness(r, secrets...)
+	return NewHashCommitmentWithRandomness(ctx, r, secrets...)
 }
 
 func NewHashDeCommitmentFromBytes(marshalled [][]byte) HashDeCommitment {
 	return common.MultiBytesToBigInts(marshalled)
 }
 
-func (cmt *HashCommitDecommit) Verify() bool {
+func (cmt *HashCommitDecommit) Verify(ctx context.Context) bool {
 	C, D := cmt.C, cmt.D
 	if C == nil || D == nil {
 		return false
 	}
-	hash := common.SHA512_256i(D...)
+	hash := common.SHA512_256i(ctx, D...)
 	return hash.Cmp(C) == 0
 }
 
-func (cmt *HashCommitDecommit) DeCommit(expectedLen int) (bool, HashDeCommitment) {
-	if cmt.Verify() && expectedLen == len(cmt.D)-1 {
+func (cmt *HashCommitDecommit) DeCommit(ctx context.Context, expectedLen int) (bool, HashDeCommitment) {
+	if cmt.Verify(ctx) && expectedLen == len(cmt.D)-1 {
 		// [1:] skips random element r in D
 		return true, cmt.D[1:]
 	} else {

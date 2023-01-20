@@ -3,6 +3,7 @@
 package presigning
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"math/big"
@@ -11,18 +12,19 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/log"
 
 	"github.com/btcsuite/btcd/chaincfg"
 )
 
-func UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
+func UpdatePublicKeyAndAdjustBigXj(ctx context.Context, keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
 	var err error
 	gDelta := crypto.ScalarBaseMult(ec, keyDerivationDelta)
 	for k := range keys {
 		keys[k].ECDSAPub, err = crypto.NewECPoint(ec, extendedChildPk.X, extendedChildPk.Y)
 		// keys[k].ECDSAPub, err = keys[k].ECDSAPub.Add(gDelta)
 		if err != nil {
-			common.Logger.Errorf("error creating new extended child public key")
+			log.Error(ctx, "error creating new extended child public key")
 			return err
 		}
 		// Suppose X_j has shamir shares X_j0,     X_j1,     ..., X_jn
@@ -30,7 +32,7 @@ func UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta *big.Int, keys []keygen.Lo
 		for j := range keys[k].BigXj {
 			keys[k].BigXj[j], err = keys[k].BigXj[j].Add(gDelta)
 			if err != nil {
-				common.Logger.Errorf("error in delta operation")
+				log.Error(ctx, "error in delta operation")
 				return err
 			}
 		}
@@ -38,7 +40,7 @@ func UpdatePublicKeyAndAdjustBigXj(keyDerivationDelta *big.Int, keys []keygen.Lo
 	return nil
 }
 
-func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
+func UpdateKeys(ctx context.Context, keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
 	var err error
 	modN := common.ModInt(ec.Params().N)
 	gDelta := crypto.ScalarBaseMult(ec, keyDerivationDelta)
@@ -47,7 +49,7 @@ func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, e
 		keys[k].ECDSAPub, err = crypto.NewECPoint(ec, extendedChildPk.X, extendedChildPk.Y)
 		// keys[k].ECDSAPub, err = keys[k].ECDSAPub.Add(gDelta)
 		if err != nil {
-			common.Logger.Errorf("error creating new extended child public key")
+			log.Error(ctx, "error creating new extended child public key")
 			return err
 		}
 		// Suppose X_j has shamir shares X_j0,     X_j1,     ..., X_jn
@@ -55,7 +57,7 @@ func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, e
 		for j := range keys[k].BigXj {
 			keys[k].BigXj[j], err = keys[k].BigXj[j].Add(gDelta)
 			if err != nil {
-				common.Logger.Errorf("error in delta operation")
+				log.Error(ctx, "error in delta operation")
 				return err
 			}
 		}
@@ -63,7 +65,7 @@ func UpdateKeys(keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, e
 	return nil
 }
 
-func DerivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []uint32, ec elliptic.Curve) (*big.Int, *ckd.ExtendedKey, error) {
+func DerivingPubkeyFromPath(ctx context.Context, masterPub *crypto.ECPoint, chainCode []byte, path []uint32, ec elliptic.Curve) (*big.Int, *ckd.ExtendedKey, error) {
 	// build ecdsa key pair
 	pk, err := crypto.NewECPoint(ec, masterPub.X(), masterPub.Y())
 	if err != nil {
@@ -80,5 +82,5 @@ func DerivingPubkeyFromPath(masterPub *crypto.ECPoint, chainCode []byte, path []
 		Version:    net.HDPrivateKeyID[:],
 	}
 
-	return ckd.DeriveChildKeyFromHierarchy(path, extendedParentPk, ec.Params().N, ec)
+	return ckd.DeriveChildKeyFromHierarchy(ctx, path, extendedParentPk, ec.Params().N, ec)
 }

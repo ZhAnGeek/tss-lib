@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -22,7 +23,7 @@ func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, data *com
 		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}}
 }
 
-func (round *round2) Start() *tss.Error {
+func (round *round2) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -40,11 +41,11 @@ func (round *round2) Start() *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	proofD, err := zkpsch.NewProof(ContextI, round.temp.pointDi, round.temp.di)
+	proofD, err := zkpsch.NewProof(ctx, ContextI, round.temp.pointDi, round.temp.di)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	proofE, err := zkpsch.NewProof(ContextI, round.temp.pointEi, round.temp.ei)
+	proofE, err := zkpsch.NewProof(ctx, ContextI, round.temp.pointEi, round.temp.ei)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

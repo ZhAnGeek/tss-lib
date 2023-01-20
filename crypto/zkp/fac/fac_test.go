@@ -7,6 +7,7 @@
 package zkpfac_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 
@@ -28,6 +29,7 @@ var (
 )
 
 func TestFac(test *testing.T) {
+	ctx := context.Background()
 	ec := tss.EC()
 	// q := ec.Params().N
 
@@ -38,19 +40,19 @@ func TestFac(test *testing.T) {
 	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits), common.GetRandomPrimeInt(testSafePrimeBits)}
 	NCap, s, t, err := crypto.GenerateNTildei(primes)
 	assert.NoError(test, err)
-	proof, err := NewProof(Session, ec, N0, NCap, s, t, N0p, N0q)
+	proof, err := NewProof(ctx, Session, ec, N0, NCap, s, t, N0p, N0q)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, ec, N0, NCap, s, t)
+	ok := proof.Verify(ctx, Session, ec, N0, NCap, s, t)
 	assert.True(test, ok, "proof must verify")
 
 	N0p = common.GetRandomPrimeInt(1548)
 	N0q = common.GetRandomPrimeInt(500)
 	N0 = new(big.Int).Mul(N0p, N0q)
 
-	proof, err = NewProof(Session, ec, N0, NCap, s, t, N0p, N0q)
+	proof, err = NewProof(ctx, Session, ec, N0, NCap, s, t, N0p, N0q)
 	assert.NoError(test, err)
 
-	ok = proof.Verify(Session, ec, N0, NCap, s, t)
+	ok = proof.Verify(ctx, Session, ec, N0, NCap, s, t)
 	assert.True(test, ok, "proof must verify")
 }

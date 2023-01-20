@@ -7,6 +7,7 @@
 package resharing
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/pkg/errors"
@@ -18,7 +19,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round4) Start() *tss.Error {
+func (round *round4) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -50,7 +51,7 @@ func (round *round4) Start() *tss.Error {
 
 		// 3. unpack flat "v" commitment content
 		vCmtDeCmt := commitments.HashCommitDecommit{C: vCj, D: vDj}
-		ok, flatVs := vCmtDeCmt.DeCommit((round.NewThreshold() + 1) * 2)
+		ok, flatVs := vCmtDeCmt.DeCommit(ctx, (round.NewThreshold()+1)*2)
 		if !ok || len(flatVs) != (round.NewThreshold()+1)*2 { // they're points so * 2
 			// TODO collect culprits and return a list of them as per convention
 			return round.WrapError(errors.New("de-commitment of v_j0..v_jt failed"), round.Parties().IDs()[j])

@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -23,7 +24,7 @@ func newRound1(params *tss.Parameters, save *LocalPartySaveData, temp *localTemp
 		&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start() *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -60,7 +61,7 @@ func (round *round1) Start() *tss.Error {
 	if round.save.LocalPreParams.Validate() {
 		preParams = &round.save.LocalPreParams
 	} else {
-		preParams, err = GeneratePreParams(round.SafePrimeGenTimeout())
+		preParams, err = GeneratePreParams(ctx, round.SafePrimeGenTimeout())
 		if err != nil {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}
@@ -74,7 +75,7 @@ func (round *round1) Start() *tss.Error {
 	// Fig 6. Round 1. preparams
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
-	proofPrm, err := zkpprm.NewProof(ContextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
+	proofPrm, err := zkpprm.NewProof(ctx, ContextI, round.save.H1i, round.save.H2i, round.save.NTildei, Phi, round.save.Beta)
 	if err != nil {
 		return round.WrapError(errors.New("create proofPrm failed"), Pi)
 	}
@@ -91,7 +92,7 @@ func (round *round1) Start() *tss.Error {
 	cmtRandomness := new(big.Int).SetBytes(cmtRandomnessBz)
 	listToHash = append(listToHash, preParams.PaillierSK.PublicKey.N, preParams.NTildei, preParams.H1i, preParams.H2i, Ai.X(), Ai.Y(), rid, cmtRandomness)
 	listToHash = append(listToHash, proofPrmList...)
-	VHash := common.SHA512_256i(listToHash...)
+	VHash := common.SHA512_256i(ctx, listToHash...)
 	{
 		msg := NewKGRound1Message(round.PartyID(), VHash)
 		round.out <- msg

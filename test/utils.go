@@ -7,12 +7,13 @@
 package test
 
 import (
+	"context"
 	"sync"
 
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func SharedPartyUpdater(party tss.Party, msg tss.Message, errCh chan<- *tss.Error) {
+func SharedPartyUpdater(ctx context.Context, party tss.Party, msg tss.Message, errCh chan<- *tss.Error) {
 	// do not send a message from this party back to itself
 	if party.PartyID() == msg.GetFrom() {
 		return
@@ -27,12 +28,12 @@ func SharedPartyUpdater(party tss.Party, msg tss.Message, errCh chan<- *tss.Erro
 		errCh <- party.WrapError(err)
 		return
 	}
-	if _, err := party.Update(pMsg); err != nil {
+	if _, err := party.Update(ctx, pMsg); err != nil {
 		errCh <- err
 	}
 }
 
-func SharedPartyUpdaterWithWg(party tss.Party, msg tss.Message, errCh chan<- *tss.Error, wg *sync.WaitGroup) {
+func SharedPartyUpdaterWithWg(ctx context.Context, party tss.Party, msg tss.Message, errCh chan<- *tss.Error, wg *sync.WaitGroup) {
 	if wg != nil {
 		defer wg.Done()
 	}
@@ -50,7 +51,7 @@ func SharedPartyUpdaterWithWg(party tss.Party, msg tss.Message, errCh chan<- *ts
 		errCh <- party.WrapError(err)
 		return
 	}
-	if _, err := party.Update(pMsg); err != nil {
+	if _, err := party.Update(ctx, pMsg); err != nil {
 		errCh <- err
 	}
 }

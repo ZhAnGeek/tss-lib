@@ -7,14 +7,15 @@
 package resharing
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -64,6 +65,7 @@ type (
 // You may optionally generate and set the LocalPreParams if you would like to use pre-generated safe primes and Paillier secret.
 // (This is similar to providing the `optionalPreParams` to `keygen.LocalParty`).
 func NewLocalParty(
+	ctx context.Context,
 	params *tss.ReSharingParameters,
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
@@ -72,7 +74,7 @@ func NewLocalParty(
 	oldPartyCount := len(params.OldParties().IDs())
 	subset := key
 	if params.IsOldCommittee() {
-		subset = keygen.BuildLocalSaveDataSubset(key, params.OldParties().IDs())
+		subset = keygen.BuildLocalSaveDataSubset(ctx, key, params.OldParties().IDs())
 	}
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
@@ -97,20 +99,20 @@ func (p *LocalParty) FirstRound() tss.Round {
 	return newRound1(p.params, &p.input, &p.save, &p.temp, p.out, p.end)
 }
 
-func (p *LocalParty) Start() *tss.Error {
-	return tss.BaseStart(p, TaskName)
+func (p *LocalParty) Start(ctx context.Context) *tss.Error {
+	return tss.BaseStart(ctx, p, TaskName)
 }
 
-func (p *LocalParty) Update(msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(p, msg, TaskName)
+func (p *LocalParty) Update(ctx context.Context, msg tss.ParsedMessage) (ok bool, err *tss.Error) {
+	return tss.BaseUpdate(ctx, p, msg, TaskName)
 }
 
-func (p *LocalParty) UpdateFromBytes(wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
+func (p *LocalParty) UpdateFromBytes(ctx context.Context, wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
 	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
 	if err != nil {
 		return false, p.WrapError(err)
 	}
-	return p.Update(msg)
+	return p.Update(ctx, msg)
 }
 
 func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
@@ -132,7 +134,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	return true, nil
 }
 
-func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
+func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (bool, *tss.Error) {
 	// ValidateBasic is cheap; double-check the message here in case the public StoreMessage was called externally
 	if ok, err := p.ValidateMessage(msg); !ok || err != nil {
 		return ok, err
@@ -153,7 +155,7 @@ func (p *LocalParty) StoreMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	case *DGRound4Message:
 		p.temp.dgRound4Messages[fromPIdx] = msg
 	default: // unrecognised message, just ignore!
-		common.Logger.Warningf("unrecognised message ignored: %v", msg)
+		log.Warn(ctx, "unrecognised message ignored: %v", msg)
 		return false, nil
 	}
 	return true, nil

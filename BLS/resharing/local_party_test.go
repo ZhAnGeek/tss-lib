@@ -7,11 +7,12 @@
 package resharing_test
 
 import (
+	"context"
 	"math/big"
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
@@ -28,8 +29,8 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 
@@ -38,7 +39,8 @@ func setUp(level string) {
 }
 
 func TestE2EConcurrent(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold, newThreshold := testThreshold, testThreshold
 
@@ -68,7 +70,7 @@ func TestE2EConcurrent(t *testing.T) {
 	// init the old parties first
 	for j, pID := range oldPIDs {
 		params := tss.NewReSharingParameters(tss.Bls12381(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
-		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
+		P := NewLocalParty(ctx, params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 
@@ -76,14 +78,14 @@ func TestE2EConcurrent(t *testing.T) {
 	for _, pID := range newPIDs {
 		params := tss.NewReSharingParameters(tss.Bls12381(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
-		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
+		P := NewLocalParty(ctx, params, save, outCh, endCh).(*LocalParty)
 		newCommittee = append(newCommittee, P)
 	}
 
 	// start the new parties; they will wait for messages
 	for _, P := range newCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -91,7 +93,7 @@ func TestE2EConcurrent(t *testing.T) {
 	// start the old parties; they will send messages
 	for _, P := range oldCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -103,7 +105,7 @@ func TestE2EConcurrent(t *testing.T) {
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -114,12 +116,12 @@ func TestE2EConcurrent(t *testing.T) {
 			}
 			if msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest[:len(oldCommittee)] {
-					go updater(oldCommittee[destP.Index], msg, errCh)
+					go updater(ctx, oldCommittee[destP.Index], msg, errCh)
 				}
 			}
 			if !msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest {
-					go updater(newCommittee[destP.Index], msg, errCh)
+					go updater(ctx, newCommittee[destP.Index], msg, errCh)
 				}
 			}
 
@@ -163,10 +165,10 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.Bls12381(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
-		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
+		P := signing.NewLocalParty(ctx, big.NewInt(42).Bytes(), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				signErrCh <- err
 			}
 		}(P)
@@ -176,7 +178,7 @@ signing:
 	for {
 		select {
 		case err := <-signErrCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -187,13 +189,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, signErrCh)
+					go updater(ctx, P, msg, signErrCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, signErrCh)
+				go updater(ctx, signParties[dest[0].Index], msg, signErrCh)
 			}
 
 		case <-signEndCh:
@@ -208,7 +210,8 @@ signing:
 }
 
 func TestE2EConcurrentThresholdChange(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold, newThreshold := testThreshold, testThreshold+1
 
@@ -238,7 +241,7 @@ func TestE2EConcurrentThresholdChange(t *testing.T) {
 	// init the old parties first
 	for j, pID := range oldPIDs {
 		params := tss.NewReSharingParameters(tss.Bls12381(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
-		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
+		P := NewLocalParty(ctx, params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 
@@ -246,14 +249,14 @@ func TestE2EConcurrentThresholdChange(t *testing.T) {
 	for _, pID := range newPIDs {
 		params := tss.NewReSharingParameters(tss.Bls12381(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
-		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
+		P := NewLocalParty(ctx, params, save, outCh, endCh).(*LocalParty)
 		newCommittee = append(newCommittee, P)
 	}
 
 	// start the new parties; they will wait for messages
 	for _, P := range newCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -261,7 +264,7 @@ func TestE2EConcurrentThresholdChange(t *testing.T) {
 	// start the old parties; they will send messages
 	for _, P := range oldCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -273,7 +276,7 @@ func TestE2EConcurrentThresholdChange(t *testing.T) {
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -284,12 +287,12 @@ func TestE2EConcurrentThresholdChange(t *testing.T) {
 			}
 			if msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest[:len(oldCommittee)] {
-					go updater(oldCommittee[destP.Index], msg, errCh)
+					go updater(ctx, oldCommittee[destP.Index], msg, errCh)
 				}
 			}
 			if !msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest {
-					go updater(newCommittee[destP.Index], msg, errCh)
+					go updater(ctx, newCommittee[destP.Index], msg, errCh)
 				}
 			}
 
@@ -333,10 +336,10 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.Bls12381(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
-		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
+		P := signing.NewLocalParty(ctx, big.NewInt(42).Bytes(), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				signErrCh <- err
 			}
 		}(P)
@@ -346,7 +349,7 @@ signing:
 	for {
 		select {
 		case err := <-signErrCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -357,13 +360,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, signErrCh)
+					go updater(ctx, P, msg, signErrCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, signErrCh)
+				go updater(ctx, signParties[dest[0].Index], msg, signErrCh)
 			}
 
 		case <-signEndCh:
@@ -378,7 +381,8 @@ signing:
 }
 
 func TestE2EConcurrentPartyChange(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold, newThreshold := testThreshold, testThreshold
 
@@ -408,7 +412,7 @@ func TestE2EConcurrentPartyChange(t *testing.T) {
 	// init the old parties first
 	for j, pID := range oldPIDs {
 		params := tss.NewReSharingParameters(tss.Bls12381(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
-		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
+		P := NewLocalParty(ctx, params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 
@@ -416,14 +420,14 @@ func TestE2EConcurrentPartyChange(t *testing.T) {
 	for _, pID := range newPIDs {
 		params := tss.NewReSharingParameters(tss.Bls12381(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
-		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
+		P := NewLocalParty(ctx, params, save, outCh, endCh).(*LocalParty)
 		newCommittee = append(newCommittee, P)
 	}
 
 	// start the new parties; they will wait for messages
 	for _, P := range newCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -431,7 +435,7 @@ func TestE2EConcurrentPartyChange(t *testing.T) {
 	// start the old parties; they will send messages
 	for _, P := range oldCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -443,7 +447,7 @@ func TestE2EConcurrentPartyChange(t *testing.T) {
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -454,12 +458,12 @@ func TestE2EConcurrentPartyChange(t *testing.T) {
 			}
 			if msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest[:len(oldCommittee)] {
-					go updater(oldCommittee[destP.Index], msg, errCh)
+					go updater(ctx, oldCommittee[destP.Index], msg, errCh)
 				}
 			}
 			if !msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest {
-					go updater(newCommittee[destP.Index], msg, errCh)
+					go updater(ctx, newCommittee[destP.Index], msg, errCh)
 				}
 			}
 
@@ -503,10 +507,10 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.Bls12381(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
-		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
+		P := signing.NewLocalParty(ctx, big.NewInt(42).Bytes(), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				signErrCh <- err
 			}
 		}(P)
@@ -516,7 +520,7 @@ signing:
 	for {
 		select {
 		case err := <-signErrCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -527,13 +531,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, signErrCh)
+					go updater(ctx, P, msg, signErrCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, signErrCh)
+				go updater(ctx, signParties[dest[0].Index], msg, signErrCh)
 			}
 
 		case <-signEndCh:
@@ -548,7 +552,8 @@ signing:
 }
 
 func TestE2EConcurrentPartyThresholdChange(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold, newThreshold := testThreshold, testThreshold+1
 
@@ -578,7 +583,7 @@ func TestE2EConcurrentPartyThresholdChange(t *testing.T) {
 	// init the old parties first
 	for j, pID := range oldPIDs {
 		params := tss.NewReSharingParameters(tss.Bls12381(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
-		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
+		P := NewLocalParty(ctx, params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 
@@ -586,14 +591,14 @@ func TestE2EConcurrentPartyThresholdChange(t *testing.T) {
 	for _, pID := range newPIDs {
 		params := tss.NewReSharingParameters(tss.Bls12381(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
-		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
+		P := NewLocalParty(ctx, params, save, outCh, endCh).(*LocalParty)
 		newCommittee = append(newCommittee, P)
 	}
 
 	// start the new parties; they will wait for messages
 	for _, P := range newCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -601,7 +606,7 @@ func TestE2EConcurrentPartyThresholdChange(t *testing.T) {
 	// start the old parties; they will send messages
 	for _, P := range oldCommittee {
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -613,7 +618,7 @@ func TestE2EConcurrentPartyThresholdChange(t *testing.T) {
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -624,12 +629,12 @@ func TestE2EConcurrentPartyThresholdChange(t *testing.T) {
 			}
 			if msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest[:len(oldCommittee)] {
-					go updater(oldCommittee[destP.Index], msg, errCh)
+					go updater(ctx, oldCommittee[destP.Index], msg, errCh)
 				}
 			}
 			if !msg.IsToOldCommittee() || msg.IsToOldAndNewCommittees() {
 				for _, destP := range dest {
-					go updater(newCommittee[destP.Index], msg, errCh)
+					go updater(ctx, newCommittee[destP.Index], msg, errCh)
 				}
 			}
 
@@ -673,10 +678,10 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.Bls12381(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
-		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
+		P := signing.NewLocalParty(ctx, big.NewInt(42).Bytes(), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				signErrCh <- err
 			}
 		}(P)
@@ -686,7 +691,7 @@ signing:
 	for {
 		select {
 		case err := <-signErrCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -697,13 +702,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, signErrCh)
+					go updater(ctx, P, msg, signErrCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(signParties[dest[0].Index], msg, signErrCh)
+				go updater(ctx, signParties[dest[0].Index], msg, signErrCh)
 			}
 
 		case <-signEndCh:

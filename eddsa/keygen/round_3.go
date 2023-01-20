@@ -7,9 +7,11 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/hashicorp/go-multierror"
 	errors2 "github.com/pkg/errors"
 
@@ -20,7 +22,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round3) Start() *tss.Error {
+func (round *round3) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -74,7 +76,7 @@ func (round *round3) Start() *tss.Error {
 			r2msg2 := round.temp.kgRound2Message2s[j].Content().(*KGRound2Message2)
 			KGDj := r2msg2.UnmarshalDeCommitment()
 			cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
-			ok, flatPolyGs := cmtDeCmt.DeCommit((round.Threshold() + 1) * 2)
+			ok, flatPolyGs := cmtDeCmt.DeCommit(ctx, (round.Threshold()+1)*2)
 			if !ok || flatPolyGs == nil {
 				ch <- vssOut{errors.New("de-commitment verify failed"), nil}
 				return
@@ -92,7 +94,7 @@ func (round *round3) Start() *tss.Error {
 				ch <- vssOut{errors.New("failed to unmarshal Schnorr proof"), nil}
 				return
 			}
-			ok = proof.Verify(ContextJ, PjVs[0])
+			ok = proof.Verify(ctx, ContextJ, PjVs[0])
 			if !ok {
 				ch <- vssOut{errors.New("failed to prove Schnorr proof"), nil}
 				return
@@ -193,7 +195,7 @@ func (round *round3) Start() *tss.Error {
 	round.save.EDDSAPub = eddsaPubKey
 
 	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), eddsaPubKey)
+	log.Debug(ctx, "%s public key: %x", round.PartyID(), eddsaPubKey)
 
 	round.end <- *round.save
 	return nil

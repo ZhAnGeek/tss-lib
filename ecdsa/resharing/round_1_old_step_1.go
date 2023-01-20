@@ -7,6 +7,7 @@
 package resharing
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -26,7 +27,7 @@ func newRound1(params *tss.ReSharingParameters, input, save *keygen.LocalPartySa
 		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1}}
 }
 
-func (round *round1) Start() *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -55,7 +56,7 @@ func (round *round1) Start() *tss.Error {
 	ssidList = append(ssidList, round.input.NTildej...) // NCap
 	ssidList = append(ssidList, round.input.H1j...)     // s
 	ssidList = append(ssidList, round.input.H2j...)     // t
-	ssid := common.SHA512_256i(ssidList...).Bytes()
+	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 
 	// 1. PrepareForSigning() -> w_i
 	xi, ks, bigXj := round.input.Xi, round.input.Ks, round.input.BigXj
@@ -76,7 +77,7 @@ func (round *round1) Start() *tss.Error {
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	vCmt := commitments.NewHashCommitment(flatVis...)
+	vCmt := commitments.NewHashCommitment(ctx, flatVis...)
 
 	// 4. populate temp data
 	round.temp.VD = vCmt.D

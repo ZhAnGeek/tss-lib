@@ -7,16 +7,16 @@
 package decryption
 
 import (
+	"context"
 	"math/big"
 	"sync/atomic"
 	"testing"
 
 	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/common"
 	test "github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -26,15 +26,16 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 	tss.Bls12381()
 }
 
 func TestE2EConcurrent(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 
@@ -64,10 +65,10 @@ func TestE2EConcurrent(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(ePIDS); i++ {
 		params := tss.NewParameters(tss.Bls12381(), p2pCtx, ePIDS[i], len(ePIDS), threshold, false, 0)
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(ctx, msg, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -78,7 +79,7 @@ decryption:
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break decryption
 
@@ -89,13 +90,13 @@ decryption:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case res := <-endCh:

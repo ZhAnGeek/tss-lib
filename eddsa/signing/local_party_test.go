@@ -7,15 +7,16 @@
 package signing
 
 import (
+	"context"
 	"fmt"
 	"hash"
 	"math/big"
 	"sync/atomic"
 	"testing"
 
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
-	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/blake2b"
 
@@ -30,8 +31,8 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 
@@ -40,7 +41,8 @@ func setUp(level string) {
 }
 
 func TestE2EConcurrent(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 
@@ -69,7 +71,7 @@ func TestE2EConcurrent(t *testing.T) {
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -80,7 +82,7 @@ signing:
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break signing
 
@@ -91,13 +93,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case <-endCh:
@@ -162,7 +164,8 @@ signing:
 }
 
 func TestE2EConcurrentBlake2b(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 
@@ -194,7 +197,7 @@ func TestE2EConcurrentBlake2b(t *testing.T) {
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -204,7 +207,7 @@ signing:
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break signing
 		case msg := <-outCh:
@@ -214,13 +217,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 		case <-endCh:
 			atomic.AddInt32(&ended, 1)

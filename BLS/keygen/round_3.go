@@ -7,9 +7,11 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
+	"github.com/Safulet/tss-lib-private/log"
 	errors2 "github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -20,7 +22,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round3) Start() *tss.Error {
+func (round *round3) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -57,7 +59,7 @@ func (round *round3) Start() *tss.Error {
 		KGDj := round.temp.r2msg2Decommit[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
 
-		ok, flatPolyGs := cmtDeCmt.DeCommit((round.Threshold() + 1) * 2)
+		ok, flatPolyGs := cmtDeCmt.DeCommit(ctx, (round.Threshold()+1)*2)
 		if !ok || flatPolyGs == nil {
 			return round.WrapError(errors.New("de-commitment failed"), Pj)
 		}
@@ -72,7 +74,7 @@ func (round *round3) Start() *tss.Error {
 			}
 		}
 		proof := round.temp.r2msg2Proof[j]
-		ok = proof.Verify(ContextJ, PjVs[0])
+		ok = proof.Verify(ctx, ContextJ, PjVs[0])
 		if !ok {
 			return round.WrapError(errors.New("failed to verify schnorr proof"), Pj)
 		}
@@ -113,7 +115,7 @@ func (round *round3) Start() *tss.Error {
 	}
 	round.save.PubKey = PubKey
 	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), PubKey)
+	log.Debug(ctx, "%s public key: %x", round.PartyID(), PubKey)
 	round.end <- *round.save
 
 	return nil
@@ -134,10 +136,10 @@ func (round *round3) NextRound() tss.Round {
 }
 
 // get ssid from local params
-func (round *base) getSSID() ([]byte, error) {
+func (round *base) getSSID(ctx context.Context) ([]byte, error) {
 	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
 	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                         // parties
-	ssid := common.SHA512_256i(ssidList...).Bytes()
+	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 
 	return ssid, nil
 }

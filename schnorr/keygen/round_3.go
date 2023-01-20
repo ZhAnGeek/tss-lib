@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -14,10 +15,11 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round3) Start() *tss.Error {
+func (round *round3) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -52,7 +54,7 @@ func (round *round3) Start() *tss.Error {
 		KGCj := round.temp.KGCs[j]
 		KGDj := round.temp.r2msg2Decommit[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
-		ok, flatPolyGs := cmtDeCmt.DeCommit((round.Threshold() + 1) * 2)
+		ok, flatPolyGs := cmtDeCmt.DeCommit(ctx, (round.Threshold()+1)*2)
 		if !ok || flatPolyGs == nil {
 			return round.WrapError(errors.New("de-commitment failed"), Pj)
 		}
@@ -68,7 +70,7 @@ func (round *round3) Start() *tss.Error {
 		}
 
 		proof := round.temp.r2msg2Proof[j]
-		ok = proof.Verify(ContextJ, PjVs[0])
+		ok = proof.Verify(ctx, ContextJ, PjVs[0])
 		if !ok {
 			return round.WrapError(errors.New("failed to verify schnorr proof"), Pj)
 		}
@@ -134,7 +136,7 @@ func (round *round3) Start() *tss.Error {
 	}
 
 	// PRINT public key & private share
-	common.Logger.Debugf("%s public key: %x", round.PartyID(), PubKey)
+	log.Debug(ctx, "%s public key: %x", round.PartyID(), PubKey)
 
 	round.end <- *round.save
 	return nil

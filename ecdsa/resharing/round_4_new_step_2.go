@@ -7,10 +7,12 @@
 package resharing
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
 	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
+	"github.com/Safulet/tss-lib-private/log"
 	errors2 "github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -21,7 +23,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round4) Start() *tss.Error {
+func (round *round4) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -55,23 +57,23 @@ func (round *round4) Start() *tss.Error {
 			return round.WrapError(errors.New("proofPrm failed"), Pj)
 		}
 		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
-		if ok := proofPrm.Verify(ContextJ, H1, H2, Nj); !ok {
+		if ok := proofPrm.Verify(ctx, ContextJ, H1, H2, Nj); !ok {
 			culprits = append(culprits, Pj)
-			common.Logger.Warnf("proofPrm verify failed for party %s", Pj)
+			log.Warn(ctx, "proofPrm verify failed for party %s", Pj)
 			continue
 		}
 		round.save.NTildej[j] = Nj
 		round.save.H1j[j] = H1
 		round.save.H2j[j] = H2
-		common.Logger.Debugf("paillier verify passed for party %s", Pj)
+		log.Debug(ctx, "paillier verify passed for party %s", Pj)
 
 		proofMod, err := r2msg1.UnmarshalProofMod()
 		if err != nil {
 			return round.WrapError(errors.New("proofMod failed"), Pj)
 		}
-		if ok := proofMod.Verify(ContextJ, round.save.NTildej[j]); !ok {
+		if ok := proofMod.Verify(ctx, ContextJ, round.save.NTildej[j]); !ok {
 			culprits = append(culprits, Pj)
-			common.Logger.Warnf("proofMod verify failed for party %s", Pj)
+			log.Warn(ctx, "proofMod verify failed for party %s", Pj)
 			continue
 		}
 	}
@@ -88,7 +90,7 @@ func (round *round4) Start() *tss.Error {
 		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
 		SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
 		SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
-		proofFac, err := zkpfac.NewProof(ContextJ, round.EC(), round.save.LocalPreParams.NTildei,
+		proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.NTildei,
 			round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
 		if err != nil {
 			return round.WrapError(errors.New("create proofFac failed"), Pi)
@@ -112,7 +114,7 @@ func (round *round4) Start() *tss.Error {
 
 		// 6. unpack flat "v" commitment content
 		vCmtDeCmt := commitments.HashCommitDecommit{C: vCj, D: vDj}
-		ok, flatVs := vCmtDeCmt.DeCommit((round.NewThreshold() + 1) * 2)
+		ok, flatVs := vCmtDeCmt.DeCommit(ctx, (round.NewThreshold()+1)*2)
 		if !ok || len(flatVs) != (round.NewThreshold()+1)*2 { // they're points so * 2
 			// TODO collect culprits and return a list of them as per convention
 			return round.WrapError(errors.New("de-commitment of v_j0..v_jt failed"), round.Parties().IDs()[j])

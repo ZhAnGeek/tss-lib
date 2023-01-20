@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"crypto/elliptic"
 	"errors"
 	"math/big"
@@ -16,8 +17,8 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *crypto.ECPoint) bool {
-	c_ := common.SHA512_256_TAGGED([]byte(TagChallenge), R.X().Bytes(), Y.X().Bytes(), m)
+func VerirySig(ctx context.Context, ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *crypto.ECPoint) bool {
+	c_ := common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), Y.X().Bytes(), m)
 	c := new(big.Int).SetBytes(c_)
 	LHS := crypto.ScalarBaseMult(ec, z)
 	RHS, err := R.Add(Y.ScalarMult(c))
@@ -27,7 +28,7 @@ func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *cr
 	return LHS.Equals(RHS)
 }
 
-func (round *finalization) Start() *tss.Error {
+func (round *finalization) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -65,7 +66,7 @@ func (round *finalization) Start() *tss.Error {
 	round.data.Signature = append(round.temp.R.X().Bytes(), sumZ.Bytes()...)
 	round.data.M = round.temp.m
 
-	ok := VerirySig(round.EC(), round.temp.R, sumZ, round.temp.m, round.key.PubKey)
+	ok := VerirySig(ctx, round.EC(), round.temp.R, sumZ, round.temp.m, round.key.PubKey)
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}

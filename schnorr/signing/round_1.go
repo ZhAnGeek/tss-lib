@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -28,7 +29,7 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, data *com
 		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start() *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -41,7 +42,7 @@ func (round *round1) Start() *tss.Error {
 	round.ok[i] = true
 
 	round.temp.ssidNonce = new(big.Int).SetInt64(int64(0))
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
@@ -54,7 +55,7 @@ func (round *round1) Start() *tss.Error {
 	// 2. make commitment
 	pointDi := crypto.ScalarBaseMult(round.Params().EC(), di)
 	pointEi := crypto.ScalarBaseMult(round.Params().EC(), ei)
-	cmt := commitments.NewHashCommitment(pointDi.X(), pointDi.Y(), pointEi.X(), pointEi.Y())
+	cmt := commitments.NewHashCommitment(ctx, pointDi.X(), pointDi.Y(), pointEi.X(), pointEi.Y())
 
 	// 3. store r1 message pieces
 	round.temp.di = di

@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	sync "sync"
@@ -19,7 +20,7 @@ import (
 	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
 )
 
-func (round *round3) Start() *tss.Error {
+func (round *round3) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -45,7 +46,7 @@ func (round *round3) Start() *tss.Error {
 			if round.save.NTildej[j].BitLen() != SafeBitLen*2 {
 				errChs <- round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
 			}
-			if ok := round.temp.r2msgpfprm[j].Verify(contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
+			if ok := round.temp.r2msgpfprm[j].Verify(ctx, contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
 				errChs <- round.WrapError(errors.New("proofPrm verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -61,7 +62,7 @@ func (round *round3) Start() *tss.Error {
 			}
 			listToHash = append(listToHash, round.save.PaillierPKs[j].N, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.r2msgAs[j].X(), round.temp.r2msgAs[j].Y(), round.temp.r2msgRids[j], round.temp.r2msgCmtRandomness[j])
 			listToHash = append(listToHash, proofPrmList...)
-			VjHash := common.SHA512_256i(listToHash...)
+			VjHash := common.SHA512_256i(ctx, listToHash...)
 			if VjHash.Cmp(round.temp.r1msgVHashs[j]) != 0 {
 				errChs <- round.WrapError(errors.New("verify hash failed"), Pj)
 			}
@@ -91,7 +92,7 @@ func (round *round3) Start() *tss.Error {
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
 
 	ContextI := append(RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
-	proofMod, err := zkpmod.NewProof(ContextI, round.save.NTildei, SP, SQ)
+	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.NTildei, SP, SQ)
 	if err != nil {
 		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}
@@ -106,7 +107,7 @@ func (round *round3) Start() *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proofFac, err := zkpfac.NewProof(ContextI, round.EC(), round.save.NTildei, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+			proofFac, err := zkpfac.NewProof(ctx, ContextI, round.EC(), round.save.NTildei, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("create proofFac failed"), Pi)
 			}

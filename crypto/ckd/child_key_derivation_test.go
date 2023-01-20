@@ -7,6 +7,7 @@
 package ckd_test
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"log"
@@ -25,6 +26,7 @@ import (
 )
 
 func TestPublicDerivation(t *testing.T) {
+	ctx := context.Background()
 	// port from https://github.com/btcsuite/btcutil/blob/master/hdkeychain/extendedkey_test.go
 	// The public extended keys for test vectors in [BIP32].
 	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
@@ -125,7 +127,7 @@ tests:
 
 		for _, childNum := range test.path {
 			var err error
-			_, extKey, err = DeriveChildKeyOfEcdsa(childNum, extKey, btcec.S256())
+			_, extKey, err = DeriveChildKeyOfEcdsa(ctx, childNum, extKey, btcec.S256())
 			if err != nil {
 				t.Errorf("err: %v", err)
 				continue tests
@@ -143,6 +145,7 @@ tests:
 }
 
 func TestEdwards(t *testing.T) {
+	ctx := context.Background()
 	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
 	privKeyScaler := big.NewInt(667)
 
@@ -155,7 +158,7 @@ func TestEdwards(t *testing.T) {
 	pkExt.PublicKey = *pkNew
 
 	path := []uint32{0, 1, 2, 2}
-	delta, childExtKey, err := DeriveChildKeyFromHierarchy(path, pkExt, ec.Params().N, ec)
+	delta, childExtKey, err := DeriveChildKeyFromHierarchy(ctx, path, pkExt, ec.Params().N, ec)
 	assert.NoError(t, err)
 	assert.False(t, delta.Uint64() == 0, "delta is not zero")
 	assert.True(t, childExtKey.PublicKey.IsOnCurve())
@@ -173,6 +176,7 @@ func TestEdwards(t *testing.T) {
 }
 
 func Test_DeriveChildPubKeyOfEddsa(t *testing.T) {
+	ctx := context.Background()
 	// ** Note **
 	// the lowest 3 bits of the first byte of seed should be cleared
 	// the highest bit of the last byte of seed should be cleared
@@ -205,7 +209,7 @@ func Test_DeriveChildPubKeyOfEddsa(t *testing.T) {
 	for _, childNum := range []uint32{0, 4, 51, 37} {
 		var err error
 		deltaTmp := delta
-		delta, extKey, err = DeriveChildKeyOfEddsa(childNum, k, edwards.Edwards())
+		delta, extKey, err = DeriveChildKeyOfEddsa(ctx, childNum, k, edwards.Edwards())
 		if err != nil {
 			t.Errorf("err: %v", err)
 			continue

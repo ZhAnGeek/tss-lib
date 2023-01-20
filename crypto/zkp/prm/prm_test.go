@@ -7,6 +7,7 @@
 package zkpprm_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 	"time"
@@ -22,27 +23,29 @@ var (
 )
 
 func TestPrm(test *testing.T) {
-	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
+	ctx := context.Background()
+	preParams, err := keygen.GeneratePreParams(ctx, time.Minute*10, 8)
 	assert.NoError(test, err)
 
 	s, t, lambda, P, Q, N := preParams.H1i, preParams.H2i, preParams.Beta, preParams.P, preParams.Q, preParams.NTildei
 	P2, Q2 := new(big.Int).Lsh(P, 1), new(big.Int).Lsh(Q, 1)
 	Phi := new(big.Int).Mul(P2, Q2)
 
-	proof, err := NewProof(Session, s, t, N, Phi, lambda)
+	proof, err := NewProof(ctx, Session, s, t, N, Phi, lambda)
 	assert.NoError(test, err)
 
 	proofBzs := proof.Bytes()
 	proof, err = NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
 
-	ok := proof.Verify(Session, s, t, N)
+	ok := proof.Verify(ctx, Session, s, t, N)
 	assert.True(test, ok, "proof must verify")
 }
 
 // TOB-BIN-8
 func TestPrmForgery(test *testing.T) {
-	preParams, err := keygen.GeneratePreParams(time.Minute*10, 8)
+	ctx := context.Background()
+	preParams, err := keygen.GeneratePreParams(ctx, time.Minute*10, 8)
 	assert.NoError(test, err)
 	s, _, _, _, _, N := preParams.H1i, preParams.H2i, preParams.Beta, preParams.P,
 		preParams.Q, preParams.NTildei
@@ -60,6 +63,6 @@ func TestPrmForgery(test *testing.T) {
 	}
 	proof, err := NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
-	ok := proof.Verify(Session, s, big.NewInt(0), N)
+	ok := proof.Verify(ctx, Session, s, big.NewInt(0), N)
 	assert.False(test, ok, "proof must verify")
 }

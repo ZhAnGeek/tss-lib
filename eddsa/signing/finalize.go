@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -21,7 +22,7 @@ var (
 	zero = big.NewInt(0)
 )
 
-func (round *finalization) Start() *tss.Error {
+func (round *finalization) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

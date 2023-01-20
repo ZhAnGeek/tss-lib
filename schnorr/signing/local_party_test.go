@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"runtime"
@@ -14,7 +15,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -28,8 +29,8 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 
@@ -44,8 +45,9 @@ func BenchmarkE2E(b *testing.B) {
 }
 
 func E2E(b *testing.B) {
+	ctx := context.Background()
 	b.StopTimer()
-	setUp("error")
+	setUp(log.ErrorLevel)
 
 	threshold := testThreshold
 
@@ -76,7 +78,7 @@ func E2E(b *testing.B) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -96,10 +98,10 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 		case <-endCh:
 			atomic.AddInt32(&ended, 1)
@@ -111,7 +113,8 @@ signing:
 }
 
 func TestE2EConcurrent(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 
@@ -143,7 +146,7 @@ func TestE2EConcurrent(t *testing.T) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -156,7 +159,7 @@ signing:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break signing
 
@@ -167,13 +170,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case <-endCh:
@@ -189,7 +192,8 @@ signing:
 }
 
 func TestE2EConcurrentFromECDSA(t *testing.T) {
-	setUp("info")
+	ctx := context.Background()
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 
@@ -221,7 +225,7 @@ func TestE2EConcurrentFromECDSA(t *testing.T) {
 		wg.Add(1)
 		go func(P *LocalParty) {
 			defer wg.Done()
-			if err := P.Start(); err != nil {
+			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
 		}(P)
@@ -234,7 +238,7 @@ signing:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break signing
 
@@ -245,13 +249,13 @@ signing:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(P, msg, errCh)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else {
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 				}
-				go updater(parties[dest[0].Index], msg, errCh)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
 		case <-endCh:
