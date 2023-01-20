@@ -7,6 +7,7 @@
 package presigning
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"sync"
@@ -22,7 +23,7 @@ func newRound4(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 4}}}}}
 }
 
-func (round *presignout) Start() *tss.Error {
+func (round *presignout) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

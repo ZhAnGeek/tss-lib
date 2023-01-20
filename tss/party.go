@@ -175,7 +175,7 @@ func BaseStart(ctx context.Context, p Party, task string, prepare ...func(Round)
 	}
 	if p.round() != nil {
 		p.round().SetStarted(false)
-		return p.round().Start() // start from restored round
+		return p.round().Start(ctx) // start from restored round
 		// return p.WrapError(errors.New("could not start. this party is in an unexpected state. use the constructor and Start()"))
 	}
 	round := p.FirstRound()
@@ -194,7 +194,7 @@ func BaseStart(ctx context.Context, p Party, task string, prepare ...func(Round)
 	defer func() {
 		common.Logger.Debugf("party %v: %s round %d finished", p.round().Params().PartyID(), task, 1)
 	}()
-	return p.round().Start()
+	return p.round().Start(ctx)
 }
 
 func BaseRestore(ctx context.Context, p Party, task string) *Error {
@@ -251,7 +251,7 @@ func BaseUpdate(ctx context.Context, p Party, msg ParsedMessage, task string) (o
 		}
 		if p.round().CanProceed() {
 			if p.advance(); p.round() != nil {
-				if err := p.round().Start(); err != nil {
+				if err := p.round().Start(ctx); err != nil {
 					return r(false, err)
 				}
 				rndNum := p.round().RoundNumber()
@@ -290,7 +290,7 @@ func BaseUpdateNR(ctx context.Context, p Party, msg ParsedMessage, task string) 
 		}
 		if p.round().CanProceed() {
 			if p.advance(); p.round() != nil {
-				if err := p.round().Start(); err != nil {
+				if err := p.round().Start(ctx); err != nil {
 					rndNum := p.round().RoundNumber()
 					common.Logger.Debugf("party %v: %s round %d started with Err", p.round().Params().PartyID(), task, rndNum)
 					return false, err

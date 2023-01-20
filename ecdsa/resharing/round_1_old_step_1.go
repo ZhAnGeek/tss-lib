@@ -7,6 +7,7 @@
 package resharing
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -26,7 +27,7 @@ func newRound1(params *tss.ReSharingParameters, input, save *keygen.LocalPartySa
 		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1}}
 }
 
-func (round *round1) Start() *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

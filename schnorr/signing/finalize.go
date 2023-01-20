@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"crypto/elliptic"
 	"errors"
 	"math/big"
@@ -27,7 +28,7 @@ func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *cr
 	return LHS.Equals(RHS)
 }
 
-func (round *finalization) Start() *tss.Error {
+func (round *finalization) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

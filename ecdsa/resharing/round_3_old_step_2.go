@@ -7,12 +7,13 @@
 package resharing
 
 import (
+	"context"
 	"errors"
 
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round3) Start() *tss.Error {
+func (round *round3) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

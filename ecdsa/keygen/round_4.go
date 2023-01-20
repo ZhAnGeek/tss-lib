@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	sync "sync"
@@ -18,7 +19,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round4) Start() *tss.Error {
+func (round *round4) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -146,7 +147,7 @@ func (round *round4) Start() *tss.Error {
 	common.Logger.Debugf("%s public key: %x", round.PartyID(), ecdsaPubKey)
 
 	ContextI := append(round.temp.RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
-	//proof, err := zkpsch.NewProof(ContextI, round.save.BigXj[i], round.save.Xi)
+	// proof, err := zkpsch.NewProof(ContextI, round.save.BigXj[i], round.save.Xi)
 	proof, err := zkpsch.NewProofWithAlpha(ContextI, round.save.BigXj[i], round.temp.Ai, round.temp.alphai, round.save.Xi)
 	if err != nil {
 		return round.WrapError(err)

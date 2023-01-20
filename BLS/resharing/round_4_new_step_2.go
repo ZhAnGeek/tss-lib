@@ -7,6 +7,7 @@
 package resharing
 
 import (
+	"context"
 	"math/big"
 
 	"github.com/pkg/errors"
@@ -18,7 +19,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round4) Start() *tss.Error {
+func (round *round4) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

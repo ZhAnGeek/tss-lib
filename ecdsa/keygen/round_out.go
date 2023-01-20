@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"context"
 	"errors"
 	"math/big"
 	"sync"
@@ -14,7 +15,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *roundout) Start() *tss.Error {
+func (round *roundout) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

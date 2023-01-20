@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"errors"
@@ -43,7 +44,7 @@ func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *
 		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 2}}}
 }
 
-func (round *signout) Start() *tss.Error {
+func (round *signout) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

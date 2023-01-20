@@ -9,6 +9,7 @@
 package decryption
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -24,7 +25,7 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 		&base{params, *temp, *key, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start() *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}

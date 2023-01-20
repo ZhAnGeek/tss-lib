@@ -6,9 +6,13 @@
 
 package tss
 
+import (
+	"context"
+)
+
 type Round interface {
 	Params() *Parameters
-	Start() *Error
+	Start(ctx context.Context) *Error
 	SetStarted(bool)
 	Update() (bool, *Error)
 	RoundNumber() int

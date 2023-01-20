@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"context"
 	"errors"
 	"math/big"
 
@@ -24,7 +25,7 @@ func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *
 		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 3}}}}
 }
 
-func (round *identification1) Start() *tss.Error {
+func (round *identification1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
