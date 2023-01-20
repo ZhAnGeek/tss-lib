@@ -56,7 +56,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	ssidList = append(ssidList, round.input.NTildej...) // NCap
 	ssidList = append(ssidList, round.input.H1j...)     // s
 	ssidList = append(ssidList, round.input.H2j...)     // t
-	ssid := common.SHA512_256i(ssidList...).Bytes()
+	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 
 	// 1. PrepareForSigning() -> w_i
 	xi, ks, bigXj := round.input.Xi, round.input.Ks, round.input.BigXj
@@ -77,7 +77,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	vCmt := commitments.NewHashCommitment(flatVis...)
+	vCmt := commitments.NewHashCommitment(ctx, flatVis...)
 
 	// 4. populate temp data
 	round.temp.VD = vCmt.D

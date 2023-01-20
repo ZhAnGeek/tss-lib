@@ -92,7 +92,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	cmtRandomness := new(big.Int).SetBytes(cmtRandomnessBz)
 	listToHash = append(listToHash, preParams.PaillierSK.PublicKey.N, preParams.NTildei, preParams.H1i, preParams.H2i, Ai.X(), Ai.Y(), rid, cmtRandomness)
 	listToHash = append(listToHash, proofPrmList...)
-	VHash := common.SHA512_256i(listToHash...)
+	VHash := common.SHA512_256i(ctx, listToHash...)
 	{
 		msg := NewKGRound1Message(round.PartyID(), VHash)
 		round.out <- msg

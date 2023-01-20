@@ -3,7 +3,7 @@ package log
 import "context"
 
 const (
-	SDK string = "tss-mpc-sdk"
+	tssLib string = "tss-lib-private"
 )
 
 var logger ILogger

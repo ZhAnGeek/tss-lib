@@ -20,7 +20,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -35,15 +35,15 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 }
 
 func TestStartRound1Paillier(t *testing.T) {
 	ctx := context.Background()
-	setUp("debug")
+	setUp(log.DebugLevel)
 
 	pIDs := tss.GenerateTestPartyIDs(1)
 	p2pCtx := tss.NewPeerContext(pIDs)
@@ -84,7 +84,7 @@ func TestStartRound1Paillier(t *testing.T) {
 
 func TestFinishAndSaveH1H2(t *testing.T) {
 	ctx := context.Background()
-	setUp("debug")
+	setUp(log.DebugLevel)
 
 	pIDs := tss.GenerateTestPartyIDs(1)
 	p2pCtx := tss.NewPeerContext(pIDs)
@@ -133,7 +133,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 
 	// tss.SetCurve(elliptic.P256())
 
@@ -185,7 +185,7 @@ keygen:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break keygen
 

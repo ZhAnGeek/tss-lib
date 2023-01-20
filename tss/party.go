@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/log"
 )
 
 type Party interface {
@@ -165,7 +166,7 @@ func (p *BaseParty) unlock() {
 func BaseStart(ctx context.Context, p Party, task string, prepare ...func(Round) *Error) *Error {
 	defer func() {
 		if err := recover(); err != nil {
-			common.Logger.Errorf("Error during BaseStart %s: %v", p, err)
+			log.Error(ctx, "Error during BaseStart %s: %v", p, err)
 		}
 	}()
 	p.lock()
@@ -200,7 +201,7 @@ func BaseStart(ctx context.Context, p Party, task string, prepare ...func(Round)
 func BaseRestore(ctx context.Context, p Party, task string) *Error {
 	defer func() {
 		if err := recover(); err != nil {
-			common.Logger.Errorf("Error during BaseRestore %s: %v", p, err)
+			log.Error(ctx, "Error during BaseRestore %s: %v", p, err)
 		}
 	}()
 	p.lock()
@@ -224,7 +225,7 @@ func BaseRestore(ctx context.Context, p Party, task string) *Error {
 func BaseUpdate(ctx context.Context, p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	defer func() {
 		if err := recover(); err != nil {
-			common.Logger.Errorf("Error during BaseUpdate %s: %v", p, err)
+			log.Error(ctx, "Error during BaseUpdate %s: %v", p, err)
 		}
 	}()
 	// fast-fail on an invalid message; do not lock the mutex yet
@@ -272,7 +273,7 @@ func BaseUpdate(ctx context.Context, p Party, msg ParsedMessage, task string) (o
 func BaseUpdateNR(ctx context.Context, p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	// fast-fail on an invalid message; do not lock the mutex yet
 	if _, err := p.ValidateMessage(msg); err != nil {
-		common.Logger.Errorf("party %s: %s got invalid msg %d", p, task, msg.Content().RoundNumber())
+		log.Error(ctx, "party %s: %s got invalid msg %d", p, task, msg.Content().RoundNumber())
 		return false, err
 	}
 	common.Logger.Debugf("party %v received message: %s", p.PartyID(), msg.String())
@@ -280,7 +281,7 @@ func BaseUpdateNR(ctx context.Context, p Party, msg ParsedMessage, task string) 
 		common.Logger.Debugf("party %v round %d update: %s", p.PartyID(), p.round().RoundNumber(), msg.String())
 	}
 	if ok, err := p.StoreMessage(ctx, msg); err != nil || !ok {
-		common.Logger.Errorf("party %s: %s store msg %d with error", p, task, msg.Content().RoundNumber())
+		log.Error(ctx, "party %s: %s store msg %d with error", p, task, msg.Content().RoundNumber())
 		return false, err
 	}
 	if p.round() != nil {
@@ -311,11 +312,11 @@ func BaseUpdateNR(ctx context.Context, p Party, msg ParsedMessage, task string) 
 func BaseUpdatePool(ctx context.Context, p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	defer func() {
 		if err := recover(); err != nil {
-			common.Logger.Errorf("Error during BaseUpdatePool %s: %v", p, err)
+			log.Error(ctx, "Error during BaseUpdatePool %s: %v", p, err)
 		}
 	}()
 	if _, err := p.ValidateMessage(msg); err != nil {
-		common.Logger.Errorf("party %s: %s got invalid msg %d", p, task, msg.Content().RoundNumber())
+		log.Error(ctx, "party %s: %s got invalid msg %d", p, task, msg.Content().RoundNumber())
 		return false, err
 	}
 	p.lock()

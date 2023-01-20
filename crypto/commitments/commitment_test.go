@@ -7,6 +7,7 @@
 package commitments_test
 
 import (
+	"context"
 	"math/big"
 	"testing"
 
@@ -16,21 +17,23 @@ import (
 )
 
 func TestCreateVerify(t *testing.T) {
+	ctx := context.Background()
 	one := big.NewInt(1)
 	zero := big.NewInt(0)
 
-	commitment := NewHashCommitment(zero, one)
-	pass := commitment.Verify()
+	commitment := NewHashCommitment(ctx, zero, one)
+	pass := commitment.Verify(ctx)
 
 	assert.True(t, pass, "must pass")
 }
 
 func TestDeCommit(t *testing.T) {
+	ctx := context.Background()
 	one := big.NewInt(1)
 	zero := big.NewInt(0)
 
-	commitment := NewHashCommitment(zero, one)
-	pass, secrets := commitment.DeCommit(2)
+	commitment := NewHashCommitment(ctx, zero, one)
+	pass, secrets := commitment.DeCommit(ctx, 2)
 
 	assert.True(t, zero.Cmp(secrets[0]) == 0, "must pass")
 	assert.True(t, one.Cmp(secrets[1]) == 0, "must pass")

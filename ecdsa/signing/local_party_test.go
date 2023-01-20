@@ -15,7 +15,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -31,15 +31,15 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 }
 
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
@@ -89,7 +89,7 @@ presigning:
 		case du := <-dumpCh:
 			fmt.Println("Dumped: ", du.Index, du.RoundNum)
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break presigning
 
@@ -158,7 +158,7 @@ signing:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -191,7 +191,7 @@ signing:
 
 func TestE2EConcurrentWithIdentification(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
@@ -241,7 +241,7 @@ presigning:
 		case du := <-dumpCh:
 			fmt.Println("Dumped: ", du.Index, du.RoundNum)
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break presigning
 
@@ -323,7 +323,7 @@ signing:
 			}
 
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -377,7 +377,7 @@ identification:
 		// fmt.Printf("Sign identification selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 

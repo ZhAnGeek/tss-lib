@@ -40,7 +40,7 @@ func (round *sign1) Start(ctx context.Context) *tss.Error {
 	round.ok[i] = true
 
 	round.temp.SsidNonce = round.predata.UnmarshalSsidNonce()
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}

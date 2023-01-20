@@ -13,11 +13,10 @@ import (
 	"testing"
 
 	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/common"
 	test "github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -27,8 +26,8 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 	tss.Bls12381()
@@ -36,7 +35,7 @@ func setUp(level string) {
 
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 
@@ -80,7 +79,7 @@ decryption:
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break decryption
 

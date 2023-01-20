@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -29,8 +29,8 @@ const (
 	testThreshold    = TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 }
@@ -44,7 +44,7 @@ func BenchmarkE2EKeyGen(b *testing.B) {
 func E2EKeyGen(b *testing.B) {
 	ctx := context.Background()
 
-	setUp("error")
+	setUp(log.ErrorLevel)
 	b.StopTimer()
 	threshold := testThreshold
 	_, pIDs, err := LoadKeygenTestFixtures(testParticipants)
@@ -83,7 +83,7 @@ keygen:
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(b, err.Error())
 			break keygen
 
@@ -186,7 +186,7 @@ keygen:
 
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 	_, pIDs, err := LoadKeygenTestFixtures(testParticipants)
@@ -224,7 +224,7 @@ keygen:
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break keygen
 

@@ -7,6 +7,7 @@
 package common_test
 
 import (
+	"context"
 	"math/big"
 	"reflect"
 	"testing"
@@ -15,9 +16,10 @@ import (
 )
 
 func TestRejectionSample(t *testing.T) {
+	ctx := context.Background()
 	curveQ := common.GetRandomPrimeInt(256)
 	randomQ := common.MustGetRandomInt(64)
-	hash := common.SHA512_256i(big.NewInt(123))
+	hash := common.SHA512_256i(ctx, big.NewInt(123))
 	rs1 := common.RejectionSample(curveQ, hash)
 	rs2 := common.RejectionSample(randomQ, hash)
 	rs3 := common.RejectionSample(common.MustGetRandomInt(64), hash)

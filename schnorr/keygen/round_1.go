@@ -37,7 +37,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	round.ok[i] = true
 
 	round.temp.ssidNonce = new(big.Int).SetInt64(int64(0))
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -60,7 +60,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	cmt := cmts.NewHashCommitment(pGFlat...)
+	cmt := cmts.NewHashCommitment(ctx, pGFlat...)
 
 	round.save.ShareID = ids[i]
 	round.temp.vs = vs

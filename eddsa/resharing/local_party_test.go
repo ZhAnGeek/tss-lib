@@ -12,8 +12,8 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
-	"github.com/ipfs/go-log/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -30,8 +30,8 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 
@@ -41,7 +41,7 @@ func setUp(level string) {
 
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 
 	threshold, newThreshold := testThreshold, testThreshold
 
@@ -106,7 +106,7 @@ func TestE2EConcurrent(t *testing.T) {
 	for {
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -181,7 +181,7 @@ signing:
 	for {
 		select {
 		case err := <-signErrCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 

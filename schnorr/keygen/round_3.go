@@ -53,7 +53,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		KGCj := round.temp.KGCs[j]
 		KGDj := round.temp.r2msg2Decommit[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
-		ok, flatPolyGs := cmtDeCmt.DeCommit((round.Threshold() + 1) * 2)
+		ok, flatPolyGs := cmtDeCmt.DeCommit(ctx, (round.Threshold()+1)*2)
 		if !ok || flatPolyGs == nil {
 			return round.WrapError(errors.New("de-commitment failed"), Pj)
 		}

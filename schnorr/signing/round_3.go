@@ -54,7 +54,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			msg := round.temp.signRound2Messages[j]
 			r2msg := msg.Content().(*SignRound2Message)
 			cmtDeCmt := commitments.HashCommitDecommit{C: round.temp.cjs[j], D: r2msg.UnmarshalDeCommitment()}
-			ok, coordinates := cmtDeCmt.DeCommit(4)
+			ok, coordinates := cmtDeCmt.DeCommit(ctx, 4)
 			if !ok {
 				errChs <- round.WrapError(errors.New("de-commitment verify failed"))
 				return
@@ -179,7 +179,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 
 	// compute challenge
-	c_ := common.SHA512_256_TAGGED([]byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
+	c_ := common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
 	c := new(big.Int).SetBytes(c_)
 
 	// compute signature share zi

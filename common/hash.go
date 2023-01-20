@@ -7,6 +7,7 @@
 package common
 
 import (
+	"context"
 	"crypto"
 	"encoding/binary"
 	"math/big"
@@ -50,7 +51,7 @@ func SHA512_256(in ...[]byte) []byte {
 }
 
 // SHA512_256_TAGGED Tagged version of SHA512_256
-func SHA512_256_TAGGED(tag []byte, in ...[]byte) []byte {
+func SHA512_256_TAGGED(ctx context.Context, tag []byte, in ...[]byte) []byte {
 	tagBz := SHA512_256(tag)
 	var data []byte
 	state := crypto.SHA512_256.New()
@@ -85,7 +86,7 @@ func SHA512_256_TAGGED(tag []byte, in ...[]byte) []byte {
 }
 
 // SHA512_256i hash for big.Int slice
-func SHA512_256i(in ...*big.Int) *big.Int {
+func SHA512_256i(ctx context.Context, in ...*big.Int) *big.Int {
 	var data []byte
 	state := crypto.SHA512_256.New()
 	inLen := len(in)

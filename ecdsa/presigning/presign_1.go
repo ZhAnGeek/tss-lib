@@ -39,7 +39,7 @@ func (round *presign1) Start(ctx context.Context) *tss.Error {
 
 	// Fig 7. Round 1. generate ssid #TODO missing run_id & pre_data idx as input
 	round.temp.SsidNonce = new(big.Int).SetInt64(int64(round.Params().Nonce()))
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}

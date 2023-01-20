@@ -35,7 +35,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	round.resetOK()
 
 	round.temp.ssidNonce = new(big.Int).SetInt64(int64(0))
-	ssid, err := round.getSSID()
+	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
@@ -46,7 +46,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 
 	// 2. make commitment
 	pointRi := crypto.ScalarBaseMult(round.Params().EC(), ri)
-	cmt := commitments.NewHashCommitment(pointRi.X(), pointRi.Y())
+	cmt := commitments.NewHashCommitment(ctx, pointRi.X(), pointRi.Y())
 
 	// 3. store r1 message pieces
 	round.temp.ri = ri

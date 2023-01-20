@@ -12,6 +12,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/log"
 
 	"github.com/btcsuite/btcd/chaincfg"
 )
@@ -23,7 +24,7 @@ func UpdatePublicKeyAndAdjustBigXj(ctx context.Context, keyDerivationDelta *big.
 		keys[k].ECDSAPub, err = crypto.NewECPoint(ec, extendedChildPk.X, extendedChildPk.Y)
 		// keys[k].ECDSAPub, err = keys[k].ECDSAPub.Add(gDelta)
 		if err != nil {
-			common.Logger.Errorf("error creating new extended child public key")
+			log.Error(ctx, "error creating new extended child public key")
 			return err
 		}
 		// Suppose X_j has shamir shares X_j0,     X_j1,     ..., X_jn
@@ -31,7 +32,7 @@ func UpdatePublicKeyAndAdjustBigXj(ctx context.Context, keyDerivationDelta *big.
 		for j := range keys[k].BigXj {
 			keys[k].BigXj[j], err = keys[k].BigXj[j].Add(gDelta)
 			if err != nil {
-				common.Logger.Errorf("error in delta operation")
+				log.Error(ctx, "error in delta operation")
 				return err
 			}
 		}
@@ -48,7 +49,7 @@ func UpdateKeys(ctx context.Context, keyDerivationDelta *big.Int, keys []keygen.
 		keys[k].ECDSAPub, err = crypto.NewECPoint(ec, extendedChildPk.X, extendedChildPk.Y)
 		// keys[k].ECDSAPub, err = keys[k].ECDSAPub.Add(gDelta)
 		if err != nil {
-			common.Logger.Errorf("error creating new extended child public key")
+			log.Error(ctx, "error creating new extended child public key")
 			return err
 		}
 		// Suppose X_j has shamir shares X_j0,     X_j1,     ..., X_jn
@@ -56,7 +57,7 @@ func UpdateKeys(ctx context.Context, keyDerivationDelta *big.Int, keys []keygen.
 		for j := range keys[k].BigXj {
 			keys[k].BigXj[j], err = keys[k].BigXj[j].Add(gDelta)
 			if err != nil {
-				common.Logger.Errorf("error in delta operation")
+				log.Error(ctx, "error in delta operation")
 				return err
 			}
 		}

@@ -58,7 +58,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		KGDj := round.temp.r2msg2Decommit[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
 
-		ok, flatPolyGs := cmtDeCmt.DeCommit((round.Threshold() + 1) * 2)
+		ok, flatPolyGs := cmtDeCmt.DeCommit(ctx, (round.Threshold()+1)*2)
 		if !ok || flatPolyGs == nil {
 			return round.WrapError(errors.New("de-commitment failed"), Pj)
 		}
@@ -135,10 +135,10 @@ func (round *round3) NextRound() tss.Round {
 }
 
 // get ssid from local params
-func (round *base) getSSID() ([]byte, error) {
+func (round *base) getSSID(ctx context.Context) ([]byte, error) {
 	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
 	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                         // parties
-	ssid := common.SHA512_256i(ssidList...).Bytes()
+	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 
 	return ssid, nil
 }

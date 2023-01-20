@@ -3,12 +3,13 @@ package log
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"time"
 )
 
-var mpcLogTag = zap.String("library", SDK)
+var mpcLogTag = zap.String("library", tssLib)
 
 type defaultLogger struct {
 	zapLogger *zap.Logger

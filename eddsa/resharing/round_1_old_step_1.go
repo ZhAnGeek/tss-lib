@@ -61,7 +61,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	vCmt := commitments.NewHashCommitment(flatVis...)
+	vCmt := commitments.NewHashCommitment(ctx, flatVis...)
 
 	// 4. populate temp data
 	round.temp.VD = vCmt.D

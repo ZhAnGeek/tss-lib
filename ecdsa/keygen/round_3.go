@@ -62,7 +62,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			}
 			listToHash = append(listToHash, round.save.PaillierPKs[j].N, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.r2msgAs[j].X(), round.temp.r2msgAs[j].Y(), round.temp.r2msgRids[j], round.temp.r2msgCmtRandomness[j])
 			listToHash = append(listToHash, proofPrmList...)
-			VjHash := common.SHA512_256i(listToHash...)
+			VjHash := common.SHA512_256i(ctx, listToHash...)
 			if VjHash.Cmp(round.temp.r1msgVHashs[j]) != 0 {
 				errChs <- round.WrapError(errors.New("verify hash failed"), Pj)
 			}

@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/ipfs/go-log/v2"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -33,8 +33,8 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level string) {
-	if err := log.SetLogLevel("tss-lib", level); err != nil {
+func setUp(level log.Level) {
+	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 }
@@ -101,7 +101,7 @@ func fetchingMessages(
 			}
 
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			return err
 
 		case msg := <-outCh:
@@ -157,7 +157,7 @@ func BenchmarkE2E(b *testing.B) {
 func E2E(b *testing.B) {
 	ctx := context.Background()
 	b.StopTimer()
-	setUp("error")
+	setUp(log.ErrorLevel)
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
@@ -290,7 +290,7 @@ signing:
 
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
@@ -340,7 +340,7 @@ presigning:
 		case du := <-dumpCh:
 			fmt.Println(du.Index, du.RoundNum)
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break presigning
 
@@ -409,7 +409,7 @@ signing:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -442,7 +442,7 @@ signing:
 
 func TestR2RConcurrent(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 	threshold := testThreshold
 
 	// Load keygen fixtures
@@ -614,7 +614,7 @@ func TestR2RConcurrent(t *testing.T) {
 
 func TestR2RWithIdentification(t *testing.T) {
 	ctx := context.Background()
-	setUp("error")
+	setUp(log.ErrorLevel)
 	threshold := testThreshold
 
 	// Load keygen fixtures
@@ -764,7 +764,7 @@ presignOutLoop:
 			}
 
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break presignOutLoop
 
@@ -802,7 +802,7 @@ identification:
 		// fmt.Printf("Signing selecting messages...ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
@@ -835,7 +835,7 @@ identification:
 
 func TestE2EConcurrentHD(t *testing.T) {
 	ctx := context.Background()
-	setUp("info")
+	setUp(log.InfoLevel)
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
@@ -886,7 +886,7 @@ presigning:
 		case du := <-dumpCh:
 			fmt.Println(du.Index, du.RoundNum)
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			break presigning
 
@@ -964,7 +964,7 @@ signing:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case err := <-errCh:
-			common.Logger.Errorf("Error: %s", err)
+			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
 			return
 
