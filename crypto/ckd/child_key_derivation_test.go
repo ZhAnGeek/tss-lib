@@ -19,7 +19,7 @@ import (
 	. "github.com/Safulet/tss-lib-private/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/eddsa/signing"
 	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ed25519"

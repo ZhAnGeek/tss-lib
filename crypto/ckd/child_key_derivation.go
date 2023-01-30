@@ -19,7 +19,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"golang.org/x/crypto/ripemd160"
