@@ -111,13 +111,13 @@ func NewExtendedKeyFromString(key string, curve elliptic.Curve) (*ExtendedKey, e
 	keyData := payload[45:78]
 
 	var pubKeyPoint crypto.ECPoint
-	if c, ok := curve.(*btcec.KoblitzCurve); ok {
+	if _, ok := curve.(*btcec.KoblitzCurve); ok {
 		// Ensure the public key parses correctly and is actually on the secp256k1 curve.
-		pk, err := btcec.ParsePubKey(keyData, c)
+		pk, err := btcec.ParsePubKey(keyData)
 		if err != nil {
 			return nil, err
 		}
-		pubKey, err := crypto.NewECPoint(curve, pk.X, pk.Y)
+		pubKey, err := crypto.NewECPoint(curve, pk.X(), pk.Y())
 		if err != nil {
 			return nil, err
 		}
