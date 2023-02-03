@@ -16,7 +16,7 @@ import (
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 
-	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/v2/common"
 )
 
 func encodedBytesToBigInt(s *[32]byte) *big.Int {

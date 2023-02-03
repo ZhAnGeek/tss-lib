@@ -1,4 +1,4 @@
-module github.com/Safulet/tss-lib-private
+module github.com/Safulet/tss-lib-private/v2
 
 go 1.19
 

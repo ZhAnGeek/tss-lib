@@ -12,11 +12,11 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/eddsa/keygen"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 // round 1 represents round 1 of the signing part of the EDDSA TSS spec

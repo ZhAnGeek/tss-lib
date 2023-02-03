@@ -13,10 +13,10 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/common"
-	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
-	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	zkpenc "github.com/Safulet/tss-lib-private/v2/crypto/zkp/enc"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {

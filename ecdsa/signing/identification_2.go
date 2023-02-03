@@ -12,11 +12,11 @@ import (
 	"math/big"
 	sync "sync"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/presigning"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func newRound4(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {

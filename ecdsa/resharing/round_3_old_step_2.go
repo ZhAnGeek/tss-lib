@@ -10,7 +10,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func (round *round3) Start(ctx context.Context) *tss.Error {

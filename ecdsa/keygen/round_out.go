@@ -12,7 +12,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func (round *roundout) Start(ctx context.Context) *tss.Error {

@@ -17,8 +17,8 @@ import (
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/tss"
+	. "github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func TestFlattenECPoints(t *testing.T) {

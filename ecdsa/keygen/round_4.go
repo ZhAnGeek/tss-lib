@@ -12,12 +12,12 @@ import (
 	"math/big"
 	sync "sync"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
-	"github.com/Safulet/tss-lib-private/log"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	zkpsch "github.com/Safulet/tss-lib-private/v2/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func (round *round4) Start(ctx context.Context) *tss.Error {

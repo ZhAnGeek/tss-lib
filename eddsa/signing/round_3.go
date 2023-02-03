@@ -13,9 +13,9 @@ import (
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/pkg/errors"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func (round *round3) Start(ctx context.Context) *tss.Error {

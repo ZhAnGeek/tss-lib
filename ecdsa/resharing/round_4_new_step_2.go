@@ -11,16 +11,16 @@ import (
 	"errors"
 	"math/big"
 
-	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
-	"github.com/Safulet/tss-lib-private/log"
+	zkpfac "github.com/Safulet/tss-lib-private/v2/crypto/zkp/fac"
+	"github.com/Safulet/tss-lib-private/v2/log"
 	errors2 "github.com/pkg/errors"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func (round *round4) Start(ctx context.Context) *tss.Error {

@@ -11,12 +11,12 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	"github.com/Safulet/tss-lib-private/schnorr/keygen"
-	"github.com/Safulet/tss-lib-private/schnorr/signing"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	"github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
+	"github.com/Safulet/tss-lib-private/v2/schnorr/signing"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 // round 1 represents round 1 of the reshare part of the Schnorr TSS spec
