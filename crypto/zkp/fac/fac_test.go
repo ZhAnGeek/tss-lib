@@ -13,10 +13,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	. "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	. "github.com/Safulet/tss-lib-private/v2/crypto/zkp/fac"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 // Using a modulus length of 2048 is recommended in the GG18 spec

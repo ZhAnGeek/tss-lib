@@ -11,8 +11,8 @@ import (
 	"errors"
 	"math/big"
 
-	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
-	"github.com/Safulet/tss-lib-private/tss"
+	zkpsch "github.com/Safulet/tss-lib-private/v2/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func (round *round2) Start(ctx context.Context) *tss.Error {

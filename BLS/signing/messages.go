@@ -9,8 +9,8 @@ package signing
 import (
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into schnorr-signing.pb.go

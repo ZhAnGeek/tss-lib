@@ -11,7 +11,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/Safulet/tss-lib-private/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/v2/crypto/bls12381"
 	s256k1 "github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 )

@@ -1,4 +1,4 @@
-MODULE = github.com/Safulet/tss-lib-private
+MODULE = github.com/Safulet/tss-lib-private/v2
 PACKAGES = $(shell go list ./... | grep -v '/vendor/')
 
 all: protob test

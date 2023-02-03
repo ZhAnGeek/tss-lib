@@ -15,10 +15,10 @@ import (
 	"hash"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/log"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
@@ -34,7 +34,7 @@ type ExtendedKey struct {
 	Version    []byte
 }
 
-// For more information about child key derivation see https://github.com/Safulet/tss-lib-private/issues/104
+// For more information about child key derivation see https://github.com/Safulet/tss-lib-private/v2/issues/104
 // https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki .
 // The functions below do not implement the full BIP-32 specification. As mentioned in the Jira ticket above,
 // we only use non-hardened derived keys.

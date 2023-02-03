@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/log"
+	"github.com/Safulet/tss-lib-private/v2/log"
 )
 
 type Party interface {

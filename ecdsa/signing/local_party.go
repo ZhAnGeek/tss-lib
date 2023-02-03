@@ -12,15 +12,15 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
-	zkpdec "github.com/Safulet/tss-lib-private/crypto/zkp/dec"
-	zkpmulstar "github.com/Safulet/tss-lib-private/crypto/zkp/mulstar"
-	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
-	"github.com/Safulet/tss-lib-private/log"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	zkpaffg "github.com/Safulet/tss-lib-private/v2/crypto/zkp/affg"
+	zkpdec "github.com/Safulet/tss-lib-private/v2/crypto/zkp/dec"
+	zkpmulstar "github.com/Safulet/tss-lib-private/v2/crypto/zkp/mulstar"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/presigning"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 // Implements Party

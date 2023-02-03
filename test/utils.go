@@ -10,7 +10,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func SharedPartyUpdater(ctx context.Context, party tss.Party, msg tss.Message, errCh chan<- *tss.Error) {
