@@ -12,13 +12,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/common"
-	"github.com/Safulet/tss-lib-private/v2/crypto"
-	"github.com/Safulet/tss-lib-private/v2/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
-	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/v2/ecdsa/presigning"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // round 1 represents round 1 of the keygen part of the GG18 ECDSA TSS spec (Gennaro, Goldfeder; 2018)

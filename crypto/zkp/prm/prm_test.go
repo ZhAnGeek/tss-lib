@@ -14,8 +14,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/Safulet/tss-lib-private/v2/crypto/zkp/prm"
-	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	. "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 )
 
 var (

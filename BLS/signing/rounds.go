@@ -7,9 +7,9 @@
 package signing
 
 import (
-	"github.com/Safulet/tss-lib-private/v2/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/v2/common"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/BLS/keygen"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (

@@ -12,7 +12,7 @@ import (
 	"encoding/binary"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/log"
 )
 
 const (

@@ -10,11 +10,11 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/common"
-	cmt "github.com/Safulet/tss-lib-private/v2/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
-	zkpsch "github.com/Safulet/tss-lib-private/v2/crypto/zkp/sch"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into schnorr-keygen.pb.go

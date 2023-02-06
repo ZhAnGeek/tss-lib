@@ -11,10 +11,10 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/common"
-	zkpsch "github.com/Safulet/tss-lib-private/v2/crypto/zkp/sch"
-	"github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/schnorr/keygen"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // round 2 represents round 2 of the signing part of the Schnorr TSS spec

@@ -11,13 +11,13 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/common"
-	"github.com/Safulet/tss-lib-private/v2/crypto"
-	zkpdec "github.com/Safulet/tss-lib-private/v2/crypto/zkp/dec"
-	zkpmulstar "github.com/Safulet/tss-lib-private/v2/crypto/zkp/mulstar"
-	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/v2/ecdsa/presigning"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	zkpdec "github.com/Safulet/tss-lib-private/crypto/zkp/dec"
+	zkpmulstar "github.com/Safulet/tss-lib-private/crypto/zkp/mulstar"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {

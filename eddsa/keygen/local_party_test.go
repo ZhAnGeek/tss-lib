@@ -18,15 +18,15 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/v2/ecdsa/signing"
-	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/ecdsa/signing"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/v2/crypto"
-	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
-	"github.com/Safulet/tss-lib-private/v2/test"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/test"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (

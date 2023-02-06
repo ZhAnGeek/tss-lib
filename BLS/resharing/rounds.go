@@ -7,8 +7,8 @@
 package resharing
 
 import (
-	keygen "github.com/Safulet/tss-lib-private/v2/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	keygen "github.com/Safulet/tss-lib-private/BLS/keygen"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (

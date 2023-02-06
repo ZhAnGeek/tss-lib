@@ -12,9 +12,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/common"
-	"github.com/Safulet/tss-lib-private/v2/crypto"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func VerirySig(ctx context.Context, ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *crypto.ECPoint) bool {

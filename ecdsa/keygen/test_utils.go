@@ -18,8 +18,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Safulet/tss-lib-private/v2/test"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/test"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (

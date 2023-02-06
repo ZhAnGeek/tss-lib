@@ -12,9 +12,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/v2/common"
-	. "github.com/Safulet/tss-lib-private/v2/crypto/vss"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	. "github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func TestCheckIndexesDup(t *testing.T) {

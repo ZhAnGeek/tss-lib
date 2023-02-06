@@ -11,9 +11,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/crypto"
-	"github.com/Safulet/tss-lib-private/v2/crypto/paillier"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/paillier"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 type (

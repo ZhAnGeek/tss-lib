@@ -14,16 +14,16 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/agl/ed25519/edwards25519"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/blake2b"
 
-	"github.com/Safulet/tss-lib-private/v2/common"
-	"github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
-	"github.com/Safulet/tss-lib-private/v2/test"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/eddsa/keygen"
+	"github.com/Safulet/tss-lib-private/test"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (

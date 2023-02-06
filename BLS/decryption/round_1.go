@@ -14,9 +14,9 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/v2/crypto/bls12381"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/BLS/keygen"
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // round 1 represents round 1 of the signing part of the pairing-based threshold signature spec on BLS12381

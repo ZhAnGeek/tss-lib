@@ -12,8 +12,8 @@ import (
 	bls "github.com/ethereum/go-ethereum/crypto/bls12381"
 	"github.com/pkg/errors"
 
-	"github.com/Safulet/tss-lib-private/v2/crypto/bls12381"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func (round *round2) Start(ctx context.Context) *tss.Error {

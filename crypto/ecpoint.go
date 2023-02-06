@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/tss"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 

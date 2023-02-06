@@ -10,11 +10,11 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/v2/common"
-	"github.com/Safulet/tss-lib-private/v2/crypto"
-	cmt "github.com/Safulet/tss-lib-private/v2/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into schnorr-resharing.pb.go

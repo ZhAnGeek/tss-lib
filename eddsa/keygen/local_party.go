@@ -12,10 +12,10 @@ import (
 	"fmt"
 	"math/big"
 
-	cmt "github.com/Safulet/tss-lib-private/v2/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
-	"github.com/Safulet/tss-lib-private/v2/log"
-	"github.com/Safulet/tss-lib-private/v2/tss"
+	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
+	"github.com/Safulet/tss-lib-private/log"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 // Implements Party
