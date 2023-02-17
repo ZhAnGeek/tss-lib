@@ -1,0 +1,56 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib.schnorr.resharing;
+option go_package = "kcdsa/resharing";
+
+/*
+ * The Round 1 data is broadcast to peers of the All Committee in this message.
+ */
+message DGRound1MessageNewParty {
+    bytes paillier_n = 1;
+    bytes n_tilde = 2;
+    bytes h1 = 3;
+    bytes h2 = 4;
+}
+
+/*
+ * The Round 1 data is broadcast to peers of the New Committee in this message.
+ */
+message DGRound1Message {
+    bytes pub_x = 1;
+    bytes pub_y = 2;
+    bytes pub_x_schnorr = 3;
+    bytes pub_y_schnorr = 4;
+    bytes v_commitment = 5;
+}
+
+/*
+ * The Round 2 "ACK" is broadcast to peers of the Old Committee in this message.
+ */
+message DGRound2Message {
+}
+
+/*
+ * The Round 3 data is sent to peers of the New Committee in this message.
+ */
+message DGRound3Message1 {
+    bytes share = 1;
+}
+
+/*
+ * The Round 3 data is broadcast to peers of the New Committee in this message.
+ */
+message DGRound3Message2 {
+    repeated bytes v_decommitment = 1;
+}
+
+/*
+ * The Round 4 "ACK" is broadcast to peers of the Old and New Committees from the New Committee in this message.
+ */
+message DGRound4Message {
+}
