@@ -8,6 +8,7 @@ package signing
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"math/big"
@@ -44,8 +45,9 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	}
 	round.temp.ssid = ssid
 
+	mHash := sha256.Sum256(round.temp.m)
 	// mHash
-	round.temp.mHash = common.SHA512_256(ctx, round.temp.m)
+	round.temp.mHash = mHash[:]
 
 	// 1. select ki
 	ki := common.GetRandomPositiveInt(round.EC().Params().N)

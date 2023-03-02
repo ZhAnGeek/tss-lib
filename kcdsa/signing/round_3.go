@@ -8,6 +8,7 @@ package signing
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 	"math/big"
 	"sync"
@@ -98,8 +99,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 
 	// compute challenge
-	e := common.SHA512_256(ctx, round.temp.mHash, BigKsSum.X().Bytes())
-	round.temp.e = new(big.Int).SetBytes(e)
+	mHashKXBytes := append(round.temp.mHash, BigKsSum.X().Bytes()...)
+	e := sha256.Sum256(mHashKXBytes)
+	round.temp.e = new(big.Int).SetBytes(e[:])
 
 	tInverse := new(big.Int).ModInverse(new(big.Int).SetInt64(int64(round.Params().PartyCount())), round.EC().Params().N)
 	modN := common.ModInt(round.EC().Params().N)

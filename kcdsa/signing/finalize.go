@@ -8,6 +8,7 @@ package signing
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"math/big"
 
@@ -32,11 +33,12 @@ func (round *finalization) VerirySig(ctx context.Context, s *big.Int, e *big.Int
 	}
 
 	W, _ := sY.Add(eG)
-	mHash := common.SHA512_256(ctx, m)
-	e2 := common.SHA512_256(ctx, mHash, W.X().Bytes())
+	mHash := sha256.Sum256(m)
+	mHashPkBytes := append(mHash[:], W.X().Bytes()...)
+	e2Bytes := sha256.Sum256(mHashPkBytes)
 
 	// e1 == e2
-	return e.Cmp(new(big.Int).SetBytes(e2)) == 0
+	return e.Cmp(new(big.Int).SetBytes(e2Bytes[:])) == 0
 }
 
 func (round *finalization) Start(ctx context.Context) *tss.Error {
