@@ -18,7 +18,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *finalization) VerirySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
+func (round *finalization) VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
 	sY := pubkey.ScalarMult(s)
 	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
 	eG := g.ScalarMult(e)
@@ -27,6 +27,31 @@ func (round *finalization) VerirySig(ctx context.Context, s *big.Int, e *big.Int
 	if needsNeg {
 		Y2 := new(big.Int).Sub(round.EC().Params().P, eG.Y())
 		eG2, err := crypto.NewECPoint(round.EC(), eG.X(), Y2)
+		if err != nil {
+			return false
+		}
+		eG = eG2
+	}
+
+	W, _ := sY.Add(eG)
+	mHash := sha256.Sum256(m)
+	mHashPkBytes := append(mHash[:], ckd.ReverseBytes(W.X().Bytes())...)
+	e2Bytes := sha256.Sum256(mHashPkBytes)
+
+	// e1 == e2
+	return e.Cmp(new(big.Int).SetBytes(ckd.ReverseBytes(e2Bytes[:]))) == 0
+}
+
+func VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
+	ec := tss.Curve25519()
+	sY := pubkey.ScalarMult(s)
+	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy)
+	eG := g.ScalarMult(e)
+	// if pk is not negative, then eG should negate
+	needsNeg := pubkey.Y().Bit(0) != 1
+	if needsNeg {
+		Y2 := new(big.Int).Sub(ec.Params().P, eG.Y())
+		eG2, err := crypto.NewECPoint(ec, eG.X(), Y2)
 		if err != nil {
 			return false
 		}
@@ -89,7 +114,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	round.data.Signature = append(round.data.R, round.data.S...)
 	round.data.M = round.temp.m
 
-	ok := round.VerirySig(ctx, sumKXShare, round.temp.e, round.temp.m, round.key.PubKey)
+	ok := round.VerifySig(ctx, sumKXShare, round.temp.e, round.temp.m, round.key.PubKey)
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}
