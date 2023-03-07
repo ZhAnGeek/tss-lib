@@ -112,6 +112,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	round.data.R = ckd.ReverseBytes(sBytes)
 	round.data.S = ckd.ReverseBytes(eBytes)
 	round.data.Signature = append(round.data.R, round.data.S...)
+
 	round.data.M = round.temp.m
 
 	ok := round.VerifySig(ctx, sumKXShare, round.temp.e, round.temp.m, round.key.PubKey)
