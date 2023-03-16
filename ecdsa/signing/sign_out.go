@@ -21,7 +21,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func VerirySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK *crypto.ECPoint) bool {
+func VerifySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK *crypto.ECPoint) bool {
 	modN := common.ModInt(ec.Params().N)
 	SInv := modN.ModInverse(S)
 	err := common.CheckBigIntNotNil(SInv)
