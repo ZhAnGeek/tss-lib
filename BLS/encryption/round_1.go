@@ -14,6 +14,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -28,6 +29,12 @@ func (round *round1) Start(_ context.Context) *tss.Error {
 		return round.WrapError(errors.New("round already started"))
 	}
 
+	var suite []byte
+	if round.EC().Params().Gx.Cmp(bls12381.G2Curve().Params().Gx) == 0 {
+		suite = bls12381.GetBLSSignatureSuiteG1()
+	} else if round.EC().Params().Gx.Cmp(bls12381.G1Curve().Params().Gx) == 0 {
+		suite = bls12381.GetBLSSignatureSuiteG2()
+	}
 	round.number = 1
 	round.started = true
 	round.resetOK()
@@ -35,7 +42,7 @@ func (round *round1) Start(_ context.Context) *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
-	encryptedResult, err := crypto.EncryptByECPoint(round.key.PubKey, round.temp.m.Bytes())
+	encryptedResult, err := crypto.EncryptByECPoint(suite, round.key.PubKey, round.temp.m.Bytes())
 
 	if err != nil {
 		return round.WrapError(err)

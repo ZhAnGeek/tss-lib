@@ -17,8 +17,14 @@ func FromIntToPointG1(x, y *big.Int) (*bls.PointG1, error) {
 	in := make([]byte, 96)
 	xx := x.Bytes()
 	yy := y.Bytes()
-	xx = PadToLengthBytesInPlace(xx, 48)
-	yy = PadToLengthBytesInPlace(yy, 48)
+	xx, err := PadToLengthBytesInPlace(xx, 48)
+	if err != nil {
+		return nil, err
+	}
+	yy, err = PadToLengthBytesInPlace(yy, 48)
+	if err != nil {
+		return nil, err
+	}
 	copy(in[:48], xx)
 	copy(in[48:], yy)
 	g1, err := p.FromBytes(in)

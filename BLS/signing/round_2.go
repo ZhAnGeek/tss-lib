@@ -92,7 +92,10 @@ func AddOnSignatureG1(sign []*big.Int) (*big.Int, error) {
 	g1 := bls.NewG1()
 	res := g1.Zero()
 	for _, s := range sign {
-		tmp := bls12381.PadToLengthBytesInPlace(s.Bytes(), bls12381.SignatureSizeG1*2)
+		tmp, err := bls12381.PadToLengthBytesInPlace(s.Bytes(), bls12381.SignatureSizeG1*2)
+		if err != nil {
+			return nil, err
+		}
 		addPoint, err := g1.FromBytes(tmp)
 		if err != nil {
 			return nil, err
@@ -106,7 +109,10 @@ func AddOnSignatureG2(sign []*big.Int) (*big.Int, error) {
 	g2 := bls.NewG2()
 	res := g2.Zero()
 	for _, s := range sign {
-		tmp := bls12381.PadToLengthBytesInPlace(s.Bytes(), bls12381.SignatureSizeG2*2)
+		tmp, err := bls12381.PadToLengthBytesInPlace(s.Bytes(), bls12381.SignatureSizeG2*2)
+		if err != nil {
+			return nil, err
+		}
 		addPoint, err := g2.FromBytes(tmp)
 		if err != nil {
 			return nil, err

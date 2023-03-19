@@ -21,6 +21,11 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
+var (
+	suite = bls12381.GetBLSSignatureSuiteG1()
+	ec    = tss.GetBLSCurveBySuite(suite)
+)
+
 const (
 	testParticipants = test.TestParticipants
 	testThreshold    = test.TestThreshold
@@ -54,8 +59,6 @@ func TestE2EConcurrent(t *testing.T) {
 	endCh := make(chan EncryptedData, len(ePIDs))
 
 	updater := test.SharedPartyUpdater
-	suite := bls12381.GetBLSSignatureSuiteG2()
-	ec := tss.GetBLSCurveBySuite(suite)
 
 	msg := big.NewInt(200)
 	// init the parties

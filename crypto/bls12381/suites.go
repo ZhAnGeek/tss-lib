@@ -96,7 +96,7 @@ func I2OSP(x, xLen int) ([]byte, error) {
 	if xB.Cmp(zero) == -1 || xB.Cmp(new(big.Int).Lsh(big.NewInt(1), uint(8*xLen))) != -1 {
 		return nil, errors.New(fmt.Sprintf("I2OSP overflow %s, %d", xB.String(), xLen))
 	}
-	return PadToLengthBytesInPlace(xB.Bytes(), xLen), nil
+	return PadToLengthBytesInPlace(xB.Bytes(), xLen)
 }
 
 // OS2IP converts an octet string to a nonnegative integer

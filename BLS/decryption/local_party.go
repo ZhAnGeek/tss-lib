@@ -46,6 +46,10 @@ type (
 	localTempData struct {
 		localMessageStore
 
+		suite         []byte
+		PublicKeySize int
+		SignatureSize int
+
 		wi           *big.Int
 		derivePubKey *big.Int
 

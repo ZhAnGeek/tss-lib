@@ -8,9 +8,11 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/hmac"
 	"crypto/sha256"
 	"crypto/sha512"
 	"errors"
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -81,7 +83,10 @@ func Sign(suite []byte, privateKey PrivateKey, message []byte) []byte {
 }
 
 func signG1(signature, privateKey, message []byte) {
-	privateKey = PadToLengthBytesInPlace(privateKey, PrivateKeySize)
+	privateKey, err := PadToLengthBytesInPlace(privateKey, PrivateKeySize)
+	if err != nil {
+		panic(err)
+	}
 	if l := len(privateKey); l != PrivateKeySize {
 		panic("bls12381:bad private key length" + strconv.Itoa(l))
 	}
@@ -97,7 +102,10 @@ func signG1(signature, privateKey, message []byte) {
 }
 
 func signG2(signature, privateKey, message []byte) {
-	privateKey = PadToLengthBytesInPlace(privateKey, PrivateKeySize)
+	privateKey, err := PadToLengthBytesInPlace(privateKey, PrivateKeySize)
+	if err != nil {
+		panic(err)
+	}
 	if l := len(privateKey); l != PrivateKeySize {
 		panic("bls12381:bad private key length" + strconv.Itoa(l))
 	}
@@ -133,7 +141,10 @@ func verifyG1(publicKey PublicKey, message, sig []byte) bool {
 	if err != nil {
 		panic("bls12381: invalid message hashing into G1Curve")
 	}
-	sig = PadToLengthBytesInPlace(sig, PublicKeySizeG1*2)
+	sig, err = PadToLengthBytesInPlace(sig, PublicKeySizeG1*2)
+	if err != nil {
+		return false
+	}
 	signature, err := g1.FromBytes(sig)
 	if err != nil {
 		return false
@@ -168,7 +179,11 @@ func verifyG2(publicKey PublicKey, message, sig []byte) bool {
 	if err != nil {
 		panic("bls12381: invalid message hashing into G2Curve")
 	}
-	sig = PadToLengthBytesInPlace(sig, PublicKeySizeG2*2)
+	sig, err = PadToLengthBytesInPlace(sig, PublicKeySizeG2*2)
+	if err != nil {
+		return false
+	}
+
 	signature, err := g2.FromBytes(sig)
 	if err != nil {
 		return false
@@ -192,7 +207,7 @@ func verifyG2(publicKey PublicKey, message, sig []byte) bool {
 	return r1.Equal(r2)
 }
 
-func VerifyDecryptShare(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.PointG1, H *bls.PointG1) error {
+func VerifyDecryptShareSignatureSuiteG1(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.PointG1, H *bls.PointG1) error {
 	g2 := bls.NewG2()
 	g1 := bls.NewG1()
 	fst := bls.NewPairingEngine()
@@ -201,9 +216,15 @@ func VerifyDecryptShare(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.Po
 	if err != nil {
 		return err
 	}
+	if g2.IsZero(Ui) || !g2.InCorrectSubgroup(Ui) {
+		return fmt.Errorf("ui is not valid, could be infinity or wrong subgroup")
+	}
 	Wi, err := g1.FromBytes(share[PointG2Size:])
 	if err != nil {
 		return err
+	}
+	if g1.IsZero(Wi) || !g1.InCorrectSubgroup(Wi) {
+		return fmt.Errorf("Wi is not valid, could be infinity or wrong subgroup")
 	}
 	fst.AddPair(W, Ui)
 	snd.AddPair(Wi, U)
@@ -225,49 +246,152 @@ func VerifyDecryptShare(share []byte, Yi *bls.PointG2, U *bls.PointG2, W *bls.Po
 	return nil
 }
 
-func Decrypt(shares [][]byte, cipherText []byte, yi []*bls.PointG2) ([]byte, error) {
-	iv := cipherText[:aes.BlockSize]
-	cipherText = cipherText[aes.BlockSize:]
-	U, V, W := getUVWFromCipherText(cipherText)
-	H, err := hashToGroup(U, V)
+func VerifyDecryptShareSignatureSuiteG2(share []byte, Yi *bls.PointG1, U *bls.PointG1, W *bls.PointG2, H *bls.PointG2) error {
+	g2 := bls.NewG2()
+	g1 := bls.NewG1()
+	fst := bls.NewPairingEngine()
+	snd := bls.NewPairingEngine()
+	Ui, err := g1.FromBytes(share[:PointG1Size])
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if err = VerifyCipherText(U, V, W); err != nil {
-		return nil, err
+	if g1.IsZero(Ui) || !g1.InCorrectSubgroup(Ui) {
+		return fmt.Errorf("ui is not valid, could be infinity or wrong subgroup")
 	}
-
-	for i, share := range shares {
-		if err := VerifyDecryptShare(share, yi[i], U, W, H); err != nil {
-			return nil, err
-		}
-	}
-
-	combined, err := combineShares(shares)
+	Wi, err := g2.FromBytes(share[PointG1Size:])
 	if err != nil {
-		return nil, err
+		return err
+	}
+	if g2.IsZero(Wi) || !g2.InCorrectSubgroup(Wi) {
+		return fmt.Errorf("Wi is not valid, could be infinity or wrong subgroup")
+	}
+	fst.AddPair(Ui, W)
+	snd.AddPair(U, Wi)
+
+	if !fst.Result().Equal(snd.Result()) {
+		return errors.New("U verification failed, please recheck U integrity")
 	}
 
-	combinedSha256 := g2ToBytes(combined)
+	fst2 := bls.NewPairingEngine()
+	snd2 := bls.NewPairingEngine()
 
-	for i, b := range V {
-		combinedSha256[i] ^= b
+	fst2.AddPair(Yi, W)
+	snd2.AddPair(Ui, H)
+
+	if !fst2.Result().Equal(snd2.Result()) {
+		return errors.New("Y verification failed, please recheck Y integrity")
 	}
 
-	aesKey := combinedSha256
-	encrypedMessage := cipherText[PointG2Size+PointG1Size+Sha256SumSize:]
-	aesCipher, err := aes.NewCipher(aesKey)
-	if err != nil {
-		return nil, err
-	}
-	message := make([]byte, len(encrypedMessage))
-	decrypter := cipher.NewCBCDecrypter(aesCipher, iv)
-	decrypter.CryptBlocks(message, encrypedMessage)
-	message = RemovePadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
-	return message, nil
+	return nil
 }
 
-func combineShares(shares [][]byte) (*bls.PointG2, error) {
+func Decrypt(suite []byte, shares [][]byte, cipherText []byte, yig2 []*bls.PointG2, yig1 []*bls.PointG1) ([]byte, error) {
+	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+		iv := cipherText[:aes.BlockSize]
+		cipherText = cipherText[aes.BlockSize:]
+		U, V, W, err := getUVWFromCipherTextSignatureSuiteG1(cipherText)
+		if err != nil {
+			return nil, err
+		}
+		H, err := hashToGroupG2(U, V)
+		if err != nil {
+			return nil, err
+		}
+		if err = VerifyCipherTextSignatureSuiteG1(U, V, W); err != nil {
+			return nil, err
+		}
+
+		for i, share := range shares {
+			if err := VerifyDecryptShareSignatureSuiteG1(share, yig2[i], U, W, H); err != nil {
+				return nil, err
+			}
+		}
+
+		combined, err := combineSharesSignatureSuiteG1(shares)
+		if err != nil {
+			return nil, err
+		}
+
+		combinedSha256 := g2ToBytes(combined)
+
+		for i, b := range V {
+			combinedSha256[i] ^= b
+		}
+
+		aesKey := combinedSha256
+		encrypedMessage := cipherText[PointG2Size+PointG1Size+Sha256SumSize:]
+		pureMsg := make([]byte, len(encrypedMessage)-32)
+		copy(pureMsg, encrypedMessage[:len(encrypedMessage)-32])
+
+		hmacActual := hmac.New(sha256.New, iv).Sum(pureMsg)
+		if !hmac.Equal(encrypedMessage, hmacActual) {
+			return nil, fmt.Errorf("not authenticated")
+		}
+		aesCipher, err := aes.NewCipher(aesKey)
+		if err != nil {
+			return nil, err
+		}
+		message := make([]byte, len(pureMsg))
+		decrypter := cipher.NewCBCDecrypter(aesCipher, iv)
+		decrypter.CryptBlocks(message, pureMsg)
+		return RemovePadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
+	}
+
+	if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+		iv := cipherText[:aes.BlockSize]
+		cipherText = cipherText[aes.BlockSize:]
+		U, V, W, err := getUVWFromCipherTextSignatureSuiteG2(cipherText)
+		if err != nil {
+			return nil, err
+		}
+		H, err := hashToGroupG1(U, V)
+		if err != nil {
+			return nil, err
+		}
+		if err = VerifyCipherTextSignatureSuiteG2(U, V, W); err != nil {
+			return nil, err
+		}
+
+		for i, share := range shares {
+			if err := VerifyDecryptShareSignatureSuiteG2(share, yig1[i], U, W, H); err != nil {
+				return nil, err
+			}
+		}
+
+		combined, err := combineSharesSignatureSuiteG2(shares)
+		if err != nil {
+			return nil, err
+		}
+
+		combinedSha256 := g1ToBytes(combined)
+
+		for i, b := range V {
+			combinedSha256[i] ^= b
+		}
+
+		aesKey := combinedSha256
+		encrypedMessage := cipherText[PointG2Size+PointG1Size+Sha256SumSize:]
+		pureMsg := make([]byte, len(encrypedMessage)-32)
+		copy(pureMsg, encrypedMessage[:len(encrypedMessage)-32])
+
+		hmacActual := hmac.New(sha256.New, iv).Sum(pureMsg)
+		if !hmac.Equal(encrypedMessage, hmacActual) {
+			return nil, fmt.Errorf("not authenticated")
+		}
+		aesCipher, err := aes.NewCipher(aesKey)
+		if err != nil {
+			return nil, err
+		}
+		message := make([]byte, len(pureMsg))
+		decrypter := cipher.NewCBCDecrypter(aesCipher, iv)
+		decrypter.CryptBlocks(message, pureMsg)
+		return RemovePadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
+	}
+
+	return nil, fmt.Errorf("no suite")
+}
+
+func combineSharesSignatureSuiteG1(shares [][]byte) (*bls.PointG2, error) {
 	sharePoints := make([]*bls.PointG2, len(shares))
 	g2 := bls.NewG2()
 	for i := 0; i < len(shares); i++ {
@@ -284,12 +408,33 @@ func combineShares(shares [][]byte) (*bls.PointG2, error) {
 	return ret, nil
 }
 
-func VerifyCipherText(U *bls.PointG2, V []byte, W *bls.PointG1) error {
-	H, err := hashToGroup(U, V)
+func combineSharesSignatureSuiteG2(shares [][]byte) (*bls.PointG1, error) {
+	sharePoints := make([]*bls.PointG1, len(shares))
+	g1 := bls.NewG1()
+	for i := 0; i < len(shares); i++ {
+		point, err := g1.FromBytes(shares[i][:PointG1Size])
+		if err != nil {
+			return nil, err
+		}
+		sharePoints[i] = point
+	}
+	ret := g1.Zero()
+	for _, point := range sharePoints {
+		g1.Add(ret, ret, point)
+	}
+	return ret, nil
+}
+
+func VerifyCipherTextSignatureSuiteG1(U *bls.PointG2, V []byte, W *bls.PointG1) error {
+	H, err := hashToGroupG2(U, V)
 	if err != nil {
 		return err
 	}
 	g2 := bls.NewG2()
+	g1 := bls.NewG1()
+	if g1.IsZero(H) || !g1.InCorrectSubgroup(H) {
+		return fmt.Errorf("H generate by U,V is not valid")
+	}
 	fst := bls.NewPairingEngine()
 	snd := bls.NewPairingEngine()
 	fst.AddPair(W, g2.One())
@@ -302,35 +447,89 @@ func VerifyCipherText(U *bls.PointG2, V []byte, W *bls.PointG1) error {
 	return nil
 }
 
-func DecryptShare(privateKey PrivateKey, cipherText []byte) ([]byte, error) {
-	cipherText = cipherText[aes.BlockSize:]
-	U, V, W := getUVWFromCipherText(cipherText)
-	if err := VerifyCipherText(U, V, W); err != nil {
-		return nil, err
+func VerifyCipherTextSignatureSuiteG2(U *bls.PointG1, V []byte, W *bls.PointG2) error {
+	H, err := hashToGroupG1(U, V)
+	if err != nil {
+		return err
 	}
 	g2 := bls.NewG2()
 	g1 := bls.NewG1()
+	if g2.IsZero(H) || !g2.InCorrectSubgroup(H) {
+		return fmt.Errorf("H generate by U,V is not valid")
+	}
+	fst := bls.NewPairingEngine()
+	snd := bls.NewPairingEngine()
+	fst.AddPair(g1.One(), W)
+	snd.AddPair(U, H)
 
-	var share *bls.PointG2 = new(bls.PointG2)
-	var wi *bls.PointG1 = new(bls.PointG1)
-	secret := new(big.Int).SetBytes(privateKey)
-	share = G2MulScalarMont(share, U, secret)
-	wi = G1MulScalarMont(wi, W, secret)
+	if !fst.Result().Equal(snd.Result()) {
+		return errors.New("decrypted failed for validation")
+	}
 
-	bts := make([]byte, 0)
-	bts = append(bts, g2.ToBytes(share)...)
-	bts = append(bts, g1.ToBytes(wi)...)
-	return bts, nil
+	return nil
 }
 
-func Encrypt(publicKey PublicKey, message []byte) ([]byte, error) {
+func DecryptShare(suite []byte, privateKey PrivateKey, cipherText []byte) ([]byte, error) {
+	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+		cipherText = cipherText[aes.BlockSize:]
+		U, V, W, err := getUVWFromCipherTextSignatureSuiteG1(cipherText)
+		if err != nil {
+			return nil, err
+		}
+		if err := VerifyCipherTextSignatureSuiteG1(U, V, W); err != nil {
+			return nil, err
+		}
+		g2 := bls.NewG2()
+		g1 := bls.NewG1()
+
+		var share *bls.PointG2 = new(bls.PointG2)
+		var wi *bls.PointG1 = new(bls.PointG1)
+		secret := new(big.Int).SetBytes(privateKey)
+		share = G2MulScalarMont(share, U, secret)
+		wi = G1MulScalarMont(wi, W, secret)
+
+		bts := make([]byte, 0)
+		bts = append(bts, g2.ToBytes(share)...)
+		bts = append(bts, g1.ToBytes(wi)...)
+		return bts, nil
+	} else if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+		cipherText = cipherText[aes.BlockSize:]
+		U, V, W, err := getUVWFromCipherTextSignatureSuiteG2(cipherText)
+		if err != nil {
+			return nil, err
+		}
+		if err := VerifyCipherTextSignatureSuiteG2(U, V, W); err != nil {
+			return nil, err
+		}
+		g2 := bls.NewG2()
+		g1 := bls.NewG1()
+
+		var share *bls.PointG1 = new(bls.PointG1)
+		var wi *bls.PointG2 = new(bls.PointG2)
+		secret := new(big.Int).SetBytes(privateKey)
+		share = G1MulScalarMont(share, U, secret)
+		wi = G2MulScalarMont(wi, W, secret)
+
+		bts := make([]byte, 0)
+		bts = append(bts, g1.ToBytes(share)...)
+		bts = append(bts, g2.ToBytes(wi)...)
+		return bts, nil
+	}
+
+	return nil, fmt.Errorf("not suite")
+}
+
+func Encrypt(suite []byte, publicKey PublicKey, message []byte) ([]byte, error) {
 	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
-	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message))
-	err := encrypt(encryptedMessage, publicKey, message)
+	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+32)
+	err := encrypt(suite, encryptedMessage, publicKey, message)
 	return encryptedMessage, err
 }
 
-func getUVWFromCipherText(cipherText []byte) (*bls.PointG2, []byte, *bls.PointG1) {
+func getUVWFromCipherTextSignatureSuiteG1(cipherText []byte) (*bls.PointG2, []byte, *bls.PointG1, error) {
+	if len(cipherText) < PointG2Size+Sha256SumSize+PointG1Size {
+		return nil, nil, nil, fmt.Errorf("cipherText is not valid length, length is %v, expect %v", len(cipherText), PointG2Size+Sha256SumSize+PointG1Size)
+	}
 	UBytes := cipherText[:PointG2Size]
 	VBytes := cipherText[PointG2Size : PointG2Size+Sha256SumSize]
 	WBytes := cipherText[PointG2Size+Sha256SumSize : PointG2Size+Sha256SumSize+PointG1Size]
@@ -339,13 +538,34 @@ func getUVWFromCipherText(cipherText []byte) (*bls.PointG2, []byte, *bls.PointG1
 	g1 := bls.NewG1()
 	UPoint, err := g2.FromBytes(UBytes)
 	if err != nil {
-		panic(err.Error())
+		return nil, nil, nil, err
 	}
 	WPoint, err := g1.FromBytes(WBytes)
 	if err != nil {
-		panic(err.Error())
+		return nil, nil, nil, err
 	}
-	return UPoint, VBytes, WPoint
+	return UPoint, VBytes, WPoint, nil
+}
+
+func getUVWFromCipherTextSignatureSuiteG2(cipherText []byte) (*bls.PointG1, []byte, *bls.PointG2, error) {
+	if len(cipherText) < PointG2Size+Sha256SumSize+PointG1Size {
+		return nil, nil, nil, fmt.Errorf("cipherText is not valid length, length is %v, expect %v", len(cipherText), PointG2Size+Sha256SumSize+PointG1Size)
+	}
+	UBytes := cipherText[:PointG1Size]
+	VBytes := cipherText[PointG1Size : PointG1Size+Sha256SumSize]
+	WBytes := cipherText[PointG1Size+Sha256SumSize : PointG1Size+Sha256SumSize+PointG2Size]
+
+	g1 := bls.NewG1()
+	g2 := bls.NewG2()
+	UPoint, err := g1.FromBytes(UBytes)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	WPoint, err := g2.FromBytes(WBytes)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return UPoint, VBytes, WPoint, nil
 }
 
 func encryptWithAes(message []byte) ([]byte, []byte, []byte) {
@@ -362,7 +582,18 @@ func encryptWithAes(message []byte) ([]byte, []byte, []byte) {
 
 	out := make([]byte, len(message))
 	encrypter.CryptBlocks(out, message)
-	return aesKey, out, iv
+
+	hmInputs := make([]byte, len(message))
+	copy(hmInputs, out)
+	hm := hmac.New(sha256.New, iv)
+	hmBytes := hm.Sum(hmInputs)
+	return aesKey, hmBytes, iv
+}
+
+func g1ToBytes(point *bls.PointG1) []byte {
+	g1 := bls.NewG1()
+	PksBytes := sha256.Sum256(g1.ToBytes(point))
+	return PksBytes[:]
 }
 
 func g2ToBytes(point *bls.PointG2) []byte {
@@ -371,7 +602,26 @@ func g2ToBytes(point *bls.PointG2) []byte {
 	return PksBytes[:]
 }
 
-func hashToGroup(point *bls.PointG2, message []byte) (*bls.PointG1, error) {
+func hashToGroupG1(point *bls.PointG1, message []byte) (*bls.PointG2, error) {
+	g1Hash := g1ToBytes(point)
+	g1HashFirst4 := g1Hash[:4]
+	concatStr := append(g1HashFirst4, message...)
+	h := sha512.Sum512(concatStr)
+	messageDigest := make([]byte, 96)
+
+	h1 := new(big.Int).SetBytes(h[:])
+	md := new(big.Int).Mod(h1, modulus.big()) // less than modulus, with at most 48 bytes
+	md.FillBytes(messageDigest)
+
+	g2 := bls.NewG2()
+	g2Point, err := g2.MapToCurve(messageDigest)
+	if err != nil {
+		return nil, err
+	}
+	return g2Point, nil
+}
+
+func hashToGroupG2(point *bls.PointG2, message []byte) (*bls.PointG1, error) {
 	g2Hash := g2ToBytes(point)
 	g2HashFirst4 := g2Hash[:4]
 	concatStr := append(g2HashFirst4, message...)
@@ -390,98 +640,163 @@ func hashToGroup(point *bls.PointG2, message []byte) (*bls.PointG1, error) {
 	return g1Point, nil
 }
 
-func encryptAesKey(publicKey PublicKey, message []byte) ([]byte, error) {
-	pk, err := bls.NewG2().FromBytes(publicKey)
-	if err != nil {
-		return nil, err
-	}
-
-	var r *big.Int = zero
-	for {
-		r = common.GetRandomPositiveInt(modulus.big())
-		if r.Cmp(zero) != 0 {
-			break
+func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, error) {
+	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+		pk, err := bls.NewG2().FromBytes(publicKey)
+		if err != nil {
+			return nil, err
 		}
+
+		var r *big.Int = zero
+		for {
+			r = common.GetRandomPositiveInt(modulus.big())
+			if r.Cmp(zero) != 0 {
+				break
+			}
+		}
+
+		var U = new(bls.PointG2)
+		var Y = new(bls.PointG2)
+		var W = new(bls.PointG1)
+		var H = new(bls.PointG1)
+		var V []byte = make([]byte, Sha256SumSize)
+		g2 := bls.NewG2()
+		U = g2.One()
+		U = G2MulScalarMont(U, U, r)
+		Y = G2MulScalarMont(Y, pk, r)
+
+		// Y's hash to 256-bit sha256 sum
+		rPksBytes := g2ToBytes(Y)
+
+		// aes's key to 256-bit aes key
+		AesBytes := message
+
+		if len(AesBytes) != len(rPksBytes) || len(rPksBytes) != Sha256SumSize {
+			return nil, errors.New("aes bytes size not equal to pks bytes size")
+		}
+
+		for i := 0; i < len(AesBytes); i++ {
+			V[i] = rPksBytes[i] ^ AesBytes[i]
+		}
+
+		g1 := bls.NewG1()
+		H, err = hashToGroupG2(U, V)
+		if err != nil {
+			return nil, err
+		}
+		W = G1MulScalarMont(W, H, r)
+
+		// cipher bytes first 192 bytes U, denotes r * P
+		// cipher bytes second 32 bytes V, denotes G(r * pk * P) ^ aes
+		// cipher bytes third 96  bytes W, denotes r * H(U, V)
+		// assumption: sum(lamda_i * sk_i) = pk
+		// validation: e(W, P) = e(r * H, P) = e(r * P, H) = e(U, H)
+		// recovery: V ^ G(sum(lamda_i * sk_i) * U) = G(r * pk * P) ^ aes ^ G(r * pk * P) = aes
+
+		cipherBytes := g2.ToBytes(U)
+		cipherBytes = append(cipherBytes, V...)
+		cipherBytes = append(cipherBytes, g1.ToBytes(W)...)
+		return cipherBytes, nil
 	}
 
-	var U = new(bls.PointG2)
-	var Y = new(bls.PointG2)
-	var W = new(bls.PointG1)
-	var H = new(bls.PointG1)
-	var V []byte = make([]byte, Sha256SumSize)
-	g2 := bls.NewG2()
-	U = g2.One()
-	U = G2MulScalarMont(U, U, r)
-	Y = G2MulScalarMont(Y, pk, r)
+	if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+		pk, err := bls.NewG1().FromBytes(publicKey)
+		if err != nil {
+			return nil, err
+		}
 
-	// Y's hash to 256-bit sha256 sum
-	rPksBytes := g2ToBytes(Y)
+		var r *big.Int = zero
+		for {
+			r = common.GetRandomPositiveInt(modulus.big())
+			if r.Cmp(zero) != 0 {
+				break
+			}
+		}
 
-	// aes's key to 256-bit aes key
-	AesBytes := message
+		var U = new(bls.PointG1)
+		var Y = new(bls.PointG1)
+		var W = new(bls.PointG2)
+		var H = new(bls.PointG2)
+		var V []byte = make([]byte, Sha256SumSize)
+		g1 := bls.NewG1()
+		U = g1.One()
+		U = G1MulScalarMont(U, U, r)
+		Y = G1MulScalarMont(Y, pk, r)
 
-	if len(AesBytes) != len(rPksBytes) || len(rPksBytes) != Sha256SumSize {
-		return nil, errors.New("aes bytes size not equal to pks bytes size")
+		// Y's hash to 256-bit sha256 sum
+		rPksBytes := g1ToBytes(Y)
+
+		// aes's key to 256-bit aes key
+		AesBytes := message
+
+		if len(AesBytes) != len(rPksBytes) || len(rPksBytes) != Sha256SumSize {
+			return nil, errors.New("aes bytes size not equal to pks bytes size")
+		}
+
+		for i := 0; i < len(AesBytes); i++ {
+			V[i] = rPksBytes[i] ^ AesBytes[i]
+		}
+
+		g2 := bls.NewG2()
+		H, err = hashToGroupG1(U, V)
+		if err != nil {
+			return nil, err
+		}
+		W = G2MulScalarMont(W, H, r)
+
+		// cipher bytes first 192 bytes U, denotes r * P
+		// cipher bytes second 32 bytes V, denotes G(r * pk * P) ^ aes
+		// cipher bytes third 96  bytes W, denotes r * H(U, V)
+		// assumption: sum(lamda_i * sk_i) = pk
+		// validation: e(W, P) = e(r * H, P) = e(r * P, H) = e(U, H)
+		// recovery: V ^ G(sum(lamda_i * sk_i) * U) = G(r * pk * P) ^ aes ^ G(r * pk * P) = aes
+
+		cipherBytes := g1.ToBytes(U)
+		cipherBytes = append(cipherBytes, V...)
+		cipherBytes = append(cipherBytes, g2.ToBytes(W)...)
+		return cipherBytes, nil
 	}
 
-	for i := 0; i < len(AesBytes); i++ {
-		V[i] = rPksBytes[i] ^ AesBytes[i]
-	}
-
-	g1 := bls.NewG1()
-	H, err = hashToGroup(U, V)
-	if err != nil {
-		return nil, err
-	}
-	W = G1MulScalarMont(W, H, r)
-
-	// cipher bytes first 192 bytes U, denotes r * P
-	// cipher bytes second 32 bytes V, denotes G(r * pk * P) ^ aes
-	// cipher bytes third 96  bytes W, denotes r * H(U, V)
-	// assumption: sum(lamda_i * sk_i) = pk
-	// validation: e(W, P) = e(r * H, P) = e(r * P, H) = e(U, H)
-	// recovery: V ^ G(sum(lamda_i * sk_i) * U) = G(r * pk * P) ^ aes ^ G(r * pk * P) = aes
-
-	cipherBytes := g2.ToBytes(U)
-	cipherBytes = append(cipherBytes, V...)
-	cipherBytes = append(cipherBytes, g1.ToBytes(W)...)
-	return cipherBytes, nil
+	return nil, fmt.Errorf("no suite")
 }
 
-func encrypt(cipherText, publicKey, message []byte) error {
-	aesKey, encryptedMessage, iv := encryptWithAes(message)
-	encryptedAes, err := encryptAesKey(publicKey, aesKey)
+func encrypt(suite []byte, cipherText, publicKey, message []byte) error {
+	aesKey, hmacBytes, iv := encryptWithAes(message)
+	encryptedAes, err := encryptAesKey(suite, publicKey, aesKey)
 	if err != nil {
 		return err
 	}
 
 	copy(cipherText, iv)
 	copy(cipherText[aes.BlockSize:], encryptedAes)
-	copy(cipherText[aes.BlockSize+PointG2Size+Sha256SumSize+PointG1Size:], encryptedMessage)
+	copy(cipherText[aes.BlockSize+PointG2Size+Sha256SumSize+PointG1Size:], hmacBytes)
 	return nil
 }
 
-func EncryptByGeneratedAes(cipherText, publicKey, message []byte) error {
-	aesKey, encryptedMessage, iv := encryptWithAes(message)
-	encryptedAes, err := encryptAesKey(publicKey, aesKey)
+func EncryptByGeneratedAes(suite []byte, cipherText, publicKey, message []byte) error {
+	aesKey, hmacBytes, iv := encryptWithAes(message)
+	encryptedAes, err := encryptAesKey(suite, publicKey, aesKey)
 	if err != nil {
 		return err
 	}
 
 	copy(cipherText, iv)
 	copy(cipherText[aes.BlockSize:], encryptedAes)
-	copy(cipherText[aes.BlockSize+PointG2Size+Sha256SumSize+PointG1Size:], encryptedMessage)
+	copy(cipherText[aes.BlockSize+PointG2Size+Sha256SumSize+PointG1Size:], hmacBytes)
 	return nil
 }
 
-func PadToLengthBytesInPlace(src []byte, length int) []byte {
+func PadToLengthBytesInPlace(src []byte, length int) ([]byte, error) {
+	if len(src) > length {
+		return nil, fmt.Errorf("can not pad to src length %v for %v", len(src), length)
+	}
 	oriLen := len(src)
 	if oriLen < length {
 		for i := 0; i < length-oriLen; i++ {
 			src = append([]byte{0}, src...)
 		}
 	}
-	return src
+	return src, nil
 }
 
 // PadToLengthBytesInPlacePKCSS7
@@ -489,9 +804,6 @@ func PadToLengthBytesInPlace(src []byte, length int) []byte {
 func PadToLengthBytesInPlacePKCSS7(src []byte, length int) []byte {
 	oriLen := len(src)
 	oriLenLeft := oriLen % length
-	if oriLenLeft == 0 {
-		return src
-	}
 	padded := byte(length - oriLenLeft)
 	paddedBytes := make([]byte, int(padded))
 	for i := range paddedBytes {
@@ -503,20 +815,20 @@ func PadToLengthBytesInPlacePKCSS7(src []byte, length int) []byte {
 // RemovePadToLengthBytesInPlacePKCSS7
 // 255 15 15 15 15 15 15 15 15 15 15 15 15 15 15 15  -> 255
 // ref: https://stackoverflow.com/questions/13572253/what-kind-of-padding-should-aes-use
-func RemovePadToLengthBytesInPlacePKCSS7(src []byte, length int) []byte {
+func RemovePadToLengthBytesInPlacePKCSS7(src []byte, length int) ([]byte, error) {
 	for i := len(src) - 1; i >= len(src)-length; i-- {
 		if i < len(src)-1 && src[i] != src[i+1] {
-			break
+			return nil, fmt.Errorf("wrong padding")
 		}
 		if int(src[i]) == len(src)-i {
-			return src[:i]
+			return src[:i], nil
 		}
 
 		if int(src[i]) < len(src)-i {
-			break
+			return nil, fmt.Errorf("wrong padding")
 		}
 	}
-	return src
+	return src, nil
 }
 
 // G2MulScalarMont multiplies a point by given scalar value in big.Int and assigns the result to point at first argument.

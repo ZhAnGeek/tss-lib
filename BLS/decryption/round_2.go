@@ -7,6 +7,7 @@
 package decryption
 
 import (
+	"bytes"
 	"context"
 
 	bls "github.com/ethereum/go-ethereum/crypto/bls12381"
@@ -16,7 +17,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round2) Start(ctx context.Context) *tss.Error {
+func (round *round2) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -36,16 +37,29 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 		shareDecryptBytes = append(shareDecryptBytes, iBytes)
 	}
 
-	subPubKeys := make([]*bls.PointG2, 0)
-	for _, xj := range round.temp.wj {
-		g2SubPubKey, err := bls12381.FromIntToPointG2(xj.X(), xj.Y())
-		if err != nil {
-			return round.WrapError(err)
+	subPubKeysG2 := make([]*bls.PointG2, 0)
+	if bytes.Compare(round.temp.suite, bls12381.GetBLSSignatureSuiteG1()) == 0 {
+		for _, xj := range round.temp.wj {
+			g2SubPubKey, err := bls12381.FromIntToPointG2(xj.X(), xj.Y())
+			if err != nil {
+				return round.WrapError(err)
+			}
+			subPubKeysG2 = append(subPubKeysG2, g2SubPubKey)
 		}
-		subPubKeys = append(subPubKeys, g2SubPubKey)
 	}
 
-	clearTextBytes, err := bls12381.Decrypt(shareDecryptBytes, round.temp.m, subPubKeys)
+	subPubKeysG1 := make([]*bls.PointG1, 0)
+	if bytes.Compare(round.temp.suite, bls12381.GetBLSSignatureSuiteG2()) == 0 {
+		for _, xj := range round.temp.wj {
+			g1SubPubKey, err := bls12381.FromIntToPointG1(xj.X(), xj.Y())
+			if err != nil {
+				return round.WrapError(err)
+			}
+			subPubKeysG1 = append(subPubKeysG1, g1SubPubKey)
+		}
+	}
+
+	clearTextBytes, err := bls12381.Decrypt(round.temp.suite, shareDecryptBytes, round.temp.m, subPubKeysG2, subPubKeysG1)
 
 	if err != nil {
 		return round.WrapError(err)
@@ -59,7 +73,7 @@ func (round *round2) Update() (bool, *tss.Error) {
 	return true, nil
 }
 
-func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
+func (round *round2) CanAccept(_ tss.ParsedMessage) bool {
 	return true
 }
 
