@@ -160,6 +160,7 @@ func (pf *ProofMod) Verify(ctx context.Context, Session []byte, N *big.Int) bool
 			left := modN.Exp(pf.Z[i], N)
 			if left.Cmp(Y[i]) != 0 {
 				chs <- false
+				return
 			}
 			chs <- true
 		}(i)
@@ -185,6 +186,7 @@ func (pf *ProofMod) Verify(ctx context.Context, Session []byte, N *big.Int) bool
 			}
 			if left.Cmp(right) != 0 {
 				chs <- false
+				return
 			}
 			chs <- true
 		}(i)
