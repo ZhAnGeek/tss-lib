@@ -14,6 +14,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -34,11 +35,11 @@ func (round *finalization) VerifySig(ctx context.Context, s *big.Int, e *big.Int
 
 	W, _ := sY.Add(eG)
 	mHash := sha256.Sum256(m)
-	mHashPkBytes := append(mHash[:], W.X().Bytes()...)
+	mHashPkBytes := append(mHash[:], ckd.ReverseBytes(W.X().Bytes())...)
 	e2Bytes := sha256.Sum256(mHashPkBytes)
 
 	// e1 == e2
-	return e.Cmp(new(big.Int).SetBytes(e2Bytes[:])) == 0
+	return e.Cmp(new(big.Int).SetBytes(ckd.ReverseBytes(e2Bytes[:]))) == 0
 }
 
 func VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
@@ -59,11 +60,11 @@ func VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *cr
 
 	W, _ := sY.Add(eG)
 	mHash := sha256.Sum256(m)
-	mHashPkBytes := append(mHash[:], W.X().Bytes()...)
+	mHashPkBytes := append(mHash[:], ckd.ReverseBytes(W.X().Bytes())...)
 	e2Bytes := sha256.Sum256(mHashPkBytes)
 
 	// e1 == e2
-	return e.Cmp(new(big.Int).SetBytes(e2Bytes[:])) == 0
+	return e.Cmp(new(big.Int).SetBytes(ckd.ReverseBytes(e2Bytes[:]))) == 0
 }
 
 func (round *finalization) Start(ctx context.Context) *tss.Error {
@@ -108,9 +109,10 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	eBytes := round.temp.e.Bytes()
 
 	// save the signature for final output
-	round.data.R = sBytes
-	round.data.S = eBytes
-	round.data.Signature = append(sBytes, eBytes...)
+	round.data.R = ckd.ReverseBytes(sBytes)
+	round.data.S = ckd.ReverseBytes(eBytes)
+	round.data.Signature = append(round.data.R, round.data.S...)
+
 	round.data.M = round.temp.m
 
 	ok := round.VerifySig(ctx, sumKXShare, round.temp.e, round.temp.m, round.key.PubKey)
