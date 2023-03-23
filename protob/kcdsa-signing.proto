@@ -1,0 +1,60 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib.kcdsa.signing;
+option go_package = "kcdsa/signing";
+
+
+/*
+ * Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
+ */
+message SignRound1Message {
+    bytes k_commitment = 1; // used as vss share
+}
+
+/*
+ * Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
+ */
+message SignRound2Message1 {
+    repeated bytes k_de_commitment = 1;
+    repeated bytes proofK = 2;
+}
+
+/*
+ * Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
+ */
+message SignRound3Message1 {
+    bytes K = 1; // used as mta, represent k substract e
+    bytes X = 2;   // used as mta, x
+}
+
+/*
+ * Represents a P2P message sent during Round 1 of the KCDSA TSS keygen protocol.
+ */
+message SignRound3Message2 {
+   repeated bytes EncProof = 3; // used as mta, represent k substract e
+}
+
+/*
+ * Represents a P2P message sent to each party during Round 2 of the ECDSA TSS signing protocol.
+ */
+message SignRound4Message1 {
+    repeated bytes BigXShare = 1;
+    bytes DjiKX = 2;
+    bytes FjiKX = 3;
+    repeated bytes AffgProofKX = 4;
+    repeated bytes LogstarProof = 5;
+}
+
+/*
+ * Represents a P2P message sent to all parties during Round 3 of the ECDSA TSS signing protocol.
+ */
+message SignRound5Message1 {
+    bytes KXShare = 1;
+    repeated bytes BigKXShare = 2;
+    repeated bytes ProofLogstar = 3;
+}

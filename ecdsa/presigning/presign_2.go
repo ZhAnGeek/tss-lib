@@ -13,6 +13,7 @@ import (
 	"sync"
 
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/mta"
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/tss"
@@ -83,13 +84,13 @@ func (round *presign2) Start(ctx context.Context) *tss.Error {
 
 			Kj := round.temp.R1msgK[j]
 
-			DeltaMtA, err := NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			DeltaMtA, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if err != nil {
 				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
 				return
 			}
 
-			ChiMtA, err := NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.W, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			ChiMtA, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.W, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if err != nil {
 				errChs <- round.WrapError(errors.New("MtAChi failed"), Pi)
 				return

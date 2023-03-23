@@ -1,26 +1,32 @@
-// Copyright © 2019 Binance
+// Copyright © 2019-2021 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package presigning_test
+package mta_test
 
 import (
 	"context"
 	"testing"
 
+	. "github.com/Safulet/tss-lib-private/common"
+	. "github.com/Safulet/tss-lib-private/crypto"
+	. "github.com/Safulet/tss-lib-private/crypto/mta"
+	"github.com/Safulet/tss-lib-private/test"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	. "github.com/Safulet/tss-lib-private/ecdsa/presigning"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
 var (
 	Session = []byte("session")
+)
+
+const (
+	testParticipants = test.TestParticipants
+	testThreshold    = test.TestThreshold
 )
 
 func TestMtA(test *testing.T) {
@@ -35,12 +41,12 @@ func TestMtA(test *testing.T) {
 	pki := keys[0].PaillierPKs[0]
 	// skj := keys[1].PaillierSK
 	pkj := keys[1].PaillierPKs[1]
-	kj := common.GetRandomPositiveInt(q)
+	kj := GetRandomPositiveInt(q)
 	Kj, err := pkj.Encrypt(kj)
 	assert.NoError(test, err)
 
-	gammai := common.GetRandomPositiveInt(q)
-	BigGammai := crypto.ScalarBaseMult(ec, gammai)
+	gammai := GetRandomPositiveInt(q)
+	BigGammai := ScalarBaseMult(ec, gammai)
 
 	NCap, s, t, err := keygen.LoadNTildeH1H2FromTestFixture(1)
 	assert.NoError(test, err)
