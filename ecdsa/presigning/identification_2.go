@@ -43,13 +43,13 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
 			proofMul := round.temp.R5msgProofMul[j]
+			ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 			ok := proofMul.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.R1msgK[j], round.temp.R1msgG[j], round.temp.R5msgH[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)

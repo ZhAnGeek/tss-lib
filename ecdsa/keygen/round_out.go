@@ -32,12 +32,11 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.RidAllBz, big.NewInt(int64(j)).Bytes()[:]...)
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-
+			ContextJ := append(round.temp.RidAllBz, big.NewInt(int64(j)).Bytes()[:]...)
 			ok := round.temp.r4msgpfsch[j].Verify(ctx, ContextJ, round.save.BigXj[j])
 			if !ok || !round.temp.r4msgpfsch[j].A.Equals(round.temp.r2msgAs[j]) {
 				errChs <- round.WrapError(errors.New("proofSch verify failed"), Pj)
@@ -59,7 +58,7 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *roundout) CanAccept(msg tss.ParsedMessage) bool {
+func (round *roundout) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }

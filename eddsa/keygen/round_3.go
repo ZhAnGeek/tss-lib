@@ -68,7 +68,6 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if j == PIdx {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
 		// 6-9.
 		go func(j int, ch chan<- vssOut) {
 			// 4-10.
@@ -94,6 +93,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				ch <- vssOut{errors.New("failed to unmarshal Schnorr proof"), nil}
 				return
 			}
+			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
 			ok = proof.Verify(ctx, ContextJ, PjVs[0])
 			if !ok {
 				ch <- vssOut{errors.New("failed to prove Schnorr proof"), nil}
