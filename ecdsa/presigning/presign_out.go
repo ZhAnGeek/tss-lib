@@ -42,10 +42,10 @@ func (round *presignout) Start(ctx context.Context) *tss.Error {
 			continue
 		}
 
-		ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
+			ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
 			Kj := round.temp.R1msgK[j]
 			BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
 			proofLogstar := round.temp.R3msgProofLogstar[j]
@@ -131,7 +131,7 @@ func (round *presignout) Update() (bool, *tss.Error) {
 	return false, nil
 }
 
-func (round *presignout) CanAccept(msg tss.ParsedMessage) bool {
+func (round *presignout) CanAccept(_ tss.ParsedMessage) bool {
 	return false
 }
 
