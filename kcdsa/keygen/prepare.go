@@ -83,7 +83,6 @@ func GeneratePreParams(ctx context.Context, timeout time.Duration, optionalConcu
 
 	preParams := &LocalPreParams{
 		PaillierSK: paiSK,
-		NTildei:    NTildei,
 		H1i:        h1i,
 		H2i:        h2i,
 		Alpha:      alpha,

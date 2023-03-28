@@ -49,7 +49,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			XD := round.temp.r3msgRXD[j]
 			XF := round.temp.r3msgRXF[j]
 			proofAffgDelta := round.temp.r3msgRXProof[j]
-			ok := proofAffgDelta.Verify(ctx, ContextJ, round.EC(), &round.save.PaillierSK.PublicKey, round.save.PaillierPKs[j], round.save.NTildei, round.save.H1i, round.save.H2i, round.temp.R, XD, XF, XSharej)
+			ok := proofAffgDelta.Verify(ctx, ContextJ, round.EC(), &round.save.PaillierSK.PublicKey, round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, round.temp.R, XD, XF, XSharej)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg delta"), Pj)
 				return
@@ -63,7 +63,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 
 			proofLogstar := round.temp.r3msgProofLogstar[j]
 			Xj := round.temp.r1msg1X[j]
-			ok = proofLogstar.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], Xj, XSharej, g, round.save.NTildei, round.save.H1i, round.save.H2i)
+			ok = proofLogstar.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], Xj, XSharej, g, round.save.PaillierSK.N, round.save.H1i, round.save.H2i)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify logstar"), Pj)
 				return

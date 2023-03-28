@@ -118,7 +118,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 
 	// BROADCAST commitments
 	{
-		msg := NewKGRound1Message1(round.PartyID(), &round.save.PaillierSK.PublicKey, round.save.NTildei, round.save.H1i, round.save.H2i, R, X, rcmt.C, cmt.C)
+		msg := NewKGRound1Message1(round.PartyID(), &round.save.PaillierSK.PublicKey, round.save.PaillierSK.N, round.save.H1i, round.save.H2i, R, X, rcmt.C, cmt.C)
 		round.out <- msg
 	}
 	return nil

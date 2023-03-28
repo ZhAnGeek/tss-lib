@@ -49,7 +49,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 			}
 			round.save.LocalPreParams = *preParams
 		}
-		msg := NewDGRound1MessageNewParty(round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(), &round.save.PaillierSK.PublicKey, round.save.NTildei, round.save.H1i, round.save.H2i)
+		msg := NewDGRound1MessageNewParty(round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(), &round.save.PaillierSK.PublicKey, round.save.PaillierSK.N, round.save.H1i, round.save.H2i)
 		round.out <- msg
 		return nil
 	}
