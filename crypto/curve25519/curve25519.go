@@ -117,6 +117,17 @@ func (curve *Curve25519) Params() *elliptic.CurveParams {
 
 func (curve *Curve25519) ConvertPointFromMontgomery(x1, y1 *big.Int) (x, y *big.Int) {
 	one := new(big.Int).SetInt64(1)
+	zero := new(big.Int).SetInt64(0)
+
+	// map (0, 0) to (0, -1)
+	if x1.Cmp(zero) == 0 && y1.Cmp(zero) == 0 {
+		return zero, new(big.Int).SetInt64(-1)
+	}
+
+	// map point of infinity (1, 0) to (0, 1)
+	if x1.Cmp(one) == 0 && y1.Cmp(zero) == 0 {
+		return zero, one
+	}
 	modP := common.ModInt(curve.twisted.Params().P)
 	addx := new(big.Int).Add(x1, one)
 	subx := new(big.Int).Sub(x1, one)
