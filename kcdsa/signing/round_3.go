@@ -140,6 +140,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
+	round.temp.ssid = ssid
 	ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
@@ -155,8 +156,8 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				return
 			}
 
-			r1msg := NewSignRound3Message2(Pj, round.PartyID(), proof)
-			round.out <- r1msg
+			r3msg2 := NewSignRound3Message2(Pj, round.PartyID(), proof)
+			round.out <- r3msg2
 		}(j, Pj)
 	}
 	wg.Wait()
@@ -175,6 +176,10 @@ func (round *round3) Update() (bool, *tss.Error) {
 		if msg == nil || !round.CanAccept(msg) {
 			return false, nil
 		}
+		r3msg2 := round.temp.signRound3Messages2[j]
+		if r3msg2 == nil || !round.CanAccept(r3msg2) {
+			return false, nil
+		}
 		round.ok[j] = true
 	}
 	return true, nil
@@ -183,6 +188,9 @@ func (round *round3) Update() (bool, *tss.Error) {
 func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
 	if _, ok := msg.Content().(*SignRound3Message1); ok {
 		return msg.IsBroadcast()
+	}
+	if _, ok := msg.Content().(*SignRound3Message2); ok {
+		return !msg.IsBroadcast()
 	}
 	return false
 }

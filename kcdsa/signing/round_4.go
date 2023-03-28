@@ -51,6 +51,23 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			message := round.temp.signRound3Messages[j].Content().(*SignRound3Message1)
 			Kj := message.UnmarshalK()
 
+			encProofMessage := round.temp.signRound3Messages2[j].Content().(*SignRound3Message2)
+			proof, err := encProofMessage.UnmarshalEncProof()
+			if err != nil {
+				errChs <- round.WrapError(errors.New("verify enc proof failed"), Pi)
+				return
+			}
+			if err != nil {
+				errChs <- round.WrapError(errors.New("verify enc proof failed"), Pi)
+				return
+			}
+			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.PaillierSK.N, round.key.H1i, round.key.H2i, Kj)
+			if !ok {
+				errChs <- round.WrapError(errors.New("round2: proofEnc verify failed"), Pj)
+				return
+			}
+
 			kxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.XShare, BigXShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if err != nil {
 				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
