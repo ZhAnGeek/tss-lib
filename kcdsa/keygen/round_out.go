@@ -39,7 +39,7 @@ func (round *round_out) Start(ctx context.Context) *tss.Error {
 		sumRXShare = modN.Add(sumRXShare, round.temp.r4msgRXShare[j])
 		bigRXShare, err = bigRXShare.Add(round.temp.r4msgBigRXShare[j])
 		if err != nil {
-			return round.WrapError(errors.New("can not add rx share"))
+			return round.WrapError(errors.New("cannot add rx share"))
 		}
 	}
 	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)

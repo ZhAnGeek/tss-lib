@@ -20,7 +20,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// These messages were generated from Protocol Buffers definitions into schnorr-signing.pb.go
+// These messages were generated from Protocol Buffers definitions into kcdsa-signing.pb.go
 // The following messages are registered on the Protocol Buffers "wire"
 
 var (

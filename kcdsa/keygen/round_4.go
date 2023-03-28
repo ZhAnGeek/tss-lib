@@ -89,7 +89,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		var err error
 		BigX, err = BigX.Add(BigXShare)
 		if err != nil {
-			return round.WrapError(errors.New("round3: failed to collect BigGamma"))
+			return round.WrapError(errors.New("round3: failed to collect BigX"))
 		}
 	}
 	BigRXShare := BigX.ScalarMult(round.temp.RShare)
@@ -121,8 +121,8 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("proofLogStar generation failed"), Pi)
 				return
 			}
-			r3msg := NewKGRound4Message1(Pj, round.PartyID(), RXShare, BigRXShare, ProofLogstar)
-			round.out <- r3msg
+			r4msg := NewKGRound4Message1(Pj, round.PartyID(), RXShare, BigRXShare, ProofLogstar)
+			round.out <- r4msg
 		}(j, Pj)
 	}
 	wg.Wait()

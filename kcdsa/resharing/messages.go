@@ -18,7 +18,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// These messages were generated from Protocol Buffers definitions into schnorr-resharing.pb.go
+// These messages were generated from Protocol Buffers definitions into kcdsa-resharing.pb.go
 
 var (
 	// Ensure that signing messages implement ValidateBasic

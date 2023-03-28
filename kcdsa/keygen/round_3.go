@@ -211,8 +211,8 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				return
 			}
 
-			r2msg := NewKGRound3Message1(Pj, round.PartyID(), BigXShare, rxMta.Dji, rxMta.Fji, rxMta.Proofji, ProofLogstar)
-			round.out <- r2msg
+			r3msg := NewKGRound3Message1(Pj, round.PartyID(), BigXShare, rxMta.Dji, rxMta.Fji, rxMta.Proofji, ProofLogstar)
+			round.out <- r3msg
 
 			round.temp.RXShareBetas[j] = rxMta.Beta
 
