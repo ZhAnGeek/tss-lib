@@ -102,12 +102,16 @@ func (curve *Curve25519) Double(x1, y1 *big.Int) (x, y *big.Int) {
 
 func (curve *Curve25519) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 	tx, ty := one, zero
+	tmp1, tmp2 := zero, zero
 
 	bits := fmt.Sprintf("%b", new(big.Int).SetBytes(k))
 	for _, bit := range bits {
 		tx, ty = curve.Double(tx, ty)
+		tmp1, tmp2 = curve.Add(tx, ty, x1, y1)
 		if bit == '1' {
-			tx, ty = curve.Add(tx, ty, x1, y1)
+			tx, ty = tmp1, tmp2
+		} else {
+			tmp1, tmp2 = tx, ty
 		}
 	}
 	return tx, ty
