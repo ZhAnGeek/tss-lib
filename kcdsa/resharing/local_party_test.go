@@ -204,27 +204,6 @@ signing:
 			atomic.AddInt32(&signEnded, 1)
 			if atomic.LoadInt32(&signEnded) == int32(len(signPIDs)) {
 				t.Logf("Signing done. Received sign data from %d participants", signEnded)
-
-				// // BEGIN Schnorr verify
-				// pkX, pkY := signKeys[0].PubKey.X(), signKeys[0].PubKey.Y()
-				// pk := edwards.PublicKey{
-				//	Curve: tss.Edwards(),
-				//	X:     pkX,
-				//	Y:     pkY,
-				// }
-
-				// newSig, err := edwards.ParseSignature(signData.Signature)
-				// if err != nil {
-				//	println("new sig error, ", err.Error())
-				// }
-
-				// ok := edwards.Verify(&pk, big.NewInt(42).Bytes(),
-				//	newSig.R, newSig.S)
-
-				// assert.True(t, ok, "schnorr verify must pass")
-				// t.Log("Schnorr signing test done.")
-				// // END Schnorr verify
-
 				return
 			}
 		}
