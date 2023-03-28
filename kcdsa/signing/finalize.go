@@ -101,8 +101,10 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(errors.New("share not equal failed"))
 	}
 
-	sBytes := sumKXShare.Bytes()
-	eBytes := round.temp.e.Bytes()
+	sBytes := make([]byte, 32)
+	sumKXShare.FillBytes(sBytes)
+	eBytes := make([]byte, 32)
+	round.temp.e.FillBytes(eBytes)
 
 	// save the signature for final output
 	round.data.R = ckd.ReverseBytes(sBytes)
