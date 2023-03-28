@@ -162,7 +162,7 @@ func (m *SignRound3Message2) ValidateBasic() bool {
 }
 
 func (m *SignRound3Message2) RoundNumber() int {
-	return 1
+	return 3
 }
 
 func (m *SignRound3Message2) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
