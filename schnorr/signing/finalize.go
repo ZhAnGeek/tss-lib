@@ -14,6 +14,8 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/mina"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/zil"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -50,7 +52,11 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		zj := r3msg.UnmarshalZi()
 
 		LHS := crypto.ScalarBaseMult(round.EC(), zj)
-		RHS, err := round.temp.Rjs[j].Add(round.temp.bigWs[j].ScalarMult(round.temp.c))
+		negC := round.temp.c
+		if round.Network() == tss.ZIL {
+			negC = modQ.Sub(round.EC().Params().N, round.temp.c)
+		}
+		RHS, err := round.temp.Rjs[j].Add(round.temp.bigWs[j].ScalarMult(negC))
 		if err != nil {
 			return round.WrapError(errors.New("zj check failed"), Pj)
 		}
@@ -61,12 +67,24 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	}
 
 	// save the signature for final output
-	round.data.R = round.temp.R.X().Bytes()
+	if round.Network() == tss.ZIL {
+		round.data.R = round.temp.c.Bytes()
+	} else {
+		round.data.R = round.temp.R.X().Bytes()
+	}
 	round.data.S = sumZ.Bytes()
-	round.data.Signature = append(round.temp.R.X().Bytes(), sumZ.Bytes()...)
 	round.data.M = round.temp.m
+	round.data.Signature = append(round.data.R, round.data.S...)
 
-	ok := VerifySig(ctx, round.EC(), round.temp.R, sumZ, round.temp.m, round.key.PubKey)
+	var ok bool
+	switch round.Network() {
+	case tss.MINA:
+		ok = mina.MinaSchnorrVerify(round.key.PubKey, round.temp.m, round.data.Signature) == nil
+	case tss.ZIL:
+		ok = zil.ZILSchnorrVerify(round.key.PubKey, round.data.M, round.data.Signature) == nil
+	default:
+		ok = VerifySig(ctx, round.EC(), round.temp.R, sumZ, round.temp.m, round.key.PubKey)
+	}
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}

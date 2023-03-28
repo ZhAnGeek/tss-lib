@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package minasigning
+package mina
 
 import (
 	"fmt"
@@ -25,7 +25,7 @@ func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) err
 	s := signature[32:64]
 
 	rp := crypto.NewECPointNoCurveCheck(pubkey.Curve(), new(big.Int).SetBytes(r), nil)
-	e := schnorrHash(rp, pubkey, msg)
+	e := SchnorrHash(rp, pubkey, msg)
 
 	sg := new(curves.Ep).Generator()
 	sg.Mul(sg, (new(fq.Fq).SetBigInt(new(big.Int).SetBytes(s))))
@@ -37,6 +37,7 @@ func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) err
 	if !rc.Y().IsOdd() && rc.X().Equal(new(fp.Fp).SetBigInt(new(big.Int).SetBytes(r))) {
 		return nil
 	}
+
 	return fmt.Errorf("verify failed")
 }
 
@@ -50,7 +51,7 @@ func getEP(pubkey *crypto.ECPoint) *curves.Ep {
 	return p
 }
 
-func schnorrHash(r *crypto.ECPoint, pubKey *crypto.ECPoint, msg []byte) []byte {
+func SchnorrHash(r *crypto.ECPoint, pubKey *crypto.ECPoint, msg []byte) []byte {
 	networkId := mina.NetworkType(mina.MainNet)
 	input := new(Roinput)
 	if len(msg) > 0 && input.RecoverRaw(msg[1:]) == nil {
@@ -67,10 +68,8 @@ func schnorrHash(r *crypto.ECPoint, pubKey *crypto.ECPoint, msg []byte) []byte {
 	input.AddFp(pkx)
 	input.AddFp(pky)
 	input.AddFp(rx)
-
 	ctx := new(mina.Context).Init(mina.ThreeW, networkId)
 	fields := input.Fields()
 	ctx.Update(fields)
-
 	return ctx.Digest().BigInt().Bytes()
 }
