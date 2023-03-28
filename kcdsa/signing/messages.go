@@ -29,7 +29,9 @@ var (
 		(*SignRound1Message)(nil),
 		(*SignRound2Message1)(nil),
 		(*SignRound3Message1)(nil),
+		(*SignRound3Message2)(nil),
 		(*SignRound4Message1)(nil),
+		(*SignRound5Message1)(nil),
 	}
 )
 

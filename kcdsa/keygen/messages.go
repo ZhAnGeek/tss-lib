@@ -30,6 +30,9 @@ var (
 	_ = []tss.MessageContent{
 		(*KGRound1Message1)(nil),
 		(*KGRound2Message1)(nil),
+		(*KGRound2Message2)(nil),
+		(*KGRound3Message1)(nil),
+		(*KGRound4Message1)(nil),
 	}
 )
 
