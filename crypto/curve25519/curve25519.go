@@ -73,6 +73,9 @@ func (curve *Curve25519) Double(x1, y1 *big.Int) (x, y *big.Int) {
 	if x1.Cmp(one) == 0 && y1.Cmp(zero) == 0 {
 		return one, zero
 	}
+	if x1.Cmp(zero) == 0 && y1.Cmp(zero) == 0 {
+		return one, zero
+	}
 	modP := common.ModInt(curve.Params().P)
 	x12 := new(big.Int).Mul(x1, x1)
 	y12 := new(big.Int).Mul(y1, y1)
