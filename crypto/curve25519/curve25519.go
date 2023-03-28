@@ -31,6 +31,9 @@ type Curve25519 struct {
 }
 
 func (curve *Curve25519) IsOnCurve(x, y *big.Int) bool {
+	if x.Cmp(one) == 0 && y.Cmp(zero) == 0 {
+		return false
+	}
 	xt, yt := curve.ConvertPointFromMontgomery(x, y)
 	return curve.twisted.IsOnCurve(xt, yt)
 }
