@@ -132,7 +132,7 @@ func (x *KGRound1Message1) GetXCommitment() []byte {
 }
 
 //
-// Represents a P2P message sent during Round 1 of the KCDSA TSS keygen protocol.
+// Represents a P2P message sent during Round 2 of the KCDSA TSS keygen protocol.
 type KGRound2Message1 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -197,7 +197,7 @@ func (x *KGRound2Message1) GetXShare() []byte {
 }
 
 //
-// Represents a BROADCAST message sent to each party during Round 2 of the SCHNORR TSS keygen protocol.
+// Represents a BROADCAST message sent to each party during Round 2 of the KCDSA TSS keygen protocol.
 type KGRound2Message2 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -270,7 +270,7 @@ func (x *KGRound2Message2) GetXProof() [][]byte {
 }
 
 //
-// Represents a P2P message sent to each party during Round 2 of the ECDSA TSS signing protocol.
+// Represents a P2P message sent to each party during Round 3 of the KCDSA TSS signing protocol.
 type KGRound3Message1 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -351,7 +351,7 @@ func (x *KGRound3Message1) GetLogstarProof() [][]byte {
 }
 
 //
-// Represents a P2P message sent to all parties during Round 3 of the ECDSA TSS signing protocol.
+// Represents a P2P message sent to all parties during Round 4 of the KCDSA TSS signing protocol.
 type KGRound4Message1 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
