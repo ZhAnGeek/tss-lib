@@ -15,7 +15,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 )
 
-func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.ECPoint, pubkey, bigR *crypto.ECPoint) (wi *big.Int, bigWs []*crypto.ECPoint) {
+func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.ECPoint, pubkey, bigR *crypto.ECPoint) (wi *big.Int) {
 	modQ := common.ModInt(ec.Params().N)
 	if len(ks) != len(bigXs) {
 		panic(fmt.Errorf("PrepareForSigning: len(ks) != len(bigXs) (%d != %d)", len(ks), len(bigXs)))

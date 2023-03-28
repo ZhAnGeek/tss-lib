@@ -57,7 +57,6 @@ type (
 		ssid      []byte
 		ssidNonce *big.Int
 		wi        *big.Int
-		bigWs     []*crypto.ECPoint
 		ki        *big.Int
 		K         *big.Int
 		KNonce    *big.Int
