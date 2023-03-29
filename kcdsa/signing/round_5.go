@@ -110,6 +110,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(errors.New("round3: failed to collect BigGamma"))
 		}
 	}
+	round.temp.BigXAll = BigX
 	BigKXShare := BigX.ScalarMult(round.temp.KShare)
 	round.temp.BigKXShare = BigKXShare
 	modN := common.ModInt(round.EC().Params().N)
@@ -133,7 +134,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.X, BigKXShare, BigX, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
+			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, BigKXShare, BigX, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.KShare, round.temp.KNonce)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proofLogStar generation failed"), Pi)
 				return

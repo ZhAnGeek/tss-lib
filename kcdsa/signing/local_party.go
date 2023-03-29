@@ -75,10 +75,14 @@ type (
 		Kjs []*crypto.ECPoint
 		kjs []*big.Int
 
+		// round 3
+		Ks []*big.Int
+
 		// round 4
 		KXShareBetas  []*big.Int
 		KXShareAlphas []*big.Int
 		BigXShare     *crypto.ECPoint
+		BigXAll       *crypto.ECPoint
 
 		KXMtAFs       []*big.Int
 		KXMtADs       []*big.Int
@@ -117,6 +121,7 @@ func NewLocalParty(
 
 	// temp data init
 	p.temp.m = msg
+	p.temp.Ks = make([]*big.Int, partyCount)
 	p.temp.kjs = make([]*big.Int, partyCount)
 	p.temp.Kjs = make([]*crypto.ECPoint, partyCount)
 	p.temp.KXShareBetas = make([]*big.Int, partyCount)

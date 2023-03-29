@@ -50,6 +50,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 
 			message := round.temp.signRound3Messages[j].Content().(*SignRound3Message1)
 			Kj := message.UnmarshalK()
+			round.temp.Ks[j] = Kj
 
 			encProofMessage := round.temp.signRound3Messages2[j].Content().(*SignRound3Message2)
 			proof, err := encProofMessage.UnmarshalEncProof()

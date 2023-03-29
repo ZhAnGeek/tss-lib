@@ -87,8 +87,18 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		kxShare := message.UnmarshalKXShare()
 		bigKxShare, err := message.UnmarshalBigKXShare(round.EC())
 		if err != nil {
-			return round.WrapError(errors.New("can not add rx share"))
+			return round.WrapError(errors.New("can not add kx share"))
 		}
+		proofLogstar, err := message.UnmarshalProofLogstar(round.EC())
+		if err != nil {
+			return round.WrapError(errors.New("can not get proof log star"))
+		}
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ok := proofLogstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.Ks[j], bigKxShare, round.temp.BigXAll, round.key.PaillierSK.N, round.key.H1i, round.key.H2i)
+		if !ok {
+			return round.WrapError(errors.New("proof log star verify failed"))
+		}
+
 		sumKXShare = modN.Add(sumKXShare, kxShare)
 		sumBigKxShare, err = sumBigKxShare.Add(bigKxShare)
 		if err != nil {
