@@ -199,6 +199,13 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 			Rj := round.temp.r1msg1R[j]
 
+			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			encProof := round.temp.r2msg1Proof[j]
+			encProofVerified := encProof.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, Rj)
+			if !encProofVerified {
+				errChs <- round.WrapError(errors.New("rj enc proof verify failed"), Pi)
+				return
+			}
 			rxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Rj, round.temp.XShare, BigXShare, round.save.PaillierPKs[j], &round.save.PaillierSK.PublicKey, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j])
 			if err != nil {
 				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
