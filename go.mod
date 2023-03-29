@@ -14,7 +14,7 @@ require (
 	github.com/roasbeef/btcd v0.0.0-20180418012700-a03db407e40d
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.19.1
-	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
+	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97
 	google.golang.org/protobuf v1.27.1
 )
 

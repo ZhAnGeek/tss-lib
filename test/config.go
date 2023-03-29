@@ -10,5 +10,5 @@ const (
 	// To change these parameters, you must first delete the text fixture files in test/_fixtures/ and then run the keygen test alone.
 	// Then the signing and resharing tests will work with the new n, t configuration using the newly written fixture files.
 	TestParticipants = 3
-	TestThreshold    = 1 //TestParticipants / 2
+	TestThreshold    = 1 // TestParticipants / 2
 )

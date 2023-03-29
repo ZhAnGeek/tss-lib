@@ -13,6 +13,7 @@ import (
 	"reflect"
 
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/crypto/curve25519"
 	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
@@ -26,7 +27,8 @@ const (
 	Ed25519    CurveName = "ed25519"
 	BLS12381G2 CurveName = "bls12381g2"
 	BLS12381G1 CurveName = "bls12381g1"
-	PAllas     CurveName = "pallas"
+	C25519    CurveName = "curve25519"
+	PAllas    CurveName = "pallas"
 )
 
 var (
@@ -44,6 +46,7 @@ func init() {
 	registry[Ed25519] = edwards.Edwards()
 	registry[BLS12381G2] = bls12381.G2Curve()
 	registry[BLS12381G1] = bls12381.G1Curve()
+	registry[C25519] = curve25519.C25519()
 	registry[PAllas] = curves.Pallas()
 }
 
@@ -107,6 +110,10 @@ func GetBLSCurveBySuite(suite []byte) elliptic.Curve {
 		return Bls12381G2()
 	}
 	return Bls12381G1()
+}
+
+func Curve25519() elliptic.Curve {
+	return curve25519.C25519()
 }
 
 func Pallas() elliptic.Curve {
