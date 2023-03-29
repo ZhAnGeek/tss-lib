@@ -90,6 +90,7 @@ type (
 		RXShareBetas  []*big.Int
 		RXShareAlphas []*big.Int
 		BigXShare     *crypto.ECPoint
+		BigXAll       *crypto.ECPoint
 
 		RXMtAFs       []*big.Int
 		RXMtADs       []*big.Int
