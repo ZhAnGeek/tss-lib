@@ -22,7 +22,6 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 
 	round.allOldOK()
 	round.allNewOK()
-	i := round.PartyID().Index
 
 	if round.IsNewCommittee() {
 		// for this P: SAVE data
@@ -30,22 +29,6 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 		round.save.ShareID = round.PartyID().KeyInt()
 		round.save.Xi = round.temp.newXi
 		round.save.Ks = round.temp.newKs
-
-		// for other P: save Paillier
-		for j, message := range round.temp.dgRound1MessagesNewParty {
-			if message == nil {
-				continue
-			}
-			if j == i {
-				continue
-			}
-			dgMessage := message.Content().(*DGRound1MessageNewParty)
-			round.save.PaillierPKs[j] = dgMessage.UnmarshalPaillierPK()
-			round.save.H1j[j] = dgMessage.UnmarshalH1()
-			round.save.H2j[j] = dgMessage.UnmarshalH2()
-			round.save.NTildej[j] = dgMessage.UnmarshalNTilde()
-		}
-
 	} else if round.IsOldCommittee() {
 		round.input.Xi.SetInt64(0)
 	}

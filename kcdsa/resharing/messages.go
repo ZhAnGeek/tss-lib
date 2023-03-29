@@ -15,6 +15,8 @@ import (
 	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/paillier"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -39,6 +41,7 @@ func NewDGRound1Message(
 	PubKey *crypto.ECPoint,
 	PubKeySchnorr *crypto.ECPoint,
 	vct cmt.HashCommitment,
+	ssid []byte,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:             from,
@@ -52,6 +55,7 @@ func NewDGRound1Message(
 		PubXSchnorr: PubKeySchnorr.X().Bytes(),
 		PubYSchnorr: PubKeySchnorr.Y().Bytes(),
 		VCommitment: vct.Bytes(),
+		Ssid:        ssid,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -134,6 +138,10 @@ func (m *DGRound1Message) UnmarshalPubKeySchnorr(ec elliptic.Curve) (*crypto.ECP
 		new(big.Int).SetBytes(m.PubYSchnorr))
 }
 
+func (m *DGRound1Message) UnmarshalSsid() []byte {
+	return m.Ssid
+}
+
 func (m *DGRound1Message) UnmarshalVCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetVCommitment())
 }
@@ -161,6 +169,47 @@ func (m *DGRound2Message) ValidateBasic() bool {
 
 func (m *DGRound2Message) RoundNumber() int {
 	return 2
+}
+
+// ----- //
+
+func NewDGRound2Message2(
+	to []*tss.PartyID,
+	from *tss.PartyID,
+	proofPrm *zkpprm.ProofPrm,
+	proofMod *zkpmod.ProofMod,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:             from,
+		To:               to,
+		IsBroadcast:      true,
+		IsToOldCommittee: false,
+	}
+	proofPrmBz := proofPrm.Bytes()
+	proofModBz := proofMod.Bytes()
+	content := &DGRound2Message2{
+		PrmProof: proofPrmBz[:],
+		ModProof: proofModBz[:],
+	}
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+}
+
+func (m *DGRound2Message2) ValidateBasic() bool {
+	return m != nil && common.NonEmptyMultiBytes(m.GetPrmProof(), zkpprm.ProofPrmBytesParts) &&
+		common.NonEmptyMultiBytes(m.GetModProof(), zkpmod.ProofModBytesParts)
+}
+
+func (m *DGRound2Message2) RoundNumber() int {
+	return 2
+}
+
+func (m *DGRound2Message2) UnmarshalProofPrm() (*zkpprm.ProofPrm, error) {
+	return zkpprm.NewProofFromBytes(m.GetPrmProof())
+}
+
+func (m *DGRound2Message2) UnmarshalProofMod() (*zkpmod.ProofMod, error) {
+	return zkpmod.NewProofFromBytes(m.GetModProof())
 }
 
 // ----- //

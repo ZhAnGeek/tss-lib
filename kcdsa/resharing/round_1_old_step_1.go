@@ -10,7 +10,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
@@ -54,6 +56,20 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 		return nil
 	}
 
+	var err error
+	// 0. ssid
+	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
+	ssidList = append(ssidList, round.OldParties().IDs().Keys()...)                                                      // old parties
+	ssidList = append(ssidList, round.NewParties().IDs().Keys()...)                                                      // new parties
+	BigXjList, err := crypto.FlattenECPoints(round.input.BigXj)
+	if err != nil {
+		return round.WrapError(errors.New("read BigXj failed"), Pi)
+	}
+	ssidList = append(ssidList, BigXjList...)           // BigXj
+	ssidList = append(ssidList, round.input.NTildej...) // NCap
+	ssidList = append(ssidList, round.input.H1j...)     // s
+	ssidList = append(ssidList, round.input.H2j...)     // t
+	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 	round.allOldOK()
 	i := Pi.Index
 
@@ -85,7 +101,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	// 5. "broadcast" C_i to members of the NEW committee
 	r1msg := NewDGRound1Message(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		round.input.PubKey, round.input.PubKeySchnorr, vCmt.C)
+		round.input.PubKey, round.input.PubKeySchnorr, vCmt.C, ssid)
 	round.temp.dgRound1Messages[i] = r1msg
 	round.out <- r1msg
 

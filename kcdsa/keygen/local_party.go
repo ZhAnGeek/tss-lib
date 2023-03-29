@@ -18,6 +18,8 @@ import (
 	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
@@ -55,6 +57,8 @@ type (
 
 		// for ui
 		KGCs          []cmt.HashCommitment
+		ProofPrms     []*zkpprm.ProofPrm
+		ProofMods     []*zkpmod.ProofMod
 		vs            vss.Vs
 		vsXshares     vss.Shares
 		deCommitPolyG cmt.HashDeCommitment
@@ -162,6 +166,9 @@ func NewLocalParty(
 	// temp data init
 	p.temp.KGCs = make([]cmt.HashCommitment, partyCount)
 	p.temp.rKGCs = make([]cmt.HashCommitment, partyCount)
+	p.temp.ProofPrms = make([]*zkpprm.ProofPrm, partyCount)
+	p.temp.ProofMods = make([]*zkpmod.ProofMod, partyCount)
+
 	return p
 }
 
@@ -200,6 +207,16 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 		// commitment for schnorr scheme
 		p.temp.KGCs[fromPIdx] = r1msg.UnmarshalXCommitment()
 		p.temp.rKGCs[fromPIdx] = r1msg.UnmarshalRCommitment()
+
+		var err error
+		p.temp.ProofPrms[fromPIdx], err = r1msg.UnmarshalProofPrm()
+		if err != nil {
+			return false, p.WrapError(errors.New("invalid proof prm"), msg.GetFrom())
+		}
+		p.temp.ProofMods[fromPIdx], err = r1msg.UnmarshalProofMod()
+		if err != nil {
+			return false, p.WrapError(errors.New("invalid proof mod"), msg.GetFrom())
+		}
 
 		// r1msgs R for mta
 		p.temp.r1msg1R[fromPIdx] = r1msg.UnmarshalR()

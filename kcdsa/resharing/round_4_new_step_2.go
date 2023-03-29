@@ -8,6 +8,7 @@ package resharing
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/pkg/errors"
@@ -36,6 +37,40 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 
 	Pi := round.PartyID()
 	i := Pi.Index
+
+	// for other P: save Paillier
+	for j, message := range round.temp.dgRound1MessagesNewParty {
+		if message == nil {
+			continue
+		}
+		if j == i {
+			continue
+		}
+		dgMessage := message.Content().(*DGRound1MessageNewParty)
+		round.save.PaillierPKs[j] = dgMessage.UnmarshalPaillierPK()
+		round.save.H1j[j] = dgMessage.UnmarshalH1()
+		round.save.H2j[j] = dgMessage.UnmarshalH2()
+		round.save.NTildej[j] = dgMessage.UnmarshalNTilde()
+
+		r2Message := round.temp.dgRound2Message2s[j].Content().(*DGRound2Message2)
+		contextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+
+		proofPrm, err := r2Message.UnmarshalProofPrm()
+		if err != nil {
+			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
+		}
+		if ok := proofPrm.Verify(ctx, contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
+			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
+		}
+		proofMod, err := r2Message.UnmarshalProofMod()
+		if err != nil {
+			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
+		}
+		if ok := proofMod.Verify(ctx, contextJ, round.save.NTildej[j]); !ok {
+			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
+		}
+
+	}
 
 	// 1. basically same with schnorr scheme
 	newXi := big.NewInt(0)

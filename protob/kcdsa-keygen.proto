@@ -21,6 +21,8 @@ message KGRound1Message1 {
     bytes X = 6;
     bytes r_commitment = 7;
     bytes x_commitment = 8;
+    repeated bytes prm_proof = 9;
+    repeated bytes mod_proof = 10;
 }
 
 /*

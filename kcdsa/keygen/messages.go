@@ -18,6 +18,8 @@ import (
 	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -44,11 +46,15 @@ func NewKGRound1Message1(
 	nTildeI, h1I, h2I *big.Int,
 	Ri, Xi *big.Int,
 	rct, xct cmt.HashCommitment,
+	proofPrm *zkpprm.ProofPrm,
+	proofMod *zkpmod.ProofMod,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
 		IsBroadcast: true,
 	}
+	proofPrmBz := proofPrm.Bytes()
+	proofModBz := proofMod.Bytes()
 	content := &KGRound1Message1{
 		PaillierN:   paillierPK.N.Bytes(),
 		NTilde:      nTildeI.Bytes(),
@@ -58,6 +64,8 @@ func NewKGRound1Message1(
 		X:           Xi.Bytes(),
 		RCommitment: rct.Bytes(),
 		XCommitment: xct.Bytes(),
+		PrmProof:    proofPrmBz[:],
+		ModProof:    proofModBz[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -72,7 +80,9 @@ func (m *KGRound1Message1) ValidateBasic() bool {
 		common.NonEmptyBytes(m.GetR()) &&
 		common.NonEmptyBytes(m.GetX()) &&
 		common.NonEmptyBytes(m.RCommitment) &&
-		common.NonEmptyBytes(m.XCommitment)
+		common.NonEmptyBytes(m.XCommitment) &&
+		common.NonEmptyMultiBytes(m.GetPrmProof(), zkpprm.ProofPrmBytesParts) &&
+		common.NonEmptyMultiBytes(m.GetModProof(), zkpmod.ProofModBytesParts)
 }
 
 func (m *KGRound1Message1) RoundNumber() int {
@@ -109,6 +119,14 @@ func (m *KGRound1Message1) UnmarshalRCommitment() *big.Int {
 
 func (m *KGRound1Message1) UnmarshalXCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetXCommitment())
+}
+
+func (m *KGRound1Message1) UnmarshalProofPrm() (*zkpprm.ProofPrm, error) {
+	return zkpprm.NewProofFromBytes(m.GetPrmProof())
+}
+
+func (m *KGRound1Message1) UnmarshalProofMod() (*zkpmod.ProofMod, error) {
+	return zkpmod.NewProofFromBytes(m.GetModProof())
 }
 
 func NewKGRound2Message1(
