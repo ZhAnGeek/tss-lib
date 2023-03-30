@@ -32,6 +32,7 @@ message KGRound2Message1 {
     repeated bytes EncProof = 1;
     bytes r_share = 2;
     bytes x_share = 3;
+    repeated bytes fac_proof = 4;
 }
 
 /*

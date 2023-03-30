@@ -15,6 +15,7 @@ import (
 	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/paillier"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
 	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	"github.com/Safulet/tss-lib-private/tss"
@@ -29,7 +30,8 @@ var (
 		(*DGRound2Message)(nil),
 		(*DGRound3Message1)(nil),
 		(*DGRound3Message2)(nil),
-		(*DGRound4Message)(nil),
+		(*DGRound4Message1)(nil),
+		(*DGRound4Message2)(nil),
 	}
 )
 
@@ -278,7 +280,41 @@ func (m *DGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
 
 // ----- //
 
-func NewDGRound4Message(
+func NewDGRound4Message1(
+	to *tss.PartyID,
+	from *tss.PartyID,
+	proofFac *zkpfac.ProofFac,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:             from,
+		To:               []*tss.PartyID{to},
+		IsBroadcast:      false,
+		IsToOldCommittee: false,
+	}
+	proofFacBzs := proofFac.Bytes()
+	content := &DGRound4Message1{
+		FacProof: proofFacBzs[:],
+	}
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+
+}
+
+func (m *DGRound4Message1) ValidateBasic() bool {
+	return m != nil && common.NonEmptyMultiBytes(m.FacProof, zkpfac.ProofFacBytesParts)
+}
+
+func (m *DGRound4Message1) RoundNumber() int {
+	return 4
+}
+
+func (m *DGRound4Message1) UnmarshalProofFac() (*zkpfac.ProofFac, error) {
+	return zkpfac.NewProofFromBytes(m.GetFacProof())
+}
+
+// ----- //
+
+func NewDGRound4Message2(
 	to []*tss.PartyID,
 	from *tss.PartyID,
 ) tss.ParsedMessage {
@@ -288,15 +324,15 @@ func NewDGRound4Message(
 		IsBroadcast:             true,
 		IsToOldAndNewCommittees: true,
 	}
-	content := &DGRound4Message{}
+	content := &DGRound4Message2{}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound4Message) ValidateBasic() bool {
+func (m *DGRound4Message2) ValidateBasic() bool {
 	return true
 }
 
-func (m *DGRound4Message) RoundNumber() int {
+func (m *DGRound4Message2) RoundNumber() int {
 	return 4
 }

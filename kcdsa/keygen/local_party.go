@@ -17,6 +17,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
 	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
 	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
@@ -77,9 +78,10 @@ type (
 		X      *big.Int
 		XShare *big.Int
 
-		r1msg1R     []*big.Int
-		r1msg1X     []*big.Int
-		r2msg1Proof []*zkpenc.ProofEnc
+		r1msg1R        []*big.Int
+		r1msg1X        []*big.Int
+		r2msg1FacProof []*zkpfac.ProofFac
+		r2msg1Proof    []*zkpenc.ProofEnc
 
 		// for X
 		r2msg1SharesX   []*big.Int
@@ -133,6 +135,7 @@ func NewLocalParty(
 
 	p.temp.r1msg1X = make([]*big.Int, partyCount)
 	p.temp.r1msg1R = make([]*big.Int, partyCount)
+	p.temp.r2msg1FacProof = make([]*zkpfac.ProofFac, partyCount)
 	p.temp.r2msg1Proof = make([]*zkpenc.ProofEnc, partyCount)
 
 	// msgs init for X
@@ -245,6 +248,11 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.r2msg1Proof[fromPIdx] = Proof
+		facProof, err := r2msg1.UnmarshalFacProof()
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.r2msg1FacProof[fromPIdx] = facProof
 	case *KGRound2Message2:
 		// p.temp.kgRound2Message2s[fromPIdx] = msg
 		r2msg2 := msg.Content().(*KGRound2Message2)

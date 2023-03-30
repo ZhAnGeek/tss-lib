@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math/big"
 
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	"github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -70,6 +71,25 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
 		}
 
+	}
+
+	// ProofFac
+	for j, Pj := range round.NewParties().IDs() {
+		if j == i {
+			continue
+		}
+
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
+		SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
+		proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.PaillierSK.N,
+			round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+		if err != nil {
+			return round.WrapError(errors.New("create proofFac failed"), Pi)
+		}
+		r4msg1 := NewDGRound4Message1(Pj, Pi, proofFac)
+		round.temp.dgRound4Message1s[i] = r4msg1
+		round.out <- r4msg1
 	}
 
 	// 1. basically same with schnorr scheme
@@ -156,15 +176,18 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 	round.temp.newBigXjs = newBigXjs
 
 	// 21. Send an "ACK" message to both committees to signal that we're ready to save our data
-	r4msg := NewDGRound4Message(round.OldAndNewParties(), Pi)
-	round.temp.dgRound4Messages[i] = r4msg
-	round.out <- r4msg
+	r4msg2 := NewDGRound4Message2(round.OldAndNewParties(), Pi)
+	round.temp.dgRound4Message2s[i] = r4msg2
+	round.out <- r4msg2
 
 	return nil
 }
 
 func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*DGRound4Message); ok {
+	if _, ok := msg.Content().(*DGRound4Message1); ok {
+		return !msg.IsBroadcast()
+	}
+	if _, ok := msg.Content().(*DGRound4Message2); ok {
 		return msg.IsBroadcast()
 	}
 	return false
@@ -172,12 +195,18 @@ func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *round4) Update() (bool, *tss.Error) {
 	// accept messages from new -> old&new committees
-	for j, msg := range round.temp.dgRound4Messages {
+	for j, msg2 := range round.temp.dgRound4Message2s {
 		if round.newOK[j] {
 			continue
 		}
-		if msg == nil || !round.CanAccept(msg) {
+		if msg2 == nil || !round.CanAccept(msg2) {
 			return false, nil
+		}
+		if round.IsNewCommittee() {
+			msg1 := round.temp.dgRound4Message1s[j]
+			if msg1 == nil || !round.CanAccept(msg1) {
+				return false, nil
+			}
 		}
 		round.newOK[j] = true
 	}

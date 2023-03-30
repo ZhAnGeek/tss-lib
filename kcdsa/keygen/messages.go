@@ -17,6 +17,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
 	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
 	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
@@ -132,6 +133,7 @@ func (m *KGRound1Message1) UnmarshalProofMod() (*zkpmod.ProofMod, error) {
 func NewKGRound2Message1(
 	to, from *tss.PartyID,
 	EncProof *zkpenc.ProofEnc,
+	FacProof *zkpfac.ProofFac,
 	RShare, XShare *vss.Share,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
@@ -140,8 +142,10 @@ func NewKGRound2Message1(
 		IsBroadcast: false,
 	}
 	bytes := EncProof.Bytes()
+	FacProofBz := FacProof.Bytes()
 	content := &KGRound2Message1{
 		EncProof: bytes[:],
+		FacProof: FacProofBz[:],
 		RShare:   RShare.Share.Bytes(),
 		XShare:   XShare.Share.Bytes(),
 	}
@@ -150,8 +154,8 @@ func NewKGRound2Message1(
 }
 
 func (m *KGRound2Message1) ValidateBasic() bool {
-	return m != nil &&
-		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts)
+	return m != nil && common.NonEmptyBytes(m.RShare) && common.NonEmptyBytes(m.XShare) &&
+		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts) && common.NonEmptyMultiBytes(m.FacProof, zkpfac.ProofFacBytesParts)
 }
 
 func (m *KGRound2Message1) RoundNumber() int {
@@ -168,6 +172,10 @@ func (m *KGRound2Message1) UnmarshalXShare() *big.Int {
 
 func (m *KGRound2Message1) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
 	return zkpenc.NewProofFromBytes(m.GetEncProof())
+}
+
+func (m *KGRound2Message1) UnmarshalFacProof() (*zkpfac.ProofFac, error) {
+	return zkpfac.NewProofFromBytes(m.GetFacProof())
 }
 
 // ----- //

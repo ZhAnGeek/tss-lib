@@ -14,6 +14,7 @@ import (
 	"sync"
 
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -57,13 +58,19 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
+			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
+			SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
+			proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.PaillierSK.N,
+				round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+
 			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.R, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.RShare, round.temp.RNonce)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pi)
 				return
 			}
 
-			r2msg1 := NewKGRound2Message1(Pj, round.PartyID(), proof, round.temp.vsRshares[j], round.temp.vsXshares[j])
+			r2msg1 := NewKGRound2Message1(Pj, round.PartyID(), proof, proofFac, round.temp.vsRshares[j], round.temp.vsXshares[j])
 			round.out <- r2msg1
 		}(j, Pj)
 	}

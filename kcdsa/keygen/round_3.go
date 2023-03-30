@@ -197,6 +197,12 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
+			facProof := round.temp.r2msg1FacProof[j]
+			if ok := facProof.Verify(ctx, ContextI, round.EC(), round.save.NTildej[j],
+				round.save.PaillierSK.N, round.save.H1i, round.save.H2i); !ok {
+				errChs <- round.WrapError(errors.New("pj fac proof verified fail"), Pj)
+				return
+			}
 			Rj := round.temp.r1msg1R[j]
 
 			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
