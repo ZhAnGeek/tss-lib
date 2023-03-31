@@ -11,6 +11,7 @@ import (
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/tss"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fp"
 	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fq"
@@ -21,22 +22,38 @@ func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) err
 	if len(signature) < 64 {
 		return fmt.Errorf("signature is invalid")
 	}
-	r := signature[:32]
-	s := signature[32:64]
+	curve := tss.Pallas()
 
-	e := SchnorrHash(new(big.Int).SetBytes(r), pubkey, msg)
+	r := new(big.Int).SetBytes(signature[:32])
+	s := new(big.Int).SetBytes(signature[32:64])
+
+	// cannot be zero
+	if r.Cmp(big.NewInt(0)) == 0 || s.Cmp(big.NewInt(0)) == 0 {
+		return fmt.Errorf("invalid R or S value: cannot be zero")
+	}
+
+	// cannot be negative
+	if r.Sign() == -1 || s.Sign() == -1 {
+		return fmt.Errorf("Invalid R or S value: cannot be negative")
+	}
+
+	// must be smaller than curve.N
+	if r.Cmp(curve.Params().N) >= 0 || s.Cmp(curve.Params().N) >= 0 {
+		return fmt.Errorf("invalid R or S value: must be smaller than order of secp256k1")
+	}
+
+	e := SchnorrHash(r, pubkey, msg)
 
 	sg := new(curves.Ep).Generator()
-	sg.Mul(sg, (new(fq.Fq).SetBigInt(new(big.Int).SetBytes(s))))
+	sg.Mul(sg, (new(fq.Fq).SetBigInt(s)))
 
 	epk := new(curves.Ep).Mul(getEP(pubkey), new(fq.Fq).SetBigInt(new(big.Int).SetBytes(e)))
 	epk.Neg(epk)
 
 	rc := new(curves.Ep).Add(sg, epk)
-	if !rc.Y().IsOdd() && rc.X().Equal(new(fp.Fp).SetBigInt(new(big.Int).SetBytes(r))) {
+	if rc.IsOnCurve() && !rc.Y().IsOdd() && rc.X().Equal(new(fp.Fp).SetBigInt(r)) {
 		return nil
 	}
-
 	return fmt.Errorf("verify failed")
 }
 
