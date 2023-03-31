@@ -190,7 +190,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	default:
 		c_ = common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
 	}
-	c := new(big.Int).SetBytes(c_)
+	c := new(big.Int).Mod(new(big.Int).SetBytes(c_), round.EC().Params().N)
 
 	// compute signature share zi
 	zi := modQ.Add(round.temp.di, modQ.Mul(round.temp.ei, round.temp.rhos[i]))
