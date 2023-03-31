@@ -99,7 +99,7 @@ func GetCompressedBytes(Q *crypto.ECPoint) []byte {
 		ret[0] = 3
 	}
 	xBytes := x.Bytes()
-	copy(ret[1:], xBytes)
+	copy(ret[1+32-len(xBytes):], xBytes)
 
 	return ret
 }
