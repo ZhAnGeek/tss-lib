@@ -39,9 +39,9 @@ func ZILSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) erro
 		return fmt.Errorf("Invalid R or S value: cannot be negative")
 	}
 
-	// cannot be greater than curve.N
-	if bintR.Cmp(curve.Params().N) == 1 || bintS.Cmp(curve.Params().N) == 1 {
-		return fmt.Errorf("invalid R or S value: cannot be greater than order of secp256k1")
+	// must be smaller than curve.N
+	if bintR.Cmp(curve.Params().N) >= 0 || bintS.Cmp(curve.Params().N) >= 0 {
+		return fmt.Errorf("invalid R or S value: must be smaller than order of secp256k1")
 	}
 
 	pkx, pky := pubkey.X(), pubkey.Y()
