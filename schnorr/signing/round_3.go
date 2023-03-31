@@ -184,7 +184,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	var c_ []byte
 	switch round.Network() {
 	case tss.MINA:
-		c_ = mina.SchnorrHash(R, round.key.PubKey, round.temp.m)
+		c_ = mina.SchnorrHash(R.X(), round.key.PubKey, round.temp.m)
 	case tss.ZIL:
 		c_ = zil.SchnorrHash(zil.GetCompressedBytes(R), zil.GetCompressedBytes(round.key.PubKey), round.temp.m)
 	default:

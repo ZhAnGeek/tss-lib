@@ -24,8 +24,7 @@ func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) err
 	r := signature[:32]
 	s := signature[32:64]
 
-	rp := crypto.NewECPointNoCurveCheck(pubkey.Curve(), new(big.Int).SetBytes(r), nil)
-	e := SchnorrHash(rp, pubkey, msg)
+	e := SchnorrHash(new(big.Int).SetBytes(r), pubkey, msg)
 
 	sg := new(curves.Ep).Generator()
 	sg.Mul(sg, (new(fq.Fq).SetBigInt(new(big.Int).SetBytes(s))))
@@ -51,7 +50,7 @@ func getEP(pubkey *crypto.ECPoint) *curves.Ep {
 	return p
 }
 
-func SchnorrHash(r *crypto.ECPoint, pubKey *crypto.ECPoint, msg []byte) []byte {
+func SchnorrHash(r *big.Int, pubKey *crypto.ECPoint, msg []byte) []byte {
 	networkId := mina.NetworkType(mina.MainNet)
 	input := new(Roinput)
 	if len(msg) > 0 && input.RecoverRaw(msg[1:]) == nil {
@@ -63,7 +62,7 @@ func SchnorrHash(r *crypto.ECPoint, pubKey *crypto.ECPoint, msg []byte) []byte {
 
 	pkx := new(fp.Fp).SetBigInt(pubKey.X())
 	pky := new(fp.Fp).SetBigInt(pubKey.Y())
-	rx := new(fp.Fp).SetBigInt(r.X())
+	rx := new(fp.Fp).SetBigInt(r)
 
 	input.AddFp(pkx)
 	input.AddFp(pky)
