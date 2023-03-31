@@ -72,6 +72,9 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		}
 		sumZ = modQ.Add(sumZ, zj)
 	}
+	if sumZ.Cmp(big.NewInt(0)) == 0 {
+		return round.WrapError(errors.New("sumZ cannot be zero"))
+	}
 
 	// save the signature for final output
 	if round.Network() == tss.ZIL {
