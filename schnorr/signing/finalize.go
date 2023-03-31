@@ -19,6 +19,13 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
+func getSignature(r []byte, s []byte) []byte {
+	ret := make([]byte, 64)
+	copy(ret[32-len(r):], r)
+	copy(ret[64-len(s):], s)
+	return ret
+}
+
 func VerifySig(ctx context.Context, ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *crypto.ECPoint) bool {
 	c_ := common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), Y.X().Bytes(), m)
 	c := new(big.Int).SetBytes(c_)
@@ -74,7 +81,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	}
 	round.data.S = sumZ.Bytes()
 	round.data.M = round.temp.m
-	round.data.Signature = append(round.data.R, round.data.S...)
+	round.data.Signature = getSignature(round.data.R, round.data.S)
 
 	var ok bool
 	switch round.Network() {
