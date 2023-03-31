@@ -125,7 +125,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 	// <i, Di, Ei>
 	DEFlat := append(BIndexes, DjFlat...) // i, Di
-	DEFlat = append(BIndexes, EjFlat...)  // i, Ei
+	DEFlat = append(DEFlat, EjFlat...)    // i, Ei
 
 	for j, Pj := range round.Parties().IDs() {
 		rho := common.SHA512_256i_TAGGED(ctx, []byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
