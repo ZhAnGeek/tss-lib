@@ -48,6 +48,9 @@ func ZILSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) erro
 	lx, ly := curve.ScalarMult(pkx, pky, r)
 	rx, ry := curve.ScalarBaseMult(s)
 	Qx, Qy := curve.Add(rx, ry, lx, ly)
+	if !curve.IsOnCurve(Qx, Qy) {
+		return fmt.Errorf("invalid Q: cannot be point of infinity")
+	}
 	Q := secp256k1Compress(Qx, Qy, true)
 
 	pkBytes := secp256k1Compress(pkx, pky, true)
