@@ -44,10 +44,10 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	sumZ := round.temp.zi
 	modQ := common.ModInt(round.EC().Params().N)
 	for j, Pj := range round.Parties().IDs() {
-		round.ok[j] = true
 		if j == i {
 			continue
 		}
+		round.ok[j] = true
 		r3msg := round.temp.signRound3Messages[j].Content().(*SignRound3Message)
 		zj := r3msg.UnmarshalZi()
 
