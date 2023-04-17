@@ -32,6 +32,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	round.resetOK()
 
 	i := round.PartyID().Index
+	round.ok[i] = true
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
 
 	// 1. store r1 message pieces

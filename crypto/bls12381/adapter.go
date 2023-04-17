@@ -34,7 +34,7 @@ func (curve *BLS12_381Curves) IsOnCurve(x *big.Int, y *big.Int) bool {
 	g2 := bls.NewG2()
 	p, err := FromIntToPointG2(x, y)
 	if err != nil {
-		panic("bls12381: invalid coordinates input")
+		return false
 	}
 	return g2.IsOnCurve(p)
 }

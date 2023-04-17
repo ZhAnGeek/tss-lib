@@ -16,6 +16,8 @@ import (
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/mina"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/zil"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -118,12 +120,12 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 
 	BIndexes := make([]*big.Int, 0)
-	for j, _ := range round.Parties().IDs() {
+	for j := range round.Parties().IDs() {
 		BIndexes = append(BIndexes, big.NewInt(int64(j)))
 	}
 	// <i, Di, Ei>
 	DEFlat := append(BIndexes, DjFlat...) // i, Di
-	DEFlat = append(BIndexes, EjFlat...)  // i, Ei
+	DEFlat = append(DEFlat, EjFlat...)    // i, Ei
 
 	for j, Pj := range round.Parties().IDs() {
 		rho := common.SHA512_256i_TAGGED(ctx, []byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
@@ -179,12 +181,27 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 
 	// compute challenge
-	c_ := common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
-	c := new(big.Int).SetBytes(c_)
+	var c_ []byte
+	switch round.Network() {
+	case tss.MINA:
+		c_ = mina.SchnorrHash(R.X(), round.key.PubKey, round.temp.m)
+	case tss.ZIL:
+		c_ = zil.SchnorrHash(zil.GetCompressedBytes(R), zil.GetCompressedBytes(round.key.PubKey), round.temp.m)
+	default:
+		c_ = common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
+	}
+	c := new(big.Int).Mod(new(big.Int).SetBytes(c_), round.EC().Params().N)
+	if c.Cmp(zero) != 1 {
+		return round.WrapError(errors.New("challenge computed to be zero"))
+	}
 
 	// compute signature share zi
 	zi := modQ.Add(round.temp.di, modQ.Mul(round.temp.ei, round.temp.rhos[i]))
-	zi = modQ.Add(zi, modQ.Mul(round.temp.wi, c))
+	if round.Network() == tss.ZIL {
+		zi = modQ.Sub(zi, modQ.Mul(round.temp.wi, c))
+	} else {
+		zi = modQ.Add(zi, modQ.Mul(round.temp.wi, c))
+	}
 
 	round.temp.zi = zi
 	round.temp.c = c
