@@ -8,6 +8,7 @@ package signing
 
 import (
 	"context"
+	"crypto/elliptic"
 	"fmt"
 	"math/big"
 	"runtime"
@@ -29,13 +30,13 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level log.Level) {
+func setUp(level log.Level, curve elliptic.Curve) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
 
 	// only for test
-	tss.SetCurve(tss.S256())
+	tss.SetCurve(curve)
 }
 
 func BenchmarkE2E(b *testing.B) {
@@ -47,7 +48,7 @@ func BenchmarkE2E(b *testing.B) {
 func E2E(b *testing.B) {
 	ctx := context.Background()
 	b.StopTimer()
-	setUp(log.ErrorLevel)
+	setUp(log.ErrorLevel, tss.S256())
 
 	threshold := testThreshold
 
@@ -114,7 +115,7 @@ signing:
 
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
-	setUp(log.InfoLevel)
+	setUp(log.ErrorLevel, tss.S256())
 
 	threshold := testThreshold
 
@@ -193,7 +194,7 @@ signing:
 
 func TestE2EConcurrentFromECDSA(t *testing.T) {
 	ctx := context.Background()
-	setUp(log.InfoLevel)
+	setUp(log.ErrorLevel, tss.S256())
 
 	threshold := testThreshold
 
@@ -219,6 +220,398 @@ func TestE2EConcurrentFromECDSA(t *testing.T) {
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+
+		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		parties = append(parties, P)
+		wg.Add(1)
+		go func(P *LocalParty) {
+			defer wg.Done()
+			if err := P.Start(ctx); err != nil {
+				errCh <- err
+			}
+		}(P)
+	}
+	wg.Wait()
+
+	var ended int32
+signing:
+	for {
+		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case err := <-errCh:
+			log.Error(ctx, "Error: %s", err)
+			assert.FailNow(t, err.Error())
+			break signing
+
+		case msg := <-outCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range parties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(ctx, P, msg, errCh)
+				}
+			} else {
+				if dest[0].Index == msg.GetFrom().Index {
+					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+				}
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
+			}
+
+		case <-endCh:
+			atomic.AddInt32(&ended, 1)
+			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
+				// already verified in finalize.go
+				t.Logf("Done. Received save data from %d participants", ended)
+
+				break signing
+			}
+		}
+	}
+}
+
+func BenchmarkE2EMina(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		E2EMina(b)
+	}
+}
+
+func E2EMina(b *testing.B) {
+	ctx := context.Background()
+	b.StopTimer()
+	curve := tss.Pallas()
+	setUp(log.ErrorLevel, curve)
+
+	threshold := testThreshold
+
+	// PHASE: load keygen fixtures
+	keys, signPIDs, _ := keygen.LoadKeygenTestFixturesRandomSetWithCurve(testThreshold+1, curve, testParticipants)
+
+	// PHASE: signing
+
+	p2pCtx := tss.NewPeerContext(signPIDs)
+	parties := make([]*LocalParty, 0, len(signPIDs))
+
+	errCh := make(chan *tss.Error, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs))
+	endCh := make(chan common.SignatureData, len(signPIDs))
+
+	updater := test.SharedPartyUpdater
+
+	msg := big.NewInt(200).Bytes()
+	// init the parties
+	wg := sync.WaitGroup{}
+
+	b.StartTimer()
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params.SetNetwork(tss.MINA)
+
+		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		parties = append(parties, P)
+		wg.Add(1)
+		go func(P *LocalParty) {
+			defer wg.Done()
+			if err := P.Start(ctx); err != nil {
+				errCh <- err
+			}
+		}(P)
+	}
+	wg.Wait()
+
+	var ended int32
+signing:
+	for {
+		select {
+		case <-errCh:
+			break signing
+		case msg := <-outCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range parties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(ctx, P, msg, errCh)
+				}
+			} else {
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
+			}
+		case <-endCh:
+			atomic.AddInt32(&ended, 1)
+			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
+				break signing
+			}
+		}
+	}
+}
+
+func TestE2EConcurrentMina(t *testing.T) {
+	ctx := context.Background()
+
+	threshold := testThreshold
+	curve := tss.Pallas()
+	setUp(log.InfoLevel, curve)
+
+	// PHASE: load keygen fixtures
+	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSetWithCurve(testThreshold+1, curve, testParticipants)
+	assert.NoError(t, err, "should load keygen fixtures")
+	assert.Equal(t, testThreshold+1, len(keys))
+	assert.Equal(t, testThreshold+1, len(signPIDs))
+
+	// PHASE: signing
+
+	p2pCtx := tss.NewPeerContext(signPIDs)
+	parties := make([]*LocalParty, 0, len(signPIDs))
+
+	errCh := make(chan *tss.Error, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs))
+	endCh := make(chan common.SignatureData, len(signPIDs))
+
+	updater := test.SharedPartyUpdater
+
+	msg := big.NewInt(200).Bytes()
+	// init the parties
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params.SetNetwork(tss.MINA)
+
+		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		parties = append(parties, P)
+		wg.Add(1)
+		go func(P *LocalParty) {
+			defer wg.Done()
+			if err := P.Start(ctx); err != nil {
+				errCh <- err
+			}
+		}(P)
+	}
+	wg.Wait()
+
+	var ended int32
+signing:
+	for {
+		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case err := <-errCh:
+			log.Error(ctx, "Error: %s", err)
+			assert.FailNow(t, err.Error())
+			break signing
+
+		case msg := <-outCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range parties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(ctx, P, msg, errCh)
+				}
+			} else {
+				if dest[0].Index == msg.GetFrom().Index {
+					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+				}
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
+			}
+
+		case <-endCh:
+			atomic.AddInt32(&ended, 1)
+			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
+				// already verified in finalize.go
+				t.Logf("Done. Received save data from %d participants", ended)
+
+				break signing
+			}
+		}
+	}
+}
+
+func BenchmarkE2EZil(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		E2EZil(b)
+	}
+}
+
+func E2EZil(b *testing.B) {
+	ctx := context.Background()
+	b.StopTimer()
+	setUp(log.ErrorLevel, tss.S256())
+
+	threshold := testThreshold
+
+	// PHASE: load keygen fixtures
+	keys, signPIDs, _ := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
+
+	// PHASE: signing
+
+	p2pCtx := tss.NewPeerContext(signPIDs)
+	parties := make([]*LocalParty, 0, len(signPIDs))
+
+	errCh := make(chan *tss.Error, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs))
+	endCh := make(chan common.SignatureData, len(signPIDs))
+
+	updater := test.SharedPartyUpdater
+
+	msg := big.NewInt(200).Bytes()
+	// init the parties
+	wg := sync.WaitGroup{}
+
+	b.StartTimer()
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params.SetNetwork(tss.ZIL)
+
+		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		parties = append(parties, P)
+		wg.Add(1)
+		go func(P *LocalParty) {
+			defer wg.Done()
+			if err := P.Start(ctx); err != nil {
+				errCh <- err
+			}
+		}(P)
+	}
+	wg.Wait()
+
+	var ended int32
+signing:
+	for {
+		select {
+		case <-errCh:
+			break signing
+		case msg := <-outCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range parties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(ctx, P, msg, errCh)
+				}
+			} else {
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
+			}
+		case <-endCh:
+			atomic.AddInt32(&ended, 1)
+			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
+				break signing
+			}
+		}
+	}
+}
+
+func TestE2EConcurrentZil(t *testing.T) {
+	ctx := context.Background()
+	setUp(log.InfoLevel, tss.S256())
+
+	threshold := testThreshold
+
+	// PHASE: load keygen fixtures
+	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
+	assert.NoError(t, err, "should load keygen fixtures")
+	assert.Equal(t, testThreshold+1, len(keys))
+	assert.Equal(t, testThreshold+1, len(signPIDs))
+
+	// PHASE: signing
+
+	p2pCtx := tss.NewPeerContext(signPIDs)
+	parties := make([]*LocalParty, 0, len(signPIDs))
+
+	errCh := make(chan *tss.Error, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs))
+	endCh := make(chan common.SignatureData, len(signPIDs))
+
+	updater := test.SharedPartyUpdater
+
+	msg := big.NewInt(200).Bytes()
+	// init the parties
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params.SetNetwork(tss.ZIL)
+
+		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		parties = append(parties, P)
+		wg.Add(1)
+		go func(P *LocalParty) {
+			defer wg.Done()
+			if err := P.Start(ctx); err != nil {
+				errCh <- err
+			}
+		}(P)
+	}
+	wg.Wait()
+
+	var ended int32
+signing:
+	for {
+		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case err := <-errCh:
+			log.Error(ctx, "Error: %s", err)
+			assert.FailNow(t, err.Error())
+			break signing
+
+		case msg := <-outCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range parties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(ctx, P, msg, errCh)
+				}
+			} else {
+				if dest[0].Index == msg.GetFrom().Index {
+					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+				}
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
+			}
+
+		case <-endCh:
+			atomic.AddInt32(&ended, 1)
+			if atomic.LoadInt32(&ended) == int32(len(signPIDs)) {
+				// already verified in finalize.go
+				t.Logf("Done. Received save data from %d participants", ended)
+
+				break signing
+			}
+		}
+	}
+}
+
+func TestE2EConcurrentFromECDSAZil(t *testing.T) {
+	ctx := context.Background()
+	setUp(log.InfoLevel, tss.S256())
+
+	threshold := testThreshold
+
+	// PHASE: load keygen fixtures
+	keys, signPIDs, err := keygen.LoadKeygenTestFixturesFromECDSA(2)
+	assert.NoError(t, err, "should load keygen fixtures")
+	assert.Equal(t, testThreshold+1, len(keys))
+	assert.Equal(t, testThreshold+1, len(signPIDs))
+
+	// PHASE: signing
+
+	p2pCtx := tss.NewPeerContext(signPIDs)
+	parties := make([]*LocalParty, 0, len(signPIDs))
+
+	errCh := make(chan *tss.Error, len(signPIDs))
+	outCh := make(chan tss.Message, len(signPIDs))
+	endCh := make(chan common.SignatureData, len(signPIDs))
+
+	updater := test.SharedPartyUpdater
+
+	msg := big.NewInt(200).Bytes()
+	// init the parties
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params.SetNetwork(tss.ZIL)
 
 		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
