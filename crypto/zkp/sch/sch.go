@@ -11,6 +11,7 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
+	"github.com/Safulet/tss-lib-private/tss"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -96,14 +97,21 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofSch, error) {
 		return nil, fmt.Errorf("expected %d byte parts to construct ProofSch", ProofSchBytesParts)
 	}
 
-	/* BLS keygen testcase will fail
-	x := new(big.Int).Mod(new(big.Int).SetBytes(bzs[0]), ec.Params().P)
-	y := new(big.Int).Mod(new(big.Int).SetBytes(bzs[1]), ec.Params().P)
-	z := new(big.Int).Mod(new(big.Int).SetBytes(bzs[2]), ec.Params().N)
-	*/
-	x := new(big.Int).SetBytes(bzs[0])
-	y := new(big.Int).SetBytes(bzs[1])
-	z := new(big.Int).SetBytes(bzs[2])
+	var x, y, z *big.Int
+	if ecName, ok := tss.GetCurveName(ec); ok {
+		if ecName == tss.BLS12381 {
+			x = new(big.Int).SetBytes(bzs[0])
+			y = new(big.Int).SetBytes(bzs[1])
+			z = new(big.Int).SetBytes(bzs[2])
+		} else {
+			x = new(big.Int).Mod(new(big.Int).SetBytes(bzs[0]), ec.Params().P)
+			y = new(big.Int).Mod(new(big.Int).SetBytes(bzs[1]), ec.Params().P)
+			z = new(big.Int).Mod(new(big.Int).SetBytes(bzs[2]), ec.Params().N)
+		}
+
+	} else {
+		return nil, errors.New("ec not supported")
+	}
 
 	point, err := crypto.NewECPoint(ec, x, y)
 	if err != nil {

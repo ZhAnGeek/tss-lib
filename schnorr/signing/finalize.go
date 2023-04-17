@@ -72,7 +72,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		}
 		sumZ = modQ.Add(sumZ, zj)
 	}
-	if sumZ.Cmp(big.NewInt(0)) == 0 {
+	if sumZ.Cmp(zero) == 0 {
 		return round.WrapError(errors.New("sumZ cannot be zero"))
 	}
 
@@ -104,7 +104,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *finalization) CanAccept(msg tss.ParsedMessage) bool {
+func (round *finalization) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }

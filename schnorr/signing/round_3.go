@@ -120,7 +120,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 
 	BIndexes := make([]*big.Int, 0)
-	for j, _ := range round.Parties().IDs() {
+	for j := range round.Parties().IDs() {
 		BIndexes = append(BIndexes, big.NewInt(int64(j)))
 	}
 	// <i, Di, Ei>
@@ -191,6 +191,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		c_ = common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
 	}
 	c := new(big.Int).Mod(new(big.Int).SetBytes(c_), round.EC().Params().N)
+	if c.Cmp(zero) != 1 {
+		return round.WrapError(errors.New("challenge computed to be zero"))
+	}
 
 	// compute signature share zi
 	zi := modQ.Add(round.temp.di, modQ.Mul(round.temp.ei, round.temp.rhos[i]))

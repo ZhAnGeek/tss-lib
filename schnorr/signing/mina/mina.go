@@ -45,7 +45,7 @@ func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) err
 	e := SchnorrHash(r, pubkey, msg)
 
 	sg := new(curves.Ep).Generator()
-	sg.Mul(sg, (new(fq.Fq).SetBigInt(s)))
+	sg.Mul(sg, new(fq.Fq).SetBigInt(s))
 
 	epk := new(curves.Ep).Mul(getEP(pubkey), new(fq.Fq).SetBigInt(new(big.Int).SetBytes(e)))
 	epk.Neg(epk)
@@ -57,9 +57,9 @@ func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) err
 	return fmt.Errorf("verify failed")
 }
 
-func getEP(pubkey *crypto.ECPoint) *curves.Ep {
-	xb := new(fp.Fp).SetBigInt(pubkey.X()).Bytes()
-	yb := new(fp.Fp).SetBigInt(pubkey.Y()).Bytes()
+func getEP(pubKey *crypto.ECPoint) *curves.Ep {
+	xb := new(fp.Fp).SetBigInt(pubKey.X()).Bytes()
+	yb := new(fp.Fp).SetBigInt(pubKey.Y()).Bytes()
 	p, err := new(curves.Ep).FromAffineUncompressed(append(xb[:], yb[:]...))
 	if err != nil {
 		panic(err)
