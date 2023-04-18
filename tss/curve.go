@@ -27,8 +27,8 @@ const (
 	Ed25519    CurveName = "ed25519"
 	BLS12381G2 CurveName = "bls12381g2"
 	BLS12381G1 CurveName = "bls12381g1"
-	C25519    CurveName = "curve25519"
-	PAllas    CurveName = "pallas"
+	C25519     CurveName = "curve25519"
+	PAllas     CurveName = "pallas"
 )
 
 var (

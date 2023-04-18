@@ -15,7 +15,7 @@ import (
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
-//  referred from https://sagecell.sagemath.org/?q=czvfze
+// referred from https://sagecell.sagemath.org/?q=czvfze
 var (
 	positiveSqrtRoot, _ = new(big.Int).SetString("6853475219497561581579357271197624642482790079785650197046958215289687604742", 10)
 	one                 = new(big.Int).SetInt64(1)

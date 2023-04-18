@@ -26,7 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
 // Represents an encryption of bls
 type DecryptionRound1Message struct {
 	state         protoimpl.MessageState

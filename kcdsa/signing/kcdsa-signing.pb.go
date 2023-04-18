@@ -26,7 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
 // Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
 type SignRound1Message struct {
 	state         protoimpl.MessageState
@@ -75,7 +74,6 @@ func (x *SignRound1Message) GetKCommitment() []byte {
 	return nil
 }
 
-//
 // Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
 type SignRound2Message1 struct {
 	state         protoimpl.MessageState
@@ -132,7 +130,6 @@ func (x *SignRound2Message1) GetProofK() [][]byte {
 	return nil
 }
 
-//
 // Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
 type SignRound3Message1 struct {
 	state         protoimpl.MessageState
@@ -189,7 +186,6 @@ func (x *SignRound3Message1) GetX() []byte {
 	return nil
 }
 
-//
 // Represents a P2P message sent during Round 1 of the KCDSA TSS keygen protocol.
 type SignRound3Message2 struct {
 	state         protoimpl.MessageState
@@ -238,7 +234,6 @@ func (x *SignRound3Message2) GetEncProof() [][]byte {
 	return nil
 }
 
-//
 // Represents a P2P message sent to each party during Round 2 of the ECDSA TSS signing protocol.
 type SignRound4Message1 struct {
 	state         protoimpl.MessageState
@@ -319,7 +314,6 @@ func (x *SignRound4Message1) GetLogstarProof() [][]byte {
 	return nil
 }
 
-//
 // Represents a P2P message sent to all parties during Round 3 of the ECDSA TSS signing protocol.
 type SignRound5Message1 struct {
 	state         protoimpl.MessageState

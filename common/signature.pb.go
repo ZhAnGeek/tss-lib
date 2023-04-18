@@ -26,7 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
 // Container for output signatures, mostly used for marshalling this data structure to a mobile app
 type SignatureData struct {
 	state         protoimpl.MessageState

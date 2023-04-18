@@ -26,7 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
 // Represents an encryption of bls
 type EncryptionRound1Message struct {
 	state         protoimpl.MessageState
@@ -75,7 +74,6 @@ func (x *EncryptionRound1Message) GetCipherText() []byte {
 	return nil
 }
 
-//
 // Represents an decryption of bls, the cipherText should be used as
 type DecryptionRound1Message struct {
 	state         protoimpl.MessageState
@@ -124,7 +122,6 @@ func (x *DecryptionRound1Message) GetCipherText() []byte {
 	return nil
 }
 
-//
 // Represents a BROADCAST message sent to each party during Round 2 of the BLS TSS keygen protocol.
 type DecryptionRound2Message struct {
 	state         protoimpl.MessageState

@@ -26,7 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
 // The Round 1 data is broadcast to peers of the New Committee in this message.
 type DGRound1Message struct {
 	state         protoimpl.MessageState
@@ -91,7 +90,6 @@ func (x *DGRound1Message) GetVCommitment() []byte {
 	return nil
 }
 
-//
 // The Round 2 "ACK" is broadcast to peers of the Old Committee in this message.
 type DGRound2Message struct {
 	state         protoimpl.MessageState
@@ -131,7 +129,6 @@ func (*DGRound2Message) Descriptor() ([]byte, []int) {
 	return file_protob_eddsa_resharing_proto_rawDescGZIP(), []int{1}
 }
 
-//
 // The Round 3 data is sent to peers of the New Committee in this message.
 type DGRound3Message1 struct {
 	state         protoimpl.MessageState
@@ -180,7 +177,6 @@ func (x *DGRound3Message1) GetShare() []byte {
 	return nil
 }
 
-//
 // The Round 3 data is broadcast to peers of the New Committee in this message.
 type DGRound3Message2 struct {
 	state         protoimpl.MessageState
@@ -229,7 +225,6 @@ func (x *DGRound3Message2) GetVDecommitment() [][]byte {
 	return nil
 }
 
-//
 // The Round 4 "ACK" is broadcast to peers of the Old and New Committees from the New Committee in this message.
 type DGRound4Message struct {
 	state         protoimpl.MessageState
