@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/Safulet/tss-lib-private/common"
 	"math/big"
 	"os"
 	"path"
@@ -18,7 +19,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/ecdsa/signing"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
@@ -177,7 +177,7 @@ keygen:
 					Y:     pkY,
 				}
 				println("u len: ", u.Bytes())
-				sk, _, err := edwards.PrivKeyFromScalar(signing.PadToLengthBytesInPlace(u.Bytes(), 32))
+				sk, _, err := edwards.PrivKeyFromScalar(common.PadToLengthBytesInPlace(u.Bytes(), 32))
 				// fmt.Println("err: ", err.Error())
 				assert.NoError(t, err)
 
