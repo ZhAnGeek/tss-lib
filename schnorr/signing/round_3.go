@@ -8,6 +8,7 @@ package signing
 
 import (
 	"context"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
 	"math/big"
 	"sync"
 
@@ -19,11 +20,6 @@ import (
 	"github.com/Safulet/tss-lib-private/schnorr/signing/mina"
 	"github.com/Safulet/tss-lib-private/schnorr/signing/zil"
 	"github.com/Safulet/tss-lib-private/tss"
-)
-
-var (
-	TagNonce     = "BIP0340/nonce"
-	TagChallenge = "BIP0340/challenge"
 )
 
 func (round *round3) Start(ctx context.Context) *tss.Error {
@@ -128,7 +124,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	DEFlat = append(DEFlat, EjFlat...)    // i, Ei
 
 	for j, Pj := range round.Parties().IDs() {
-		rho := common.SHA512_256i_TAGGED(ctx, []byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
+		rho := common.SHA512_256i_TAGGED(ctx, []byte(btc.TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
 		Rj, err := round.temp.Djs[j].Add(round.temp.Ejs[j].ScalarMult(rho))
 		if err != nil {
 			return round.WrapError(errors.New("error in computing Ri"), Pj)
@@ -188,7 +184,11 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	case tss.ZIL:
 		c_ = zil.SchnorrHash(zil.GetCompressedBytes(R), zil.GetCompressedBytes(round.key.PubKey), round.temp.m)
 	default:
-		c_ = common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
+		c_ = common.TaggedHash256([]byte(btc.TagChallenge),
+			common.PadToLengthBytesInPlace(R.X().Bytes(), 32),
+			common.PadToLengthBytesInPlace(round.key.PubKey.X().Bytes(), 32),
+			common.PadToLengthBytesInPlace(round.temp.m, 32))
+
 	}
 	c := new(big.Int).Mod(new(big.Int).SetBytes(c_), round.EC().Params().N)
 	if c.Cmp(zero) != 1 {

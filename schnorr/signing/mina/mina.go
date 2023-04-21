@@ -38,7 +38,7 @@ func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) err
 	}
 
 	// must be smaller than curve.N
-	if r.Cmp(curve.Params().N) >= 0 || s.Cmp(curve.Params().N) >= 0 {
+	if r.Cmp(curve.Params().P) >= 0 || s.Cmp(curve.Params().N) >= 0 {
 		return fmt.Errorf("invalid R or S value: must be smaller than order of secp256k1")
 	}
 

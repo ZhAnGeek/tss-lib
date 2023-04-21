@@ -44,7 +44,7 @@ func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *
 		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 2}}}
 }
 
-func (round *signout) Start(ctx context.Context) *tss.Error {
+func (round *signout) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -83,8 +83,8 @@ func (round *signout) Start(ctx context.Context) *tss.Error {
 
 	// save the signature for final output
 	bitSizeInBytes := round.Params().EC().Params().BitSize / 8
-	round.data.R = PadToLengthBytesInPlace(round.temp.BigR.X().Bytes(), bitSizeInBytes)
-	round.data.S = PadToLengthBytesInPlace(Sigma.Bytes(), bitSizeInBytes)
+	round.data.R = common.PadToLengthBytesInPlace(round.temp.BigR.X().Bytes(), bitSizeInBytes)
+	round.data.S = common.PadToLengthBytesInPlace(Sigma.Bytes(), bitSizeInBytes)
 	round.data.Signature = append(round.data.R, round.data.S...)
 	round.data.SignatureRecovery = []byte{byte(recid)}
 	round.data.M = round.temp.m.Bytes()
@@ -124,7 +124,7 @@ func (round *signout) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *signout) CanAccept(msg tss.ParsedMessage) bool {
+func (round *signout) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }
@@ -136,14 +136,4 @@ func (round *signout) Update() (bool, *tss.Error) {
 
 func (round *signout) NextRound() tss.Round {
 	return nil // finished!
-}
-
-func PadToLengthBytesInPlace(src []byte, length int) []byte {
-	oriLen := len(src)
-	if oriLen < length {
-		for i := 0; i < length-oriLen; i++ {
-			src = append([]byte{0}, src...)
-		}
-	}
-	return src
 }

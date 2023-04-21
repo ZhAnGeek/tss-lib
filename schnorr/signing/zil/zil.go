@@ -14,7 +14,6 @@ import (
 
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/roasbeef/btcd/btcec"
 )
 
 func ZILSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) error {
@@ -40,7 +39,7 @@ func ZILSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) erro
 	}
 
 	// must be smaller than curve.N
-	if bintR.Cmp(curve.Params().N) >= 0 || bintS.Cmp(curve.Params().N) >= 0 {
+	if bintR.Cmp(curve.Params().P) >= 0 || bintS.Cmp(curve.Params().N) >= 0 {
 		return fmt.Errorf("invalid R or S value: must be smaller than order of secp256k1")
 	}
 
@@ -66,7 +65,8 @@ func ZILSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) erro
 }
 
 func secp256k1Compress(x, y *big.Int, compress bool) []byte {
-	byteLen := (btcec.S256().Params().BitSize + 7) >> 3
+	ec := tss.S256()
+	byteLen := (ec.Params().BitSize + 7) >> 3
 
 	if compress {
 		ret := make([]byte, 1+byteLen)
