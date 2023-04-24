@@ -8,7 +8,6 @@ package signing
 
 import (
 	"context"
-	"crypto/elliptic"
 	"fmt"
 	"math/big"
 	"runtime"
@@ -30,13 +29,10 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level log.Level, curve elliptic.Curve) {
+func setUp(level log.Level) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
-
-	// only for test
-	tss.SetCurve(curve)
 }
 
 func BenchmarkE2E(b *testing.B) {
@@ -48,7 +44,7 @@ func BenchmarkE2E(b *testing.B) {
 func E2E(b *testing.B) {
 	ctx := context.Background()
 	b.StopTimer()
-	setUp(log.ErrorLevel, tss.S256())
+	setUp(log.ErrorLevel)
 
 	threshold := testThreshold
 
@@ -74,7 +70,8 @@ func E2E(b *testing.B) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {
@@ -115,7 +112,7 @@ signing:
 
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
-	setUp(log.ErrorLevel, tss.S256())
+	setUp(log.ErrorLevel)
 
 	threshold := testThreshold
 
@@ -142,7 +139,8 @@ func TestE2EConcurrent(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {
@@ -194,7 +192,7 @@ signing:
 
 func TestE2EConcurrentFromECDSA(t *testing.T) {
 	ctx := context.Background()
-	setUp(log.ErrorLevel, tss.S256())
+	setUp(log.ErrorLevel)
 
 	threshold := testThreshold
 
@@ -221,7 +219,8 @@ func TestE2EConcurrentFromECDSA(t *testing.T) {
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {
@@ -281,7 +280,7 @@ func E2EMina(b *testing.B) {
 	ctx := context.Background()
 	b.StopTimer()
 	curve := tss.Pallas()
-	setUp(log.ErrorLevel, curve)
+	setUp(log.ErrorLevel)
 
 	threshold := testThreshold
 
@@ -308,7 +307,8 @@ func E2EMina(b *testing.B) {
 		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		params.SetNetwork(tss.MINA)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {
@@ -352,7 +352,7 @@ func TestE2EConcurrentMina(t *testing.T) {
 
 	threshold := testThreshold
 	curve := tss.Pallas()
-	setUp(log.InfoLevel, curve)
+	setUp(log.InfoLevel)
 
 	// PHASE: load keygen fixtures
 	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSetWithCurve(testThreshold+1, curve, testParticipants)
@@ -378,7 +378,8 @@ func TestE2EConcurrentMina(t *testing.T) {
 		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		params.SetNetwork(tss.MINA)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {
@@ -437,7 +438,7 @@ func BenchmarkE2EZil(b *testing.B) {
 func E2EZil(b *testing.B) {
 	ctx := context.Background()
 	b.StopTimer()
-	setUp(log.ErrorLevel, tss.S256())
+	setUp(log.ErrorLevel)
 
 	threshold := testThreshold
 
@@ -464,7 +465,8 @@ func E2EZil(b *testing.B) {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		params.SetNetwork(tss.ZIL)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {
@@ -505,7 +507,7 @@ signing:
 
 func TestE2EConcurrentZil(t *testing.T) {
 	ctx := context.Background()
-	setUp(log.InfoLevel, tss.S256())
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 
@@ -533,7 +535,8 @@ func TestE2EConcurrentZil(t *testing.T) {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		params.SetNetwork(tss.ZIL)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {
@@ -585,7 +588,7 @@ signing:
 
 func TestE2EConcurrentFromECDSAZil(t *testing.T) {
 	ctx := context.Background()
-	setUp(log.InfoLevel, tss.S256())
+	setUp(log.InfoLevel)
 
 	threshold := testThreshold
 
@@ -613,7 +616,8 @@ func TestE2EConcurrentFromECDSAZil(t *testing.T) {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		params.SetNetwork(tss.ZIL)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {

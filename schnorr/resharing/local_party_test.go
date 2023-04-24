@@ -33,9 +33,6 @@ func setUp(level log.Level) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
-
-	// only for test
-	tss.SetCurve(tss.S256())
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -166,7 +163,8 @@ signing:
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
-		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
+		keyDerivationDelta := big.NewInt(10)
+		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], keyDerivationDelta, signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(ctx); err != nil {

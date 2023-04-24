@@ -176,17 +176,28 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		round.temp.ei = modQ.Sub(zero, round.temp.ei)
 	}
 
+	// compute child public key
+	pkDelta := round.key.PubKey
+	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
+		gDelta := crypto.ScalarBaseMult(round.EC(), round.temp.KeyDerivationDelta)
+		var err error
+		pkDelta, err = pkDelta.Add(gDelta)
+		if err != nil {
+			return round.WrapError(errors.New("PubKey derivation failed"), round.PartyID())
+		}
+	}
+
 	// compute challenge
 	var c_ []byte
 	switch round.Network() {
 	case tss.MINA:
-		c_ = mina.SchnorrHash(R.X(), round.key.PubKey, round.temp.m)
+		c_ = mina.SchnorrHash(R.X(), pkDelta, round.temp.m)
 	case tss.ZIL:
-		c_ = zil.SchnorrHash(zil.GetCompressedBytes(R), zil.GetCompressedBytes(round.key.PubKey), round.temp.m)
+		c_ = zil.SchnorrHash(zil.GetCompressedBytes(R), zil.GetCompressedBytes(pkDelta), round.temp.m)
 	default:
 		c_ = common.TaggedHash256([]byte(btc.TagChallenge),
 			common.PadToLengthBytesInPlace(R.X().Bytes(), 32),
-			common.PadToLengthBytesInPlace(round.key.PubKey.X().Bytes(), 32),
+			common.PadToLengthBytesInPlace(pkDelta.X().Bytes(), 32),
 			common.PadToLengthBytesInPlace(round.temp.m, 32))
 
 	}
@@ -206,6 +217,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	round.temp.zi = zi
 	round.temp.c = c
 	round.temp.R = R
+	round.temp.pubKeyDelta = pkDelta
 	// broadcast zi to other parties
 	r3msg := NewSignRound3Message(round.PartyID(), zi)
 	round.temp.signRound3Messages[i] = r3msg

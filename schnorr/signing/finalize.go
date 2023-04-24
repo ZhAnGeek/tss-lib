@@ -59,6 +59,14 @@ func (round *finalization) Start(_ context.Context) *tss.Error {
 		}
 		sumZ = modQ.Add(sumZ, zj)
 	}
+	if round.temp.KeyDerivationDelta != nil {
+		sumZDelta := modQ.Mul(round.temp.c, round.temp.KeyDerivationDelta)
+		if round.Network() == tss.ZIL {
+			sumZ = modQ.Sub(sumZ, sumZDelta)
+		} else {
+			sumZ = modQ.Add(sumZ, sumZDelta)
+		}
+	}
 	if sumZ.Cmp(zero) == 0 {
 		return round.WrapError(errors.New("sumZ cannot be zero"))
 	}
@@ -76,11 +84,11 @@ func (round *finalization) Start(_ context.Context) *tss.Error {
 	var ok bool
 	switch round.Network() {
 	case tss.MINA:
-		ok = mina.SchnorrVerify(round.EC(), round.key.PubKey, round.temp.m, round.data.Signature) == nil
+		ok = mina.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.temp.m, round.data.Signature) == nil
 	case tss.ZIL:
-		ok = zil.SchnorrVerify(round.EC(), round.key.PubKey, round.temp.m, round.data.Signature) == nil
+		ok = zil.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.temp.m, round.data.Signature) == nil
 	default:
-		ok = btc.SchnorrVerify(round.EC(), round.key.PubKey, round.data.M, round.data.Signature) == nil
+		ok = btc.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.data.M, round.data.Signature) == nil
 	}
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
