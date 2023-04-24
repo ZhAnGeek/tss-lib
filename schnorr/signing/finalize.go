@@ -76,11 +76,11 @@ func (round *finalization) Start(_ context.Context) *tss.Error {
 	var ok bool
 	switch round.Network() {
 	case tss.MINA:
-		ok = mina.MinaSchnorrVerify(round.key.PubKey, round.temp.m, round.data.Signature) == nil
+		ok = mina.SchnorrVerify(round.EC(), round.key.PubKey, round.temp.m, round.data.Signature) == nil
 	case tss.ZIL:
-		ok = zil.ZILSchnorrVerify(round.key.PubKey, round.temp.m, round.data.Signature) == nil
+		ok = zil.SchnorrVerify(round.EC(), round.key.PubKey, round.temp.m, round.data.Signature) == nil
 	default:
-		ok = btc.SchnorrVerify(round.data.Signature, round.data.M, round.key.PubKey) == nil
+		ok = btc.SchnorrVerify(round.EC(), round.key.PubKey, round.data.M, round.data.Signature) == nil
 	}
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())

@@ -7,6 +7,8 @@
 package mina
 
 import (
+	"crypto/elliptic"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -18,7 +20,12 @@ import (
 	"github.com/coinbase/kryptology/pkg/signatures/schnorr/mina"
 )
 
-func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) error {
+func SchnorrVerify(ec elliptic.Curve, pubkey *crypto.ECPoint, msg []byte, signature []byte) error {
+	if !tss.SameCurve(ec, tss.Pallas()) || !tss.SameCurve(ec, pubkey.Curve()) {
+		str := "signing curve is different than tss.Pallas()"
+		return errors.New(str)
+	}
+
 	if len(signature) < 64 {
 		return fmt.Errorf("signature is invalid")
 	}

@@ -8,7 +8,9 @@ package zil
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -16,7 +18,11 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func ZILSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) error {
+func SchnorrVerify(ec elliptic.Curve, pubKey *crypto.ECPoint, msg []byte, signature []byte) error {
+	if !tss.SameCurve(ec, tss.S256()) || !tss.SameCurve(ec, pubKey.Curve()) {
+		str := "signing curve is different than tss.S256()"
+		return errors.New(str)
+	}
 	curve := tss.S256()
 
 	if len(signature) < 64 {
@@ -43,16 +49,22 @@ func ZILSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) erro
 		return fmt.Errorf("invalid R or S value: must be smaller than order of secp256k1")
 	}
 
-	pkx, pky := pubkey.X(), pubkey.Y()
+	pkx, pky := pubKey.X(), pubKey.Y()
 	lx, ly := curve.ScalarMult(pkx, pky, r)
 	rx, ry := curve.ScalarBaseMult(s)
 	Qx, Qy := curve.Add(rx, ry, lx, ly)
 	if !curve.IsOnCurve(Qx, Qy) {
 		return fmt.Errorf("invalid Q: cannot be point of infinity")
 	}
-	Q := secp256k1Compress(Qx, Qy, true)
+	Q, err := secp256k1Compress(ec, Qx, Qy, true)
+	if err != nil {
+		return err
+	}
 
-	pkBytes := secp256k1Compress(pkx, pky, true)
+	pkBytes, err := secp256k1Compress(ec, pkx, pky, true)
+	if err != nil {
+		return err
+	}
 	_r := SchnorrHash(Q, pkBytes, msg)
 	_rn := new(big.Int).Mod(new(big.Int).SetBytes(_r), curve.Params().N)
 
@@ -64,8 +76,10 @@ func ZILSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) erro
 	return fmt.Errorf("verify failed")
 }
 
-func secp256k1Compress(x, y *big.Int, compress bool) []byte {
-	ec := tss.S256()
+func secp256k1Compress(ec elliptic.Curve, x, y *big.Int, compress bool) ([]byte, error) {
+	if !tss.SameCurve(ec, tss.S256()) {
+		return nil, fmt.Errorf("secp256k1Compress on wrong curve")
+	}
 	byteLen := (ec.Params().BitSize + 7) >> 3
 
 	if compress {
@@ -77,7 +91,7 @@ func secp256k1Compress(x, y *big.Int, compress bool) []byte {
 		}
 		xBytes := x.Bytes()
 		copy(ret[1+byteLen-len(xBytes):], xBytes)
-		return ret
+		return ret, nil
 	}
 
 	ret := make([]byte, 1+2*byteLen)
@@ -87,7 +101,7 @@ func secp256k1Compress(x, y *big.Int, compress bool) []byte {
 	yBytes := y.Bytes()
 	copy(ret[1+2*byteLen-len(yBytes):], yBytes)
 
-	return ret
+	return ret, nil
 }
 
 func GetCompressedBytes(Q *crypto.ECPoint) []byte {

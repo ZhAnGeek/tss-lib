@@ -7,6 +7,7 @@
 package btc
 
 import (
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	"github.com/Safulet/tss-lib-private/common"
@@ -33,7 +34,7 @@ var (
 // This differs from the exported Verify method in that it returns a specific
 // error to support better testing while the exported method simply returns a
 // bool indicating success or failure.
-func SchnorrVerify(sig, msg []byte, pubKey *crypto.ECPoint) error {
+func SchnorrVerify(ec elliptic.Curve, pubKey *crypto.ECPoint, msg, sig []byte) error {
 	// The algorithm for producing a BIP-340 signature is described in
 	// README.md and is reproduced here for reference:
 	//
@@ -48,7 +49,10 @@ func SchnorrVerify(sig, msg []byte, pubKey *crypto.ECPoint) error {
 	// 9. Fail is x(R) != r.
 	// 10. Return success iff not failure occured before reachign this
 	// point.
-	ec := tss.S256()
+	if !tss.SameCurve(ec, tss.S256()) || !tss.SameCurve(ec, pubKey.Curve()) {
+		str := "signing curve is different than tss.S256()"
+		return errors.New(str)
+	}
 
 	// Step 1.
 	//
