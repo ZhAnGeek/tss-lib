@@ -118,7 +118,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 
 	round.data.M = round.temp.m
 
-	ok := round.VerifySig(ctx, sumKXShare, round.temp.e, round.temp.m, round.key.PubKey)
+	ok := round.VerifySig(ctx, sumKXShare, round.temp.e, round.temp.m, round.temp.pubKeyDelta)
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}
