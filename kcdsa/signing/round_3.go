@@ -117,7 +117,11 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
 
-	X, XNonce, err := round.key.PaillierSK.EncryptAndReturnRandomness(round.temp.wi)
+	wi := round.temp.wi
+	if round.temp.KeyDerivationDelta != nil {
+		wi = modN.Mul(round.temp.wi, round.temp.KeyDerivationDelta)
+	}
+	X, XNonce, err := round.key.PaillierSK.EncryptAndReturnRandomness(wi)
 	if err != nil {
 		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
@@ -127,7 +131,13 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	round.temp.XNonce = XNonce
 	round.temp.X = X
-	round.temp.XShare = round.temp.wi
+	round.temp.XShare = wi
+
+	round.temp.pubKeyDelta = round.key.PubKey
+	if round.temp.KeyDerivationDelta != nil {
+		KeyDerivationDeltaInverse := modN.ModInverse(round.temp.KeyDerivationDelta)
+		round.temp.pubKeyDelta = round.key.PubKey.ScalarMult(KeyDerivationDeltaInverse)
+	}
 
 	r3msg1 := NewSignRound3Message1(round.PartyID(), K, X)
 	round.out <- r3msg1
