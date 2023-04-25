@@ -46,6 +46,6 @@ func TestMinaSign(t *testing.T) {
 	copy(signature[32-len(xb):], xb)
 	copy(signature[64-len(yb):], yb)
 
-	err = MinaSchnorrVerify(pub, []byte(msg), signature)
+	err = SchnorrVerify(tss.Pallas(), pub, []byte(msg), signature)
 	assert.Nil(t, err)
 }

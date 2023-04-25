@@ -50,3 +50,13 @@ func NonEmptyMultiBytes(bzs [][]byte, expectLen ...int) bool {
 	}
 	return true
 }
+
+func PadToLengthBytesInPlace(src []byte, length int) []byte {
+	oriLen := len(src)
+	if oriLen < length {
+		for i := 0; i < length-oriLen; i++ {
+			src = append([]byte{0}, src...)
+		}
+	}
+	return src
+}
