@@ -209,18 +209,18 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			encProof := round.temp.r2msg1Proof[j]
 			encProofVerified := encProof.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, Rj)
 			if !encProofVerified {
-				errChs <- round.WrapError(errors.New("rj enc proof verify failed"), Pi)
+				errChs <- round.WrapError(errors.New("rj enc proof verify failed"), Pj)
 				return
 			}
 			rxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Rj, round.temp.XShare, BigXShare, round.save.PaillierPKs[j], &round.save.PaillierSK.PublicKey, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j])
 			if err != nil {
-				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
+				errChs <- round.WrapError(errors.New("rxMtA failed"), Pi)
 				return
 			}
 
 			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.X, BigXShare, g, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.XShare, round.temp.XNonce)
 			if err != nil {
-				errChs <- round.WrapError(errors.New("prooflogstar failed"), Pi)
+				errChs <- round.WrapError(errors.New("proofLogStar failed"), Pi)
 				return
 			}
 
@@ -228,13 +228,6 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			round.out <- r3msg
 
 			round.temp.RXShareBetas[j] = rxMta.Beta
-
-			if round.NeedsIdentifaction() {
-				// record transcript for presign identification 1
-				round.temp.RXMtAFs[j] = rxMta.Fji
-				round.temp.RXMtADs[j] = rxMta.Dji
-				round.temp.RXMtARXProofs[j] = rxMta.Proofji
-			}
 		}(j, Pj)
 	}
 	wg.Wait()
