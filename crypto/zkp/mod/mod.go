@@ -54,9 +54,9 @@ func NewProof(ctx context.Context, Session []byte, N, P, Q *big.Int) (*ProofMod,
 	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
 	invN := new(big.Int).ModInverse(N, Phi)
 	X := [Iterations]*big.Int{}
-	// Fix bitlen of A and B
-	A := new(big.Int).Lsh(big.NewInt(1), Iterations)
-	B := new(big.Int).Lsh(big.NewInt(1), Iterations)
+	var Abz, Bbz []byte
+	Abz = append(Abz, byte(255))
+	Bbz = append(Bbz, byte(255))
 	Z := [Iterations]*big.Int{}
 
 	// for fourth-root
@@ -78,14 +78,15 @@ func NewProof(ctx context.Context, Session []byte, N, P, Q *big.Int) (*ProofMod,
 				Xi := modN.Exp(Yi, expo)
 				Zi := modN.Exp(Y[i], invN)
 				X[i], Z[i] = Xi, Zi
-				A.SetBit(A, i, uint(a))
-				B.SetBit(B, i, uint(b))
+				Abz = append(Abz, byte(a))
+				Bbz = append(Bbz, byte(b))
 				break
 			}
 		}
 	}
+	A := new(big.Int).SetBytes(Abz)
+	B := new(big.Int).SetBytes(Bbz)
 
-	// return &ProofMod{W: W, X: X, A: A, B: B, Z: Z}, nil
 	pf := &ProofMod{W: W, X: X, A: A, B: B, Z: Z}
 	return pf, nil
 }
@@ -135,10 +136,10 @@ func (pf *ProofMod) Verify(ctx context.Context, Session []byte, N *big.Int) bool
 			return false
 		}
 	}
-	if pf.A.BitLen() != Iterations+1 {
+	if len(pf.A.Bytes()) != Iterations+1 {
 		return false
 	}
-	if pf.B.BitLen() != Iterations+1 {
+	if len(pf.B.Bytes()) != Iterations+1 {
 		return false
 	}
 
@@ -168,8 +169,8 @@ func (pf *ProofMod) Verify(ctx context.Context, Session []byte, N *big.Int) bool
 		}(i)
 
 		go func(i int) {
-			a := pf.A.Bit(i)
-			b := pf.B.Bit(i)
+			a := int(pf.A.Bytes()[i+1])
+			b := int(pf.B.Bytes()[i+1])
 			if a != 0 && a != 1 {
 				chs <- false
 				return
