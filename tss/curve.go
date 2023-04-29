@@ -9,13 +9,12 @@ package tss
 import (
 	"crypto/elliptic"
 	"errors"
-	"reflect"
-
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/crypto/curve25519"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/coinbase/kryptology/pkg/core/curves"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
+	"reflect"
 )
 
 type CurveName string
@@ -41,7 +40,7 @@ func init() {
 	registry = make(map[CurveName]elliptic.Curve)
 	registry[Secp256k1] = s256k1.S256()
 	registry[Nist256p1] = elliptic.P256()
-	registry[Ed25519] = edwards.Edwards()
+	registry[Ed25519] = edwards25519.Edwards25519()
 	registry[BLS12381] = bls12381.BLS12381()
 	registry[C25519] = curve25519.C25519()
 	registry[PAllas] = curves.Pallas()
@@ -102,7 +101,7 @@ func S256() elliptic.Curve {
 }
 
 func Edwards() elliptic.Curve {
-	return edwards.Edwards()
+	return edwards25519.Edwards25519()
 }
 
 func Bls12381() elliptic.Curve {

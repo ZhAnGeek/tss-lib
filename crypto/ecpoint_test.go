@@ -14,10 +14,10 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -144,15 +144,16 @@ func TestS256EcpointJsonSerialization(t *testing.T) {
 }
 
 func TestEdwardsEcpointJsonSerialization(t *testing.T) {
-	ec := edwards.Edwards()
+	ec := tss.Edwards()
 	tss.RegisterCurve("ed25519", ec)
 
 	pubKeyBytes, err := hex.DecodeString("ae1e5bf5f3d6bf58b5c222088671fcbe78b437e28fae944c793897b26091f249")
 	assert.NoError(t, err)
-	pbk, err := edwards.ParsePubKey(pubKeyBytes)
-	assert.NoError(t, err)
+	pkx, pky := edwards25519.EncodedBytesToEcPoint(pubKeyBytes)
+	assert.NotNil(t, pkx, "PubKey.X should not be nil")
+	assert.NotNil(t, pky, "PubKey.Y should not be nil")
 
-	point, err := NewECPoint(ec, pbk.X, pbk.Y)
+	point, err := NewECPoint(ec, pkx, pky)
 	assert.NoError(t, err)
 	bz, err := json.Marshal(point)
 	assert.NoError(t, err)

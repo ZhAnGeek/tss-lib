@@ -8,9 +8,10 @@ package signing
 
 import (
 	"context"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"math/big"
 
-	"github.com/agl/ed25519/edwards25519"
 	"github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/crypto"
@@ -28,9 +29,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	round.resetOK()
 
 	// 1. init R
-	var R edwards25519.ExtendedGroupElement
-	riBytes := bigIntToEncodedBytes(round.temp.ri)
-	edwards25519.GeScalarMultBase(&R, riBytes)
+	Rx, Ry := round.EC().ScalarBaseMult(round.temp.ri.Bytes())
 
 	// 2-6. compute R
 	i := round.PartyID().Index
@@ -67,32 +66,21 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(errors.New("failed to prove Rj"), Pj)
 		}
 
-		extendedRj := ecPointToExtendedElement(round.Params().EC(), Rj.X(), Rj.Y())
-		R = addExtendedElements(R, extendedRj)
+		Rx, Ry = round.EC().Add(Rx, Ry, Rj.X(), Rj.Y())
 	}
 
 	// Compute PubKey with Delta
-	PKwDelta := ecPointToExtendedElement(round.EC(), round.key.EDDSAPub.X(), round.key.EDDSAPub.Y())
+	PkX, PkY := round.key.EDDSAPub.X(), round.key.EDDSAPub.Y()
 	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
-		var gDelta edwards25519.ExtendedGroupElement
-		kdBytes := bigIntToEncodedBytes(round.temp.KeyDerivationDelta)
-		edwards25519.GeScalarMultBase(&gDelta, kdBytes)
-		PKwDelta = addExtendedElements(PKwDelta, gDelta)
+		DeltaX, DeltaY := round.EC().ScalarBaseMult(round.temp.KeyDerivationDelta.Bytes())
+		PkX, PkY = round.EC().Add(PkX, PkY, DeltaX, DeltaY)
 	}
-	var recip, pkx, pky edwards25519.FieldElement
-	var xBz, yBz [32]byte
-	edwards25519.FeInvert(&recip, &PKwDelta.Z)
-	edwards25519.FeMul(&pkx, &PKwDelta.X, &recip)
-	edwards25519.FeMul(&pky, &PKwDelta.Y, &recip)
-	edwards25519.FeToBytes(&xBz, &pkx)
-	edwards25519.FeToBytes(&yBz, &pky)
-	round.temp.PKX = encodedBytesToBigInt(&xBz)
-	round.temp.PKY = encodedBytesToBigInt(&yBz)
+	round.temp.PKX = PkX
+	round.temp.PKY = PkY
 
 	// 7. compute lambda
-	var encodedR [32]byte
-	R.ToBytes(&encodedR)
-	encodedPubKey := ecPointToEncodedBytes(round.temp.PKX, round.temp.PKY)
+	encodedPubKey := edwards25519.EcPointToEncodedBytes(round.temp.PKX, round.temp.PKY)
+	encodedR := edwards25519.EcPointToEncodedBytes(Rx, Ry)
 
 	// h = hash512(k || A || M)
 	h := round.Parameters.HashFunc()
@@ -102,20 +90,21 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	h.Write(round.temp.m)
 
 	var lambda [64]byte
+
 	h.Sum(lambda[:0])
-	var lambdaReduced [32]byte
-	edwards25519.ScReduce(&lambdaReduced, &lambda)
+	lambdaReduced := new(big.Int).Mod(new(big.Int).SetBytes(common.Reverse(lambda[:])), round.EC().Params().N)
 
 	// 8. compute si
-	var localS [32]byte
-	edwards25519.ScMulAdd(&localS, &lambdaReduced, bigIntToEncodedBytes(round.temp.wi), riBytes)
+	modQ := common.ModInt(round.EC().Params().N)
+	si := modQ.Mul(lambdaReduced, round.temp.wi)
+	si = modQ.Add(si, round.temp.ri)
 
 	// 9. store r3 message pieces
-	round.temp.si = &localS
-	round.temp.r = encodedBytesToBigInt(&encodedR)
+	round.temp.si = si
+	round.temp.r = edwards25519.EncodedBytesToBigInt(encodedR)
 
 	// 10. broadcast si to other parties
-	r3msg := NewSignRound3Message(round.PartyID(), encodedBytesToBigInt(&localS))
+	r3msg := NewSignRound3Message(round.PartyID(), si)
 	round.temp.signRound3Messages[round.PartyID().Index] = r3msg
 	round.out <- r3msg
 

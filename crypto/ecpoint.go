@@ -15,7 +15,6 @@ import (
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
 // ECPoint convenience helper
@@ -26,7 +25,7 @@ type ECPoint struct {
 
 var (
 	eight    = big.NewInt(8)
-	eightInv = new(big.Int).ModInverse(eight, edwards.Edwards().Params().N)
+	eightInv = new(big.Int).ModInverse(eight, tss.Edwards().Params().N)
 )
 
 // Creates a new ECPoint and checks that the given coordinates are on the elliptic curve.
@@ -93,7 +92,7 @@ func (p *ECPoint) SetCurve(curve elliptic.Curve) *ECPoint {
 	return p
 }
 
-func (p *ECPoint) EightInvEight() *ECPoint {
+func (p *ECPoint) EightInvEight() *ECPoint { // TODO generalize
 	return p.ScalarMult(eight).ScalarMult(eightInv)
 }
 

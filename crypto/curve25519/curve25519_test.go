@@ -10,13 +10,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
-)
-
-var (
-	eight    = big.NewInt(8)
-	eightInv = new(big.Int).ModInverse(eight, edwards.Edwards().Params().N)
 )
 
 func TestCurve25519BasePoint(t *testing.T) {

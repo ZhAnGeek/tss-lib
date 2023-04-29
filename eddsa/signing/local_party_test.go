@@ -9,14 +9,13 @@ package signing
 import (
 	"context"
 	"fmt"
+	"github.com/Safulet/tss-lib-private/crypto"
 	"hash"
 	"math/big"
 	"sync/atomic"
 	"testing"
 
 	"github.com/Safulet/tss-lib-private/log"
-	"github.com/agl/ed25519/edwards25519"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/blake2b"
 
@@ -35,14 +34,12 @@ func setUp(level log.Level) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
-
-	// only for test
-	tss.SetCurve(tss.Edwards())
 }
 
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
+	ec := tss.Edwards()
 
 	threshold := testThreshold
 
@@ -66,7 +63,7 @@ func TestE2EConcurrent(t *testing.T) {
 	keyDerivationDelta := big.NewInt(666777)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(ec, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
@@ -109,50 +106,33 @@ signing:
 				R := parties[0].temp.r
 
 				// BEGIN check s correctness
+				modQ := common.ModInt(ec.Params().N)
 				sumS := parties[0].temp.si
 				for i, p := range parties {
 					if i == 0 {
 						continue
 					}
 
-					var tmpSumS [32]byte
-					edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), p.temp.si)
-					sumS = &tmpSumS
+					sumS = modQ.Add(sumS, p.temp.si)
 				}
-				fmt.Printf("S: %s\n", encodedBytesToBigInt(sumS).String())
+				fmt.Printf("S: %s\n", sumS.String())
 				fmt.Printf("R: %s\n", R.String())
 				// END check s correctness
 
 				// BEGIN EDDSA verify
-				PKwDelta := ecPointToExtendedElement(tss.Edwards(), keys[0].EDDSAPub.X(), keys[1].EDDSAPub.Y())
+				PKX, PKY := keys[0].EDDSAPub.X(), keys[1].EDDSAPub.Y()
 				if keyDerivationDelta.Cmp(zero) != 0 {
-					var gDelta edwards25519.ExtendedGroupElement
-					kdBytes := bigIntToEncodedBytes(keyDerivationDelta)
-					edwards25519.GeScalarMultBase(&gDelta, kdBytes)
-					PKwDelta = addExtendedElements(PKwDelta, gDelta)
-				}
-				var recip, pkx, pky edwards25519.FieldElement
-				var xBz, yBz [32]byte
-				edwards25519.FeInvert(&recip, &PKwDelta.Z)
-				edwards25519.FeMul(&pkx, &PKwDelta.X, &recip)
-				edwards25519.FeMul(&pky, &PKwDelta.Y, &recip)
-				edwards25519.FeToBytes(&xBz, &pkx)
-				edwards25519.FeToBytes(&yBz, &pky)
-				PKX := encodedBytesToBigInt(&xBz)
-				PKY := encodedBytesToBigInt(&yBz)
-
-				pk := edwards.PublicKey{
-					Curve: tss.Edwards(),
-					X:     PKX,
-					Y:     PKY,
+					DeltaX, DeltaY := ec.ScalarBaseMult(keyDerivationDelta.Bytes())
+					PKX, PKY = ec.Add(PKX, PKY, DeltaX, DeltaY)
 				}
 
-				newSig, err := edwards.ParseSignature(parties[0].data.Signature)
+				pk, err := crypto.NewECPoint(ec, PKX, PKY)
 				if err != nil {
-					println("new sig error, ", err.Error())
+					println("construct public key error, ", err.Error())
 				}
-
-				ok := VerifyEdwards(&pk, msg, newSig.R, newSig.S, parties[0].params.HashFunc)
+				sigR := new(big.Int).SetBytes(parties[0].data.R)
+				sigS := new(big.Int).SetBytes(parties[0].data.S)
+				ok := VerifyEdwards(pk, msg, sigR, sigS, parties[0].params.HashFunc)
 				assert.True(t, ok, "eddsa verify must pass")
 				t.Log("EDDSA signing test done.")
 				// END EDDSA verify
@@ -166,6 +146,7 @@ signing:
 func TestE2EConcurrentBlake2b(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
+	ec := tss.Edwards()
 
 	threshold := testThreshold
 
@@ -189,7 +170,7 @@ func TestE2EConcurrentBlake2b(t *testing.T) {
 	keyDerivationDelta := big.NewInt(666777)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(ec, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		params.SetHashFunc(func() hash.Hash {
 			hasher, _ := blake2b.New512(nil)
 			return hasher
@@ -231,46 +212,31 @@ signing:
 				t.Logf("Done. Received save data from %d participants", ended)
 				R := parties[0].temp.r
 				// BEGIN check s correctness
+				modQ := common.ModInt(ec.Params().N)
 				sumS := parties[0].temp.si
 				for i, p := range parties {
 					if i == 0 {
 						continue
 					}
-					var tmpSumS [32]byte
-					edwards25519.ScMulAdd(&tmpSumS, sumS, bigIntToEncodedBytes(big.NewInt(1)), p.temp.si)
-					sumS = &tmpSumS
+					sumS = modQ.Add(sumS, p.temp.si)
 				}
-				fmt.Printf("S: %s\n", encodedBytesToBigInt(sumS).String())
+				fmt.Printf("S: %s\n", sumS.String())
 				fmt.Printf("R: %s\n", R.String())
 				// END check s correctness
 				// BEGIN EDDSA verify
-				PKwDelta := ecPointToExtendedElement(tss.Edwards(), keys[0].EDDSAPub.X(), keys[1].EDDSAPub.Y())
+				PKX, PKY := keys[0].EDDSAPub.X(), keys[1].EDDSAPub.Y()
 				if keyDerivationDelta.Cmp(zero) != 0 {
-					var gDelta edwards25519.ExtendedGroupElement
-					kdBytes := bigIntToEncodedBytes(keyDerivationDelta)
-					edwards25519.GeScalarMultBase(&gDelta, kdBytes)
-					PKwDelta = addExtendedElements(PKwDelta, gDelta)
-				}
-				var recip, pkx, pky edwards25519.FieldElement
-				var xBz, yBz [32]byte
-				edwards25519.FeInvert(&recip, &PKwDelta.Z)
-				edwards25519.FeMul(&pkx, &PKwDelta.X, &recip)
-				edwards25519.FeMul(&pky, &PKwDelta.Y, &recip)
-				edwards25519.FeToBytes(&xBz, &pkx)
-				edwards25519.FeToBytes(&yBz, &pky)
-				PKX := encodedBytesToBigInt(&xBz)
-				PKY := encodedBytesToBigInt(&yBz)
-				pk := edwards.PublicKey{
-					Curve: tss.Edwards(),
-					X:     PKX,
-					Y:     PKY,
-				}
-				newSig, err := edwards.ParseSignature(parties[0].data.Signature)
-				if err != nil {
-					println("new sig error, ", err.Error())
+					DeltaX, DeltaY := ec.ScalarBaseMult(keyDerivationDelta.Bytes())
+					PKX, PKY = ec.Add(PKX, PKY, DeltaX, DeltaY)
 				}
 
-				ok := VerifyEdwards(&pk, msg, newSig.R, newSig.S, parties[0].params.HashFunc)
+				pk, err := crypto.NewECPoint(ec, PKX, PKY)
+				if err != nil {
+					println("construct public key error, ", err.Error())
+				}
+				sigR := new(big.Int).SetBytes(parties[0].data.R)
+				sigS := new(big.Int).SetBytes(parties[0].data.S)
+				ok := VerifyEdwards(pk, msg, sigR, sigS, parties[0].params.HashFunc)
 				assert.True(t, ok, "eddsa verify must pass")
 				t.Log("EDDSA signing test done.")
 				// END EDDSA verify

@@ -17,11 +17,11 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -289,11 +289,7 @@ func DeriveChildKeyOfEddsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 		return nil, nil, err
 	}
 
-	pubKeyBytes := edwards.PublicKey{
-		Curve: edwards.Edwards(),
-		X:     pk.PublicKey.X(),
-		Y:     pk.PublicKey.Y(),
-	}.Serialize()
+	pubKeyBytes := edwards25519.EcPointToEncodedBytes(pk.PublicKey.X(), pk.PublicKey.Y())[:]
 
 	data := make([]byte, 37)
 	data[0] = 0x2

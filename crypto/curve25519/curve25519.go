@@ -8,14 +8,15 @@ package curve25519
 
 import (
 	"crypto/elliptic"
+	ed "filippo.io/edwards25519"
 	"fmt"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
-//  referred from https://sagecell.sagemath.org/?q=czvfze
+// referred from https://sagecell.sagemath.org/?q=czvfze
 var (
 	positiveSqrtRoot, _ = new(big.Int).SetString("6853475219497561581579357271197624642482790079785650197046958215289687604742", 10)
 	one                 = new(big.Int).SetInt64(1)
@@ -27,12 +28,16 @@ var (
 
 type Curve25519 struct {
 	*elliptic.CurveParams
-	twisted *edwards.TwistedEdwardsCurve
 }
 
 func (curve *Curve25519) IsOnCurve(x, y *big.Int) bool {
 	xt, yt := curve.ConvertPointFromMontgomery(x, y)
-	return curve.twisted.IsOnCurve(xt, yt)
+	p, err := edwards25519.NewPoint(xt, yt)
+	if err != nil {
+		return false
+	}
+	_, err = ed.NewIdentityPoint().SetBytes(p.Bytes())
+	return err == nil
 }
 
 // Add ec arithmetic equations https://en.wikipedia.org/wiki/Montgomery_curve#Addition
@@ -117,7 +122,7 @@ func (curve *Curve25519) Params() *elliptic.CurveParams {
 
 func (curve *Curve25519) ConvertPointFromMontgomery(x1, y1 *big.Int) (x, y *big.Int) {
 	one := new(big.Int).SetInt64(1)
-	modP := common.ModInt(curve.twisted.Params().P)
+	modP := common.ModInt(curve.Params().P)
 	addx := new(big.Int).Add(x1, one)
 	subx := new(big.Int).Sub(x1, one)
 	x = modP.Mul(positiveSqrtRoot, modP.Mul(x1, modP.ModInverse(y1)))
@@ -128,8 +133,7 @@ func (curve *Curve25519) ConvertPointFromMontgomery(x1, y1 *big.Int) (x, y *big.
 // C25519 base point referred https://safecurves.cr.yp.to/base.html
 func C25519() *Curve25519 {
 	c := new(Curve25519)
-	c.twisted = edwards.Edwards()
-	params := c.twisted.Params()
+	params := edwards25519.Edwards25519().Params()
 	params.Gx = new(big.Int).SetInt64(9)
 	params.Gy, _ = new(big.Int).SetString("14781619447589544791020593568409986887264606134616475288964881837755586237401", 10)
 	c.CurveParams = params
