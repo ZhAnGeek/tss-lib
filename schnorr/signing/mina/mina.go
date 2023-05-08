@@ -4,45 +4,69 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package minasigning
+package mina
 
 import (
+	"crypto/elliptic"
+	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/tss"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fp"
 	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fq"
 	"github.com/coinbase/kryptology/pkg/signatures/schnorr/mina"
 )
 
-func MinaSchnorrVerify(pubkey *crypto.ECPoint, msg []byte, signature []byte) error {
+func SchnorrVerify(ec elliptic.Curve, pubkey *crypto.ECPoint, msg []byte, signature []byte) error {
+	if !tss.SameCurve(ec, tss.Pallas()) || !tss.SameCurve(ec, pubkey.Curve()) {
+		str := "signing curve is different than tss.Pallas()"
+		return errors.New(str)
+	}
+
 	if len(signature) < 64 {
 		return fmt.Errorf("signature is invalid")
 	}
-	r := signature[:32]
-	s := signature[32:64]
+	curve := tss.Pallas()
 
-	rp := crypto.NewECPointNoCurveCheck(pubkey.Curve(), new(big.Int).SetBytes(r), nil)
-	e := schnorrHash(rp, pubkey, msg)
+	r := new(big.Int).SetBytes(signature[:32])
+	s := new(big.Int).SetBytes(signature[32:64])
+
+	// cannot be zero
+	if r.Cmp(big.NewInt(0)) == 0 || s.Cmp(big.NewInt(0)) == 0 {
+		return fmt.Errorf("invalid R or S value: cannot be zero")
+	}
+
+	// cannot be negative
+	if r.Sign() == -1 || s.Sign() == -1 {
+		return fmt.Errorf("Invalid R or S value: cannot be negative")
+	}
+
+	// must be smaller than curve.N
+	if r.Cmp(curve.Params().P) >= 0 || s.Cmp(curve.Params().N) >= 0 {
+		return fmt.Errorf("invalid R or S value: must be smaller than order of secp256k1")
+	}
+
+	e := SchnorrHash(r, pubkey, msg)
 
 	sg := new(curves.Ep).Generator()
-	sg.Mul(sg, (new(fq.Fq).SetBigInt(new(big.Int).SetBytes(s))))
+	sg.Mul(sg, new(fq.Fq).SetBigInt(s))
 
 	epk := new(curves.Ep).Mul(getEP(pubkey), new(fq.Fq).SetBigInt(new(big.Int).SetBytes(e)))
 	epk.Neg(epk)
 
 	rc := new(curves.Ep).Add(sg, epk)
-	if !rc.Y().IsOdd() && rc.X().Equal(new(fp.Fp).SetBigInt(new(big.Int).SetBytes(r))) {
+	if rc.IsOnCurve() && !rc.Y().IsOdd() && rc.X().Equal(new(fp.Fp).SetBigInt(r)) {
 		return nil
 	}
 	return fmt.Errorf("verify failed")
 }
 
-func getEP(pubkey *crypto.ECPoint) *curves.Ep {
-	xb := new(fp.Fp).SetBigInt(pubkey.X()).Bytes()
-	yb := new(fp.Fp).SetBigInt(pubkey.Y()).Bytes()
+func getEP(pubKey *crypto.ECPoint) *curves.Ep {
+	xb := new(fp.Fp).SetBigInt(pubKey.X()).Bytes()
+	yb := new(fp.Fp).SetBigInt(pubKey.Y()).Bytes()
 	p, err := new(curves.Ep).FromAffineUncompressed(append(xb[:], yb[:]...))
 	if err != nil {
 		panic(err)
@@ -50,7 +74,7 @@ func getEP(pubkey *crypto.ECPoint) *curves.Ep {
 	return p
 }
 
-func schnorrHash(r *crypto.ECPoint, pubKey *crypto.ECPoint, msg []byte) []byte {
+func SchnorrHash(r *big.Int, pubKey *crypto.ECPoint, msg []byte) []byte {
 	networkId := mina.NetworkType(mina.MainNet)
 	input := new(Roinput)
 	if len(msg) > 0 && input.RecoverRaw(msg[1:]) == nil {
@@ -62,15 +86,13 @@ func schnorrHash(r *crypto.ECPoint, pubKey *crypto.ECPoint, msg []byte) []byte {
 
 	pkx := new(fp.Fp).SetBigInt(pubKey.X())
 	pky := new(fp.Fp).SetBigInt(pubKey.Y())
-	rx := new(fp.Fp).SetBigInt(r.X())
+	rx := new(fp.Fp).SetBigInt(r)
 
 	input.AddFp(pkx)
 	input.AddFp(pky)
 	input.AddFp(rx)
-
 	ctx := new(mina.Context).Init(mina.ThreeW, networkId)
 	fields := input.Fields()
 	ctx.Update(fields)
-
 	return ctx.Digest().BigInt().Bytes()
 }

@@ -9,6 +9,7 @@ package common
 import (
 	"context"
 	"crypto"
+	"crypto/sha256"
 	"encoding/binary"
 	"math/big"
 
@@ -170,4 +171,18 @@ func SHA512_256i_TAGGED(ctx context.Context, tag []byte, in ...*big.Int) *big.In
 		return nil
 	}
 	return new(big.Int).SetBytes(state.Sum(nil))
+}
+
+func TaggedHash256(tag []byte, msgs ...[]byte) []byte {
+	shaTag := sha256.Sum256(tag)
+
+	state := sha256.New()
+	state.Write(shaTag[:])
+	state.Write(shaTag[:])
+
+	for _, msg := range msgs {
+		state.Write(msg)
+	}
+
+	return state.Sum(nil)
 }

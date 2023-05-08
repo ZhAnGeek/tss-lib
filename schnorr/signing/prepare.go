@@ -15,6 +15,10 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 )
 
+// PrepareForSigning runs before signing, when the set of parties to be signed is determined.
+// Each party locally convert his (t, n) share x_i into an additive share w_i such that x = \sum_{j \in S} w_j
+// In addition, using the values X_j that were output from the key generation protocol,
+// the players can locally compute for all j \in S, W_j = g^{w_j}.
 func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int, bigXs []*crypto.ECPoint) (wi *big.Int, bigWs []*crypto.ECPoint) {
 	modQ := common.ModInt(ec.Params().N)
 	if len(ks) != len(bigXs) {
@@ -67,8 +71,8 @@ func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int
 			if err != nil {
 				panic(err.Error())
 			}
-			iota := modQ.Mul(ksc, modQTemp)
-			bigWj = bigWj.ScalarMult(iota)
+			val := modQ.Mul(ksc, modQTemp)
+			bigWj = bigWj.ScalarMult(val)
 		}
 		bigWs[j] = bigWj
 	}

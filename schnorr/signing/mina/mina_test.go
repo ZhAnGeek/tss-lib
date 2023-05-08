@@ -4,7 +4,7 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package minasigning
+package mina
 
 import (
 	"crypto/ecdsa"
@@ -40,6 +40,12 @@ func TestMinaSign(t *testing.T) {
 	pub, err := crypto.NewECPoint(curve, priv.PublicKey.X, priv.PublicKey.Y)
 	assert.Nil(t, err)
 
-	err = MinaSchnorrVerify(pub, []byte(msg), append(msig.R.BigInt().Bytes(), msig.S.BigInt().Bytes()...))
+	xb := msig.R.BigInt().Bytes()
+	yb := msig.S.BigInt().Bytes()
+	signature := make([]byte, 64)
+	copy(signature[32-len(xb):], xb)
+	copy(signature[64-len(yb):], yb)
+
+	err = SchnorrVerify(tss.Pallas(), pub, []byte(msg), signature)
 	assert.Nil(t, err)
 }

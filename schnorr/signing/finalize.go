@@ -8,27 +8,23 @@ package signing
 
 import (
 	"context"
-	"crypto/elliptic"
 	"errors"
-	"math/big"
-
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/mina"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/zil"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func VerifySig(ctx context.Context, ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *crypto.ECPoint) bool {
-	c_ := common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), Y.X().Bytes(), m)
-	c := new(big.Int).SetBytes(c_)
-	LHS := crypto.ScalarBaseMult(ec, z)
-	RHS, err := R.Add(Y.ScalarMult(c))
-	if err != nil {
-		return false
-	}
-	return LHS.Equals(RHS)
+func getSignature(r []byte, s []byte) []byte {
+	ret := make([]byte, 64)
+	copy(ret[32-len(r):], r)
+	copy(ret[64-len(s):], s)
+	return ret
 }
 
-func (round *finalization) Start(ctx context.Context) *tss.Error {
+func (round *finalization) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -42,15 +38,19 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	sumZ := round.temp.zi
 	modQ := common.ModInt(round.EC().Params().N)
 	for j, Pj := range round.Parties().IDs() {
-		round.ok[j] = true
 		if j == i {
 			continue
 		}
+		round.ok[j] = true
 		r3msg := round.temp.signRound3Messages[j].Content().(*SignRound3Message)
 		zj := r3msg.UnmarshalZi()
 
 		LHS := crypto.ScalarBaseMult(round.EC(), zj)
-		RHS, err := round.temp.Rjs[j].Add(round.temp.bigWs[j].ScalarMult(round.temp.c))
+		negC := round.temp.c
+		if round.Network() == tss.ZIL {
+			negC = modQ.Sub(round.EC().Params().N, round.temp.c)
+		}
+		RHS, err := round.temp.Rjs[j].Add(round.temp.bigWs[j].ScalarMult(negC))
 		if err != nil {
 			return round.WrapError(errors.New("zj check failed"), Pj)
 		}
@@ -59,14 +59,37 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		}
 		sumZ = modQ.Add(sumZ, zj)
 	}
+	if round.temp.KeyDerivationDelta != nil {
+		sumZDelta := modQ.Mul(round.temp.c, round.temp.KeyDerivationDelta)
+		if round.Network() == tss.ZIL {
+			sumZ = modQ.Sub(sumZ, sumZDelta)
+		} else {
+			sumZ = modQ.Add(sumZ, sumZDelta)
+		}
+	}
+	if sumZ.Cmp(zero) == 0 {
+		return round.WrapError(errors.New("sumZ cannot be zero"))
+	}
 
 	// save the signature for final output
-	round.data.R = round.temp.R.X().Bytes()
+	if round.Network() == tss.ZIL {
+		round.data.R = round.temp.c.Bytes()
+	} else {
+		round.data.R = round.temp.R.X().Bytes()
+	}
 	round.data.S = sumZ.Bytes()
-	round.data.Signature = append(round.temp.R.X().Bytes(), sumZ.Bytes()...)
-	round.data.M = round.temp.m
+	round.data.M = common.PadToLengthBytesInPlace(round.temp.m, 32)
+	round.data.Signature = getSignature(round.data.R, round.data.S)
 
-	ok := VerifySig(ctx, round.EC(), round.temp.R, sumZ, round.temp.m, round.key.PubKey)
+	var ok bool
+	switch round.Network() {
+	case tss.MINA:
+		ok = mina.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.temp.m, round.data.Signature) == nil
+	case tss.ZIL:
+		ok = zil.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.temp.m, round.data.Signature) == nil
+	default:
+		ok = btc.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.data.M, round.data.Signature) == nil
+	}
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}
@@ -76,7 +99,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *finalization) CanAccept(msg tss.ParsedMessage) bool {
+func (round *finalization) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }

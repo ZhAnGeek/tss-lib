@@ -8,6 +8,7 @@ package signing
 
 import (
 	"context"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
 	"math/big"
 	"sync"
 
@@ -16,12 +17,9 @@ import (
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/mina"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/zil"
 	"github.com/Safulet/tss-lib-private/tss"
-)
-
-var (
-	TagNonce     = "BIP0340/nonce"
-	TagChallenge = "BIP0340/challenge"
 )
 
 func (round *round3) Start(ctx context.Context) *tss.Error {
@@ -118,15 +116,15 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	}
 
 	BIndexes := make([]*big.Int, 0)
-	for j, _ := range round.Parties().IDs() {
+	for j := range round.Parties().IDs() {
 		BIndexes = append(BIndexes, big.NewInt(int64(j)))
 	}
 	// <i, Di, Ei>
 	DEFlat := append(BIndexes, DjFlat...) // i, Di
-	DEFlat = append(BIndexes, EjFlat...)  // i, Ei
+	DEFlat = append(DEFlat, EjFlat...)    // i, Ei
 
 	for j, Pj := range round.Parties().IDs() {
-		rho := common.SHA512_256i_TAGGED(ctx, []byte(TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
+		rho := common.SHA512_256i_TAGGED(ctx, []byte(btc.TagNonce), append(DEFlat, M, big.NewInt(int64(j)))...)
 		Rj, err := round.temp.Djs[j].Add(round.temp.Ejs[j].ScalarMult(rho))
 		if err != nil {
 			return round.WrapError(errors.New("error in computing Ri"), Pj)
@@ -178,17 +176,48 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		round.temp.ei = modQ.Sub(zero, round.temp.ei)
 	}
 
+	// compute child public key
+	pkDelta := round.key.PubKey
+	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
+		gDelta := crypto.ScalarBaseMult(round.EC(), round.temp.KeyDerivationDelta)
+		var err error
+		pkDelta, err = pkDelta.Add(gDelta)
+		if err != nil {
+			return round.WrapError(errors.New("PubKey derivation failed"), round.PartyID())
+		}
+	}
+
 	// compute challenge
-	c_ := common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), round.key.PubKey.X().Bytes(), round.temp.m)
-	c := new(big.Int).SetBytes(c_)
+	var c_ []byte
+	switch round.Network() {
+	case tss.MINA:
+		c_ = mina.SchnorrHash(R.X(), pkDelta, round.temp.m)
+	case tss.ZIL:
+		c_ = zil.SchnorrHash(zil.GetCompressedBytes(R), zil.GetCompressedBytes(pkDelta), round.temp.m)
+	default:
+		c_ = common.TaggedHash256([]byte(btc.TagChallenge),
+			common.PadToLengthBytesInPlace(R.X().Bytes(), 32),
+			common.PadToLengthBytesInPlace(pkDelta.X().Bytes(), 32),
+			common.PadToLengthBytesInPlace(round.temp.m, 32))
+
+	}
+	c := new(big.Int).Mod(new(big.Int).SetBytes(c_), round.EC().Params().N)
+	if c.Cmp(zero) != 1 {
+		return round.WrapError(errors.New("challenge computed to be zero"))
+	}
 
 	// compute signature share zi
 	zi := modQ.Add(round.temp.di, modQ.Mul(round.temp.ei, round.temp.rhos[i]))
-	zi = modQ.Add(zi, modQ.Mul(round.temp.wi, c))
+	if round.Network() == tss.ZIL {
+		zi = modQ.Sub(zi, modQ.Mul(round.temp.wi, c))
+	} else {
+		zi = modQ.Add(zi, modQ.Mul(round.temp.wi, c))
+	}
 
 	round.temp.zi = zi
 	round.temp.c = c
 	round.temp.R = R
+	round.temp.pubKeyDelta = pkDelta
 	// broadcast zi to other parties
 	r3msg := NewSignRound3Message(round.PartyID(), zi)
 	round.temp.signRound3Messages[i] = r3msg

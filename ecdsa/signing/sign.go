@@ -66,7 +66,7 @@ func (round *sign1) Start(ctx context.Context) *tss.Error {
 	SigmaShareDelta := modN.Mul(Rx, modN.Mul(round.temp.KShare, round.temp.KeyDerivationDelta))
 	SigmaShare = modN.Add(SigmaShare, SigmaShareDelta)
 	bitSizeInBytes := round.Params().EC().Params().BitSize / 8
-	RxBytes := PadToLengthBytesInPlace(Rx.Bytes(), bitSizeInBytes)
+	RxBytes := common.PadToLengthBytesInPlace(Rx.Bytes(), bitSizeInBytes)
 
 	r1msg := NewSignRound1Message(round.PartyID(), SigmaShare, RxBytes, Ry)
 	round.out <- r1msg

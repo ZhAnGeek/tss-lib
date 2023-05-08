@@ -25,6 +25,7 @@ type (
 		needsIdentifaction  bool
 		nonce               int
 		hashFunc            func() hash.Hash
+		network             string
 	}
 
 	ReSharingParameters struct {
@@ -104,6 +105,14 @@ func (params *Parameters) HashFunc() hash.Hash {
 		return sha512.New()
 	}
 	return params.hashFunc()
+}
+
+func (params *Parameters) SetNetwork(network string) {
+	params.network = network
+}
+
+func (params *Parameters) Network() string {
+	return params.network
 }
 
 // ----- //
