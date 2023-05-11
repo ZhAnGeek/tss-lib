@@ -27,12 +27,21 @@ message DGRound1Message {
     bytes pub_x_schnorr = 3;
     bytes pub_y_schnorr = 4;
     bytes v_commitment = 5;
+    bytes ssid = 6;
 }
 
 /*
  * The Round 2 "ACK" is broadcast to peers of the Old Committee in this message.
  */
 message DGRound2Message {
+}
+
+/*
+ * The Round 2 Pallier proofs is broadcast to peers of the All Committee in this message.
+ */
+message DGRound2Message2 {
+    repeated bytes prm_proof = 1;
+    repeated bytes mod_proof = 2;
 }
 
 /*
@@ -50,7 +59,14 @@ message DGRound3Message2 {
 }
 
 /*
+* The Round 4 "FacProof" is p2p to peers of the New Committees from the New Committee in this message.
+ */
+message DGRound4Message1 {
+    repeated bytes fac_proof = 1;
+}
+
+/*
  * The Round 4 "ACK" is broadcast to peers of the Old and New Committees from the New Committee in this message.
  */
-message DGRound4Message {
+message DGRound4Message2 {
 }

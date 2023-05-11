@@ -15,10 +15,13 @@ import (
 	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/paillier"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// These messages were generated from Protocol Buffers definitions into schnorr-resharing.pb.go
+// These messages were generated from Protocol Buffers definitions into kcdsa-resharing.pb.go
 
 var (
 	// Ensure that signing messages implement ValidateBasic
@@ -27,6 +30,8 @@ var (
 		(*DGRound2Message)(nil),
 		(*DGRound3Message1)(nil),
 		(*DGRound3Message2)(nil),
+		(*DGRound4Message1)(nil),
+		(*DGRound4Message2)(nil),
 	}
 )
 
@@ -38,6 +43,7 @@ func NewDGRound1Message(
 	PubKey *crypto.ECPoint,
 	PubKeySchnorr *crypto.ECPoint,
 	vct cmt.HashCommitment,
+	ssid []byte,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:             from,
@@ -51,6 +57,7 @@ func NewDGRound1Message(
 		PubXSchnorr: PubKeySchnorr.X().Bytes(),
 		PubYSchnorr: PubKeySchnorr.Y().Bytes(),
 		VCommitment: vct.Bytes(),
+		Ssid:        ssid,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -133,6 +140,10 @@ func (m *DGRound1Message) UnmarshalPubKeySchnorr(ec elliptic.Curve) (*crypto.ECP
 		new(big.Int).SetBytes(m.PubYSchnorr))
 }
 
+func (m *DGRound1Message) UnmarshalSsid() []byte {
+	return m.Ssid
+}
+
 func (m *DGRound1Message) UnmarshalVCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetVCommitment())
 }
@@ -160,6 +171,47 @@ func (m *DGRound2Message) ValidateBasic() bool {
 
 func (m *DGRound2Message) RoundNumber() int {
 	return 2
+}
+
+// ----- //
+
+func NewDGRound2Message2(
+	to []*tss.PartyID,
+	from *tss.PartyID,
+	proofPrm *zkpprm.ProofPrm,
+	proofMod *zkpmod.ProofMod,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:             from,
+		To:               to,
+		IsBroadcast:      true,
+		IsToOldCommittee: false,
+	}
+	proofPrmBz := proofPrm.Bytes()
+	proofModBz := proofMod.Bytes()
+	content := &DGRound2Message2{
+		PrmProof: proofPrmBz[:],
+		ModProof: proofModBz[:],
+	}
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+}
+
+func (m *DGRound2Message2) ValidateBasic() bool {
+	return m != nil && common.NonEmptyMultiBytes(m.GetPrmProof(), zkpprm.ProofPrmBytesParts) &&
+		common.NonEmptyMultiBytes(m.GetModProof(), zkpmod.ProofModBytesParts)
+}
+
+func (m *DGRound2Message2) RoundNumber() int {
+	return 2
+}
+
+func (m *DGRound2Message2) UnmarshalProofPrm() (*zkpprm.ProofPrm, error) {
+	return zkpprm.NewProofFromBytes(m.GetPrmProof())
+}
+
+func (m *DGRound2Message2) UnmarshalProofMod() (*zkpmod.ProofMod, error) {
+	return zkpmod.NewProofFromBytes(m.GetModProof())
 }
 
 // ----- //
@@ -228,7 +280,41 @@ func (m *DGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
 
 // ----- //
 
-func NewDGRound4Message(
+func NewDGRound4Message1(
+	to *tss.PartyID,
+	from *tss.PartyID,
+	proofFac *zkpfac.ProofFac,
+) tss.ParsedMessage {
+	meta := tss.MessageRouting{
+		From:             from,
+		To:               []*tss.PartyID{to},
+		IsBroadcast:      false,
+		IsToOldCommittee: false,
+	}
+	proofFacBzs := proofFac.Bytes()
+	content := &DGRound4Message1{
+		FacProof: proofFacBzs[:],
+	}
+	msg := tss.NewMessageWrapper(meta, content)
+	return tss.NewMessage(meta, content, msg)
+
+}
+
+func (m *DGRound4Message1) ValidateBasic() bool {
+	return m != nil && common.NonEmptyMultiBytes(m.FacProof, zkpfac.ProofFacBytesParts)
+}
+
+func (m *DGRound4Message1) RoundNumber() int {
+	return 4
+}
+
+func (m *DGRound4Message1) UnmarshalProofFac() (*zkpfac.ProofFac, error) {
+	return zkpfac.NewProofFromBytes(m.GetFacProof())
+}
+
+// ----- //
+
+func NewDGRound4Message2(
 	to []*tss.PartyID,
 	from *tss.PartyID,
 ) tss.ParsedMessage {
@@ -238,15 +324,15 @@ func NewDGRound4Message(
 		IsBroadcast:             true,
 		IsToOldAndNewCommittees: true,
 	}
-	content := &DGRound4Message{}
+	content := &DGRound4Message2{}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
 }
 
-func (m *DGRound4Message) ValidateBasic() bool {
+func (m *DGRound4Message2) ValidateBasic() bool {
 	return true
 }
 
-func (m *DGRound4Message) RoundNumber() int {
+func (m *DGRound4Message2) RoundNumber() int {
 	return 4
 }

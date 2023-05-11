@@ -19,7 +19,6 @@ import (
 type (
 	LocalPreParams struct {
 		PaillierSK *paillier.PrivateKey // ski
-		NTildei,
 		H1i, H2i,
 		Alpha, Beta,
 		P, Q *big.Int
@@ -97,7 +96,6 @@ func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.Sorte
 
 func (preParams LocalPreParams) Validate() bool {
 	return preParams.PaillierSK != nil &&
-		preParams.NTildei != nil &&
 		preParams.H1i != nil &&
 		preParams.H2i != nil
 }

@@ -51,6 +51,7 @@ var (
 	_ tss.Round = (*round2)(nil)
 	_ tss.Round = (*round3)(nil)
 	_ tss.Round = (*round4)(nil)
+	_ tss.Round = (*round_out)(nil)
 )
 
 // ----- //

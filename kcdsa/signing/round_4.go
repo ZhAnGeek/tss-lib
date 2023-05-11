@@ -50,16 +50,30 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 
 			message := round.temp.signRound3Messages[j].Content().(*SignRound3Message1)
 			Kj := message.UnmarshalK()
+			round.temp.Ks[j] = Kj
+
+			encProofMessage := round.temp.signRound3Messages2[j].Content().(*SignRound3Message2)
+			proof, err := encProofMessage.UnmarshalEncProof()
+			if err != nil {
+				errChs <- round.WrapError(errors.New("proofEnc verify failed"), Pj)
+				return
+			}
+			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.PaillierSK.N, round.key.H1i, round.key.H2i, Kj)
+			if !ok {
+				errChs <- round.WrapError(errors.New("proofEnc verify failed"), Pj)
+				return
+			}
 
 			kxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.XShare, BigXShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if err != nil {
-				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
+				errChs <- round.WrapError(errors.New("kxMtA failed"), Pi)
 				return
 			}
 
 			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.X, BigXShare, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.XShare, round.temp.XNonce)
 			if err != nil {
-				errChs <- round.WrapError(errors.New("prooflogstar failed"), Pi)
+				errChs <- round.WrapError(errors.New("proofLogStar failed"), Pi)
 				return
 			}
 
@@ -67,13 +81,6 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			round.out <- r4msg
 
 			round.temp.KXShareBetas[j] = kxMta.Beta
-
-			if round.NeedsIdentifaction() {
-				// record transcript for presign identification 1
-				round.temp.KXMtAFs[j] = kxMta.Fji
-				round.temp.KXMtADs[j] = kxMta.Dji
-				round.temp.KXMtARXProofs[j] = kxMta.Proofji
-			}
 		}(j, Pj)
 	}
 	wg.Wait()

@@ -187,7 +187,7 @@ keygen:
 				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")
 
-				// make sure everyone has the same Schnorr public key
+				// make sure everyone has the same KCDSA public key
 				for _, Pj := range parties {
 					pkg := Pj.data.PubKey.ScalarMult(u)
 					pkX, pkY := pkg.X(), pkg.Y()
