@@ -20,10 +20,10 @@ import (
 )
 
 func (round *finalization) VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
-	return verifySig(round.EC(), ctx, s, e, m, pubkey)
+	return VerifySig(round.EC(), ctx, s, e, m, pubkey)
 }
 
-func verifySig(ec elliptic.Curve, _ context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
+func VerifySig(ec elliptic.Curve, _ context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
 	one := big.NewInt(1)
 	N := ec.Params().N
 	if s.Cmp(one) < 0 {
