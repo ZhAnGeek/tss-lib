@@ -121,9 +121,22 @@ func NewLocalParty(
 	params *tss.Parameters,
 	out chan<- tss.Message,
 	end chan<- LocalPartySaveData,
+	optionalPreParams ...LocalPreParams,
 ) tss.Party {
 	partyCount := params.PartyCount()
 	data := NewLocalPartySaveData(partyCount)
+
+	// when `optionalPreParams` is provided we'll use the pre-computed primes instead of generating them from scratch
+	if 0 < len(optionalPreParams) {
+		if 1 < len(optionalPreParams) {
+			panic(errors.New("keygen.NewLocalParty expected 0 or 1 item in `optionalPreParams`"))
+		}
+		if !optionalPreParams[0].Validate() {
+			panic(errors.New("keygen.NewLocalParty: `optionalPreParams` failed to validate"))
+		}
+		data.LocalPreParams = optionalPreParams[0]
+	}
+
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
 		params:    params,
