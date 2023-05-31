@@ -17,7 +17,10 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
+	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -30,6 +33,9 @@ var (
 	_ = []tss.MessageContent{
 		(*KGRound1Message1)(nil),
 		(*KGRound2Message1)(nil),
+		(*KGRound2Message2)(nil),
+		(*KGRound3Message1)(nil),
+		(*KGRound4Message1)(nil),
 	}
 )
 
@@ -41,11 +47,15 @@ func NewKGRound1Message1(
 	nTildeI, h1I, h2I *big.Int,
 	Ri, Xi *big.Int,
 	rct, xct cmt.HashCommitment,
+	proofPrm *zkpprm.ProofPrm,
+	proofMod *zkpmod.ProofMod,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:        from,
 		IsBroadcast: true,
 	}
+	proofPrmBz := proofPrm.Bytes()
+	proofModBz := proofMod.Bytes()
 	content := &KGRound1Message1{
 		PaillierN:   paillierPK.N.Bytes(),
 		NTilde:      nTildeI.Bytes(),
@@ -55,6 +65,8 @@ func NewKGRound1Message1(
 		X:           Xi.Bytes(),
 		RCommitment: rct.Bytes(),
 		XCommitment: xct.Bytes(),
+		PrmProof:    proofPrmBz[:],
+		ModProof:    proofModBz[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -69,7 +81,9 @@ func (m *KGRound1Message1) ValidateBasic() bool {
 		common.NonEmptyBytes(m.GetR()) &&
 		common.NonEmptyBytes(m.GetX()) &&
 		common.NonEmptyBytes(m.RCommitment) &&
-		common.NonEmptyBytes(m.XCommitment)
+		common.NonEmptyBytes(m.XCommitment) &&
+		common.NonEmptyMultiBytes(m.GetPrmProof(), zkpprm.ProofPrmBytesParts) &&
+		common.NonEmptyMultiBytes(m.GetModProof(), zkpmod.ProofModBytesParts)
 }
 
 func (m *KGRound1Message1) RoundNumber() int {
@@ -108,9 +122,18 @@ func (m *KGRound1Message1) UnmarshalXCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetXCommitment())
 }
 
+func (m *KGRound1Message1) UnmarshalProofPrm() (*zkpprm.ProofPrm, error) {
+	return zkpprm.NewProofFromBytes(m.GetPrmProof())
+}
+
+func (m *KGRound1Message1) UnmarshalProofMod() (*zkpmod.ProofMod, error) {
+	return zkpmod.NewProofFromBytes(m.GetModProof())
+}
+
 func NewKGRound2Message1(
 	to, from *tss.PartyID,
 	EncProof *zkpenc.ProofEnc,
+	FacProof *zkpfac.ProofFac,
 	RShare, XShare *vss.Share,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
@@ -119,8 +142,10 @@ func NewKGRound2Message1(
 		IsBroadcast: false,
 	}
 	bytes := EncProof.Bytes()
+	FacProofBz := FacProof.Bytes()
 	content := &KGRound2Message1{
 		EncProof: bytes[:],
+		FacProof: FacProofBz[:],
 		RShare:   RShare.Share.Bytes(),
 		XShare:   XShare.Share.Bytes(),
 	}
@@ -129,8 +154,8 @@ func NewKGRound2Message1(
 }
 
 func (m *KGRound2Message1) ValidateBasic() bool {
-	return m != nil &&
-		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts)
+	return m != nil && common.NonEmptyBytes(m.RShare) && common.NonEmptyBytes(m.XShare) &&
+		common.NonEmptyMultiBytes(m.EncProof, zkpenc.ProofEncBytesParts) && common.NonEmptyMultiBytes(m.FacProof, zkpfac.ProofFacBytesParts)
 }
 
 func (m *KGRound2Message1) RoundNumber() int {
@@ -147,6 +172,10 @@ func (m *KGRound2Message1) UnmarshalXShare() *big.Int {
 
 func (m *KGRound2Message1) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {
 	return zkpenc.NewProofFromBytes(m.GetEncProof())
+}
+
+func (m *KGRound2Message1) UnmarshalFacProof() (*zkpfac.ProofFac, error) {
+	return zkpfac.NewProofFromBytes(m.GetFacProof())
 }
 
 // ----- //

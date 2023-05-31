@@ -8,6 +8,7 @@ package signing
 
 import (
 	"context"
+	"crypto/elliptic"
 	"crypto/sha256"
 	"errors"
 	"math/big"
@@ -19,36 +20,26 @@ import (
 )
 
 func (round *finalization) VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
-	sY := pubkey.ScalarMult(s)
-	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
-	eG := g.ScalarMult(e)
-	// if pk is not negative, then eG should negate
-	needsNeg := pubkey.Y().Bit(0) != 1
-	if needsNeg {
-		Y2 := new(big.Int).Sub(round.EC().Params().P, eG.Y())
-		eG2, err := crypto.NewECPoint(round.EC(), eG.X(), Y2)
-		if err != nil {
-			return false
-		}
-		eG = eG2
-	}
-
-	W, _ := sY.Add(eG)
-	mHash := sha256.Sum256(m)
-	mHashPkBytes := append(mHash[:], ckd.ReverseBytes(W.X().Bytes())...)
-	e2Bytes := sha256.Sum256(mHashPkBytes)
-
-	// e1 == e2
-	return e.Cmp(new(big.Int).SetBytes(ckd.ReverseBytes(e2Bytes[:]))) == 0
+	return VerifySig(round.EC(), ctx, s, e, m, pubkey)
 }
 
-func VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
-	ec := tss.Curve25519()
+func VerifySig(ec elliptic.Curve, _ context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
+	one := big.NewInt(1)
+	N := ec.Params().N
+	if s.Cmp(one) < 0 {
+		return false
+	}
+	if s.Cmp(N) >= 0 {
+		return false
+	}
+	if len(e.Bytes()) > 32 {
+		return false
+	}
 	sY := pubkey.ScalarMult(s)
 	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy)
 	eG := g.ScalarMult(e)
-	// if pk is not negative, then eG should negate
-	needsNeg := pubkey.Y().Bit(0) != 1
+	// if y coordinate of pk is even, then eG should negate
+	needsNeg := pubkey.Y().Bit(0) == 0
 	if needsNeg {
 		Y2 := new(big.Int).Sub(ec.Params().P, eG.Y())
 		eG2, err := crypto.NewECPoint(ec, eG.X(), Y2)
@@ -82,7 +73,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	modN := common.ModInt(new(big.Int).Set(round.EC().Params().N))
 	sumKXShare := round.temp.KXShare
 	sumBigKxShare := round.temp.BigKXShare
-	for j := range round.Parties().IDs() {
+	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
@@ -91,8 +82,18 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		kxShare := message.UnmarshalKXShare()
 		bigKxShare, err := message.UnmarshalBigKXShare(round.EC())
 		if err != nil {
-			return round.WrapError(errors.New("can not add rx share"))
+			return round.WrapError(errors.New("can not add kx share"), Pj)
 		}
+		proofLogstar, err := message.UnmarshalProofLogstar(round.EC())
+		if err != nil {
+			return round.WrapError(errors.New("can not get proof log star"), Pj)
+		}
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ok := proofLogstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.Ks[j], bigKxShare, round.temp.BigXAll, round.key.PaillierSK.N, round.key.H1i, round.key.H2i)
+		if !ok {
+			return round.WrapError(errors.New("proof log star verify failed"), Pj)
+		}
+
 		sumKXShare = modN.Add(sumKXShare, kxShare)
 		sumBigKxShare, err = sumBigKxShare.Add(bigKxShare)
 		if err != nil {
@@ -105,8 +106,10 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(errors.New("share not equal failed"))
 	}
 
-	sBytes := sumKXShare.Bytes()
-	eBytes := round.temp.e.Bytes()
+	sBytes := make([]byte, 32)
+	sumKXShare.FillBytes(sBytes)
+	eBytes := make([]byte, 32)
+	round.temp.e.FillBytes(eBytes)
 
 	// save the signature for final output
 	round.data.R = ckd.ReverseBytes(sBytes)
@@ -124,7 +127,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *finalization) CanAccept(msg tss.ParsedMessage) bool {
+func (round *finalization) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }

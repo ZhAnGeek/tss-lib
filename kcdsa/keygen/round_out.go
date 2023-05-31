@@ -31,15 +31,24 @@ func (round *round_out) Start(ctx context.Context) *tss.Error {
 	modN := common.ModInt(new(big.Int).Set(round.EC().Params().N))
 	sumRXShare := round.temp.RXShare
 	bigRXShare := round.temp.BigRXShare
-	for j := range round.Parties().IDs() {
+	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
+		}
+		proofLogstarj := round.temp.r4msgProofLogstars[j]
+		bigRXSharej := round.temp.r4msgBigRXShare[j]
+		bigXSharej := round.temp.BigXAll
+		Rj := round.temp.r1msg1R[j]
+		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ok := proofLogstarj.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], Rj, bigRXSharej, bigXSharej, round.save.PaillierSK.N, round.save.H1i, round.save.H2i)
+		if !ok {
+			return round.WrapError(errors.New("failed to verify logstar"), Pj)
 		}
 		var err error
 		sumRXShare = modN.Add(sumRXShare, round.temp.r4msgRXShare[j])
 		bigRXShare, err = bigRXShare.Add(round.temp.r4msgBigRXShare[j])
 		if err != nil {
-			return round.WrapError(errors.New("can not add rx share"))
+			return round.WrapError(errors.New("cannot add rx share"))
 		}
 	}
 	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)

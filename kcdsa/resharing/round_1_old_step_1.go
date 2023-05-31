@@ -10,7 +10,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
@@ -19,7 +21,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// round 1 represents round 1 of the reshare part of the Schnorr TSS spec
+// round 1 represents round 1 of the reshare part of the KCDSA TSS spec
 func newRound1(params *tss.ReSharingParameters, input, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
 	return &round1{
 		&base{params, temp, input, save, out, end, make([]bool, len(params.OldParties().IDs())), make([]bool, len(params.NewParties().IDs())), false, 1}}
@@ -49,11 +51,25 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 			}
 			round.save.LocalPreParams = *preParams
 		}
-		msg := NewDGRound1MessageNewParty(round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(), &round.save.PaillierSK.PublicKey, round.save.NTildei, round.save.H1i, round.save.H2i)
+		msg := NewDGRound1MessageNewParty(round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(), &round.save.PaillierSK.PublicKey, round.save.PaillierSK.N, round.save.H1i, round.save.H2i)
 		round.out <- msg
 		return nil
 	}
 
+	var err error
+	// 0. ssid
+	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
+	ssidList = append(ssidList, round.OldParties().IDs().Keys()...)                                                      // old parties
+	ssidList = append(ssidList, round.NewParties().IDs().Keys()...)                                                      // new parties
+	BigXjList, err := crypto.FlattenECPoints(round.input.BigXj)
+	if err != nil {
+		return round.WrapError(errors.New("read BigXj failed"), Pi)
+	}
+	ssidList = append(ssidList, BigXjList...)           // BigXj
+	ssidList = append(ssidList, round.input.NTildej...) // NCap
+	ssidList = append(ssidList, round.input.H1j...)     // s
+	ssidList = append(ssidList, round.input.H2j...)     // t
+	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 	round.allOldOK()
 	i := Pi.Index
 
@@ -63,7 +79,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks)), round.PartyID())
 	}
 	newKs := round.NewParties().IDs().Keys()
-	wi, _ := signing.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks, round.input.BigXj, round.input.PubKey, round.input.BigR)
+	wi := signing.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks, round.input.BigXj, round.input.PubKey, round.input.BigR)
 
 	// 2.
 	vi, shares, err := vss.Create(round.Params().EC(), round.NewThreshold(), wi, newKs)
@@ -85,7 +101,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	// 5. "broadcast" C_i to members of the NEW committee
 	r1msg := NewDGRound1Message(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		round.input.PubKey, round.input.PubKeySchnorr, vCmt.C)
+		round.input.PubKey, round.input.PubKeySchnorr, vCmt.C, ssid)
 	round.temp.dgRound1Messages[i] = r1msg
 	round.out <- r1msg
 

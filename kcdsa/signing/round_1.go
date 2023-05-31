@@ -20,7 +20,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// round 1 represents round 1 of the signing part of the Schnorr TSS spec
+// round 1 represents round 1 of the signing part of the KCDSA TSS spec
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData) tss.Round {
 	return &round1{
 		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
@@ -106,9 +106,8 @@ func (round *round1) prepare() error {
 	if round.Threshold()+1 > len(ks) {
 		return fmt.Errorf("t+1=%d is not consistent with the key count %d", round.Threshold()+1, len(ks))
 	}
-	wi, bigWs := PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, round.key.BigXj, round.key.PubKey, round.key.BigR)
+	wi := PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, round.key.BigXj, round.key.PubKey, round.key.BigR)
 
 	round.temp.wi = wi
-	round.temp.bigWs = bigWs
 	return nil
 }

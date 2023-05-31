@@ -31,6 +31,9 @@ type Curve25519 struct {
 }
 
 func (curve *Curve25519) IsOnCurve(x, y *big.Int) bool {
+	if x.Cmp(one) == 0 && y.Cmp(zero) == 0 {
+		return false
+	}
 	xt, yt := curve.ConvertPointFromMontgomery(x, y)
 	p, err := edwards25519.NewPoint(xt, yt)
 	if err != nil {
@@ -78,6 +81,9 @@ func (curve *Curve25519) Double(x1, y1 *big.Int) (x, y *big.Int) {
 	if x1.Cmp(one) == 0 && y1.Cmp(zero) == 0 {
 		return one, zero
 	}
+	if x1.Cmp(zero) == 0 && y1.Cmp(zero) == 0 {
+		return one, zero
+	}
 	modP := common.ModInt(curve.Params().P)
 	x12 := new(big.Int).Mul(x1, x1)
 	y12 := new(big.Int).Mul(y1, y1)
@@ -101,12 +107,16 @@ func (curve *Curve25519) Double(x1, y1 *big.Int) (x, y *big.Int) {
 
 func (curve *Curve25519) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 	tx, ty := one, zero
+	tmp1, tmp2 := zero, zero
 
 	bits := fmt.Sprintf("%b", new(big.Int).SetBytes(k))
 	for _, bit := range bits {
 		tx, ty = curve.Double(tx, ty)
+		tmp1, tmp2 = curve.Add(tx, ty, x1, y1)
 		if bit == '1' {
-			tx, ty = curve.Add(tx, ty, x1, y1)
+			tx, ty = tmp1, tmp2
+		} else {
+			tmp1, tmp2 = tx, ty
 		}
 	}
 	return tx, ty
@@ -122,6 +132,17 @@ func (curve *Curve25519) Params() *elliptic.CurveParams {
 
 func (curve *Curve25519) ConvertPointFromMontgomery(x1, y1 *big.Int) (x, y *big.Int) {
 	one := new(big.Int).SetInt64(1)
+	zero := new(big.Int).SetInt64(0)
+
+	// map (0, 0) to (0, -1)
+	if x1.Cmp(zero) == 0 && y1.Cmp(zero) == 0 {
+		return zero, new(big.Int).SetInt64(-1)
+	}
+
+	// map point of infinity (1, 0) to (0, 1)
+	if x1.Cmp(one) == 0 && y1.Cmp(zero) == 0 {
+		return zero, one
+	}
 	modP := common.ModInt(curve.Params().P)
 	addx := new(big.Int).Add(x1, one)
 	subx := new(big.Int).Sub(x1, one)
