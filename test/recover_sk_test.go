@@ -2,13 +2,14 @@ package test_test
 
 import (
 	"fmt"
+	"math/big"
+	"testing"
+
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	"github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
 	"github.com/stretchr/testify/assert"
-	"math/big"
-	"testing"
 
 	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
@@ -84,7 +85,7 @@ func TestRestoreKcdsaSK(t *testing.T) {
 	assert.NoError(t, err, "reconstruct should not fail")
 
 	pk2 := crypto.ScalarBaseMult(ec, new(big.Int).ModInverse(sk, ec.Params().N))
-	assert.True(t, pk2.Equals(keys[0].PubKey), "pubkey derived from sk should equal pk")
+	assert.Equal(t, pk2.X().Cmp(keys[0].PubKey.X()), 0, "pubkey derived from sk should equal pk")
 	fmt.Println(pk2.Bytes())
 }
 
