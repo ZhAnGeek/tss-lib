@@ -8,9 +8,10 @@ package signing
 
 import (
 	"context"
-	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
 	"math/big"
 	"sync"
+
+	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
 
 	"github.com/pkg/errors"
 
@@ -48,7 +49,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			msg := round.temp.signRound2Messages[j]
 			r2msg := msg.Content().(*SignRound2Message)
 			cmtDeCmt := commitments.HashCommitDecommit{C: round.temp.cjs[j], D: r2msg.UnmarshalDeCommitment()}

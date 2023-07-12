@@ -39,7 +39,7 @@ func (round *round_out) Start(ctx context.Context) *tss.Error {
 		bigRXSharej := round.temp.r4msgBigRXShare[j]
 		bigXSharej := round.temp.BigXAll
 		Rj := round.temp.r1msg1R[j]
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 		ok := proofLogstarj.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], Rj, bigRXSharej, bigXSharej, round.save.PaillierSK.N, round.save.H1i, round.save.H2i)
 		if !ok {
 			return round.WrapError(errors.New("failed to verify logstar"), Pj)

@@ -58,7 +58,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("proofEnc verify failed"), Pj)
 				return
 			}
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntThroughBigInt(round.temp.ssid, big.NewInt(int64(j)))
 			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.PaillierSK.N, round.key.H1i, round.key.H2i, Kj)
 			if !ok {
 				errChs <- round.WrapError(errors.New("proofEnc verify failed"), Pj)

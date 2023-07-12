@@ -40,7 +40,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntThroughBigInt(round.temp.ssid, big.NewInt(int64(j)))
 
 		msg := round.temp.signRound2Messages[j]
 		r2msg := msg.Content().(*SignRound2Message)

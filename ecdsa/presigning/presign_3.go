@@ -51,7 +51,7 @@ func (round *presign3) Start(ctx context.Context) *tss.Error {
 			defer wg.Done()
 
 			BigGammaSharej := round.temp.R2msgBigGammaShare[j]
-			ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.Ssid, big.NewInt(int64(j)))
 
 			DeltaD := round.temp.R2msgDeltaD[j]
 			DeltaF := round.temp.R2msgDeltaF[j]

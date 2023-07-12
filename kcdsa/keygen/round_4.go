@@ -44,7 +44,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			defer wg.Done()
 
 			XSharej := round.temp.r3msgBigXShare[j]
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 
 			XD := round.temp.r3msgRXD[j]
 			XF := round.temp.r3msgRXF[j]

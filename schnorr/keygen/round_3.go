@@ -50,7 +50,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 		KGCj := round.temp.KGCs[j]
 		KGDj := round.temp.r2msg2Decommit[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
