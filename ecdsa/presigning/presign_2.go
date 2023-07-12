@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/mta"
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
@@ -49,7 +50,7 @@ func (round *presign2) Start(ctx context.Context) *tss.Error {
 
 			Kj := round.temp.R1msgK[j]
 			proof := round.temp.R1msgProof[j]
-			ContextJ := common.AppendBigIntThroughBigInt(round.temp.Ssid, big.NewInt(int64(j)))
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.Ssid, big.NewInt(int64(j)))
 			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round2: proofEnc verify failed"), Pj)

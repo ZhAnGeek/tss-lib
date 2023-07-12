@@ -11,6 +11,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto/mta"
 	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
 	"github.com/pkg/errors"
@@ -58,7 +59,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("proofEnc verify failed"), Pj)
 				return
 			}
-			ContextJ := common.AppendBigIntThroughBigInt(round.temp.ssid, big.NewInt(int64(j)))
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.PaillierSK.N, round.key.H1i, round.key.H2i, Kj)
 			if !ok {
 				errChs <- round.WrapError(errors.New("proofEnc verify failed"), Pj)

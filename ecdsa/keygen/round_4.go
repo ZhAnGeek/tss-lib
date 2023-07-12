@@ -38,7 +38,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		}
 		errChs := make(chan *tss.Error, 3)
 		wg := sync.WaitGroup{}
-		ContextJ := append(round.temp.RidAllBz, big.NewInt(int64(j)).Bytes()[:]...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.RidAllBz, big.NewInt(int64(j)))
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {

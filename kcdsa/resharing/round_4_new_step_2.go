@@ -54,7 +54,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		round.save.NTildej[j] = dgMessage.UnmarshalNTilde()
 
 		r2Message := round.temp.dgRound2Message2s[j].Content().(*DGRound2Message2)
-		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
+		contextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 
 		proofPrm, err := r2Message.UnmarshalProofPrm()
 		if err != nil {

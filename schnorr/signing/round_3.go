@@ -11,13 +11,12 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
-
 	"github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
 	"github.com/Safulet/tss-lib-private/schnorr/signing/mina"
 	"github.com/Safulet/tss-lib-private/schnorr/signing/zil"
 	"github.com/Safulet/tss-lib-private/tss"
