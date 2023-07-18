@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -36,7 +37,7 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			ContextJ := append(round.temp.RidAllBz, big.NewInt(int64(j)).Bytes()[:]...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.RidAllBz, big.NewInt(int64(j)))
 			ok := round.temp.r4msgpfsch[j].Verify(ctx, ContextJ, round.save.BigXj[j])
 			if !ok || !round.temp.r4msgpfsch[j].A.Equals(round.temp.r2msgAs[j]) {
 				errChs <- round.WrapError(errors.New("proofSch verify failed"), Pj)

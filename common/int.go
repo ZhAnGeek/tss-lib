@@ -127,3 +127,10 @@ func CheckInvertibleAndValidityModuloN(N *big.Int, is ...*big.Int) error {
 	}
 	return nil
 }
+
+func AppendBigIntToBytesSlice(commonBytes []byte, appended *big.Int) []byte {
+	resultBytes := make([]byte, len(commonBytes), len(commonBytes)+len(appended.Bytes()))
+	copy(resultBytes, commonBytes)
+	resultBytes = append(resultBytes, appended.Bytes()...)
+	return resultBytes
+}

@@ -54,7 +54,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 		KGCj := round.temp.KGCs[j]
 		KGDj := round.temp.r2msg2DecommitX[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
@@ -138,7 +138,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 		KGCj := round.temp.rKGCs[j]
 		KGDj := round.temp.r2msg2DecommitR[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
@@ -205,7 +205,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			}
 			Rj := round.temp.r1msg1R[j]
 
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			encProof := round.temp.r2msg1Proof[j]
 			encProofVerified := encProof.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, Rj)
 			if !encProofVerified {

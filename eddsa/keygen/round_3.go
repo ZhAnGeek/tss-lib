@@ -93,7 +93,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				ch <- vssOut{errors.New("failed to unmarshal Schnorr proof"), nil}
 				return
 			}
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			ok = proof.Verify(ctx, ContextJ, PjVs[0])
 			if !ok {
 				ch <- vssOut{errors.New("failed to prove Schnorr proof"), nil}

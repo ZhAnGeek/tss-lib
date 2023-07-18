@@ -48,7 +48,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			msg := round.temp.signRound2Messages[j]
 			r2msg := msg.Content().(*SignRound2Message1)
 			d := r2msg.UnmarshalKDeCommitment()

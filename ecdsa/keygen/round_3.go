@@ -42,7 +42,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			contextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			contextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			if round.save.NTildej[j].BitLen() != SafeBitLen*2 {
 				errChs <- round.WrapError(errors.New("paillier-blum modulus too small"), Pj)
 			}

@@ -54,7 +54,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		round.save.NTildej[j] = dgMessage.UnmarshalNTilde()
 
 		r2Message := round.temp.dgRound2Message2s[j].Content().(*DGRound2Message2)
-		contextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		contextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 
 		proofPrm, err := r2Message.UnmarshalProofPrm()
 		if err != nil {
@@ -79,7 +79,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			continue
 		}
 
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 		SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
 		SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
 		proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.PaillierSK.N,
