@@ -9,6 +9,7 @@ package signing
 import (
 	"context"
 	"fmt"
+	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	"math/big"
 	"runtime"
 	"sync"
@@ -133,13 +134,27 @@ func TestE2EConcurrent(t *testing.T) {
 
 	updater := test.SharedPartyUpdater
 
+	// compute child key delta
+	testMasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+
+	pkExt, err := ckd.NewExtendedKeyFromString(testMasterPubKey, tss.S256())
+	assert.NoError(t, err)
+	pkNew := keys[0].PubKey
+	pkExt.PublicKey = *pkNew
+	path := []uint32{0, 1, 2, 2}
+	ec := tss.S256()
+	delta, childExtKey, err := ckd.DeriveChildKeyFromHierarchy(ctx, path, pkExt, ec.Params().N, ec)
+	assert.NoError(t, err)
+	assert.False(t, delta.Uint64() == 0, "delta is not zero")
+	assert.True(t, childExtKey.PublicKey.IsOnCurve())
+
 	msg := big.NewInt(200).Bytes()
 	// init the parties
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
-		keyDerivationDelta := big.NewInt(10)
+		keyDerivationDelta := delta
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
@@ -371,6 +386,19 @@ func TestE2EConcurrentMina(t *testing.T) {
 
 	updater := test.SharedPartyUpdater
 
+	// compute child key delta
+	testMasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+
+	pkExt, err := ckd.NewExtendedKeyFromString(testMasterPubKey, tss.S256())
+	assert.NoError(t, err)
+	pkNew := keys[0].PubKey
+	pkExt.PublicKey = *pkNew
+	path := []uint32{0, 1, 2, 2}
+	delta, childExtKey, err := ckd.DeriveChildKeyFromHierarchy(ctx, path, pkExt, curve.Params().N, curve)
+	assert.NoError(t, err)
+	assert.False(t, delta.Uint64() == 0, "delta is not zero")
+	assert.True(t, childExtKey.PublicKey.IsOnCurve())
+
 	msg := big.NewInt(200).Bytes()
 	// init the parties
 	wg := sync.WaitGroup{}
@@ -378,7 +406,7 @@ func TestE2EConcurrentMina(t *testing.T) {
 		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		params.SetNetwork(tss.MINA)
 
-		keyDerivationDelta := big.NewInt(10)
+		keyDerivationDelta := delta
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
