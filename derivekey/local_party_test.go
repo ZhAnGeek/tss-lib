@@ -13,7 +13,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/armfazh/h2c-go-ref"
 	"github.com/pkg/errors"
-	"os"
+	"io/ioutil"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -308,7 +308,7 @@ func LoadKeygenTestFixtures(qty int, fixtureBase string, optionalStart ...int) (
 	// for i := start; i < qty; i++ {
 	for i := 0; i < qty; i++ {
 		fixtureFilePath := makeTestFixtureFilePath(i+start, fixtureBase)
-		bz, err := os.ReadFile(fixtureFilePath)
+		bz, err := ioutil.ReadFile(fixtureFilePath)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err,
 				"could not open the test fixture for party %d in the expected location: %s. run keygen tests first.",
