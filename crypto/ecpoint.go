@@ -25,7 +25,8 @@ type ECPoint struct {
 }
 
 var (
-	eight    = big.NewInt(8)
+	eight = big.NewInt(8)
+	// For ed25519 and curve25519
 	eightInv = new(big.Int).ModInverse(eight, edwards.Edwards().Params().N)
 )
 
