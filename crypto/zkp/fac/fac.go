@@ -26,31 +26,36 @@ type (
 	}
 )
 
-// NewProof implements prooffac
+var (
+	// rangeParameter l limits the bits of p or q to be in [1024-l, 1024+l]
+	rangeParameter = new(big.Int).Lsh(big.NewInt(1), 15)
+)
+
+// NewProof implements proofFac
 func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, N0, NCap, s, t, N0p, N0q *big.Int) (*ProofFac, error) {
 	if ec == nil || N0 == nil || NCap == nil || s == nil || t == nil || N0p == nil || N0q == nil {
 		return nil, errors.New("ProveFac constructor received nil value(s)")
 	}
 
 	q := ec.Params().N
-	q3 := new(big.Int).Mul(q, q)
-	q3 = new(big.Int).Mul(q, q3)
-	qNCap := new(big.Int).Mul(q, NCap)
-	qN0NCap := new(big.Int).Mul(qNCap, N0)
-	q3NCap := new(big.Int).Mul(q3, NCap)
-	q3N0NCap := new(big.Int).Mul(q3NCap, N0)
 	sqrtN0 := new(big.Int).Sqrt(N0)
-	q3SqrtN0 := new(big.Int).Mul(q3, sqrtN0)
+
+	leSqrtN0 := new(big.Int).Mul(rangeParameter, q)
+	leSqrtN0 = new(big.Int).Mul(leSqrtN0, sqrtN0)
+	lNCap := new(big.Int).Mul(rangeParameter, NCap)
+	lN0NCap := new(big.Int).Mul(lNCap, N0)
+	leN0NCap := new(big.Int).Mul(lN0NCap, q)
+	leNCap := new(big.Int).Mul(lNCap, q)
 
 	// Fig 28.1 sample
-	alpha := common.GetRandomPositiveInt(q3SqrtN0)
-	beta := common.GetRandomPositiveInt(q3SqrtN0)
-	mu := common.GetRandomPositiveInt(qNCap)
-	nu := common.GetRandomPositiveInt(qNCap)
-	sigma := common.GetRandomPositiveInt(qN0NCap)
-	r := common.GetRandomPositiveRelativelyPrimeInt(q3N0NCap)
-	x := common.GetRandomPositiveInt(q3NCap)
-	y := common.GetRandomPositiveInt(q3NCap)
+	alpha := common.GetRandomPositiveInt(leSqrtN0)
+	beta := common.GetRandomPositiveInt(leSqrtN0)
+	mu := common.GetRandomPositiveInt(lNCap)
+	nu := common.GetRandomPositiveInt(lNCap)
+	sigma := common.GetRandomPositiveInt(lN0NCap)
+	r := common.GetRandomPositiveRelativelyPrimeInt(leN0NCap)
+	x := common.GetRandomPositiveInt(leNCap)
+	y := common.GetRandomPositiveInt(leNCap)
 
 	// Fig 28.1 compute
 	modNCap := common.ModInt(NCap)
@@ -125,17 +130,17 @@ func (pf *ProofFac) Verify(ctx context.Context, Session []byte, ec elliptic.Curv
 	}
 
 	q := ec.Params().N
-	q3 := new(big.Int).Mul(q, q)
-	q3 = new(big.Int).Mul(q, q3)
 	sqrtN0 := new(big.Int).Sqrt(N0)
-	q3SqrtN0 := new(big.Int).Mul(q3, sqrtN0)
+
+	leSqrtN0 := new(big.Int).Mul(rangeParameter, q)
+	leSqrtN0 = new(big.Int).Mul(leSqrtN0, sqrtN0)
 
 	// Fig 28. Range Check
-	if !common.IsInInterval(pf.Z1, q3SqrtN0) {
+	if !common.IsInInterval(pf.Z1, leSqrtN0) {
 		return false
 	}
 
-	if !common.IsInInterval(pf.Z2, q3SqrtN0) {
+	if !common.IsInInterval(pf.Z2, leSqrtN0) {
 		return false
 	}
 

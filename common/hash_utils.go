@@ -20,8 +20,8 @@ func RejectionSample(q *big.Int, eHash *big.Int) *big.Int { // e' = eHash
 	for e.Cmp(q) != -1 {
 		eHashAdded := auxiliary.Add(auxiliary, one)
 		eHashReSample := sha256.Sum256(eHashAdded.Bytes())
-		// sample 32 bits
-		e = new(big.Int).SetBytes(eHashReSample[:4])
+		// sample 256 bits
+		e = new(big.Int).SetBytes(eHashReSample[:32])
 	}
 	return e
 }
