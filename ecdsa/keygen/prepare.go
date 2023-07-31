@@ -58,6 +58,10 @@ func GeneratePreParams(ctx context.Context, timeout time.Duration, optionalConcu
 	}
 
 	P, Q := sgps[0].SafePrime(), sgps[1].SafePrime()
+	diffPQ := new(big.Int).Sub(P, Q)
+	if diffPQ.BitLen() < SafeBitLen/2 {
+		return nil, errors.New("generated P and Q are too close, unsafe random source")
+	}
 	NTildei := new(big.Int).Mul(P, Q)
 	paiPK := &paillier.PublicKey{N: NTildei}
 	// phiN = P-1 * Q-1
