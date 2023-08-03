@@ -40,6 +40,10 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *pailli
 		return nil, errors.New("ProveLogstar constructor received nil value(s)")
 	}
 
+	if g.ScalarMult(C).Equals(X) {
+		return nil, errors.New("ProveLogstar is not provable")
+	}
+
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)

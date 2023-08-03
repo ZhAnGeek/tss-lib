@@ -16,10 +16,12 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	cmts "github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// round 1 represents round 1 of the keygen part of the Schnorr TSS spec
+// round 1 represents round 1 of the keygen part of the KCDSA TSS spec
 func newRound1(params *tss.Parameters, save *LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- LocalPartySaveData) tss.Round {
 	return &round1{
 		&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
@@ -53,6 +55,24 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}
 		round.save.LocalPreParams = *preParams
+		round.save.H1j[i] = preParams.H1i
+		round.save.H2j[i] = preParams.H2i
+		round.save.NTildej[i] = preParams.PaillierSK.N
+	}
+
+	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
+	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
+	proofPrm, err := zkpprm.NewProof(ctx, ContextI, round.save.H1i, round.save.H2i, round.save.PaillierSK.N, Phi, round.save.Beta)
+	if err != nil {
+		return round.WrapError(errors.New("create proofPrm failed"), Pi)
+	}
+
+	// Fig 5. Round 3.2 / Fig 6. Round 3.2 proofs
+	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
+	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
+	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.PaillierSK.N, SP, SQ)
+	if err != nil {
+		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}
 
 	// calculate "partial" key share ui, which see as Xi during Mta
@@ -118,7 +138,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 
 	// BROADCAST commitments
 	{
-		msg := NewKGRound1Message1(round.PartyID(), &round.save.PaillierSK.PublicKey, round.save.NTildei, round.save.H1i, round.save.H2i, R, X, rcmt.C, cmt.C)
+		msg := NewKGRound1Message1(round.PartyID(), &round.save.PaillierSK.PublicKey, round.save.PaillierSK.N, round.save.H1i, round.save.H2i, R, X, rcmt.C, cmt.C, proofPrm, proofMod)
 		round.out <- msg
 	}
 	return nil
@@ -133,15 +153,6 @@ func (round *round1) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *round1) Update() (bool, *tss.Error) {
 	for j, msg := range round.temp.KGCs {
-		if round.ok[j] {
-			continue
-		}
-		if msg == nil {
-			return false, nil
-		}
-		round.ok[j] = true
-	}
-	for j, msg := range round.temp.rKGCs {
 		if round.ok[j] {
 			continue
 		}

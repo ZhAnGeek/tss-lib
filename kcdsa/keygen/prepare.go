@@ -80,10 +80,13 @@ func GeneratePreParams(ctx context.Context, timeout time.Duration, optionalConcu
 	}
 	h1i := modNTildeI.Mul(f1, f1)
 	h2i := modNTildeI.Exp(h1i, alpha)
+	zero := new(big.Int).SetUint64(0)
+	if h1i.Cmp(zero) == 0 || h2i.Cmp(zero) == 0 {
+		return nil, errors.New("the h1i and h2i should not be zero")
+	}
 
 	preParams := &LocalPreParams{
 		PaillierSK: paiSK,
-		NTildei:    NTildei,
 		H1i:        h1i,
 		H2i:        h2i,
 		Alpha:      alpha,

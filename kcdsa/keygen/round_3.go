@@ -54,7 +54,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 		KGCj := round.temp.KGCs[j]
 		KGDj := round.temp.r2msg2DecommitX[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
@@ -138,7 +138,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 		KGCj := round.temp.rKGCs[j]
 		KGDj := round.temp.r2msg2DecommitR[j]
 		cmtDeCmt := commitments.HashCommitDecommit{C: KGCj, D: KGDj}
@@ -197,31 +197,37 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
+			facProof := round.temp.r2msg1FacProof[j]
+			if ok := facProof.Verify(ctx, ContextI, round.EC(), round.save.NTildej[j],
+				round.save.PaillierSK.N, round.save.H1i, round.save.H2i); !ok {
+				errChs <- round.WrapError(errors.New("pj fac proof verified fail"), Pj)
+				return
+			}
 			Rj := round.temp.r1msg1R[j]
 
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
+			encProof := round.temp.r2msg1Proof[j]
+			encProofVerified := encProof.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, Rj)
+			if !encProofVerified {
+				errChs <- round.WrapError(errors.New("rj enc proof verify failed"), Pj)
+				return
+			}
 			rxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Rj, round.temp.XShare, BigXShare, round.save.PaillierPKs[j], &round.save.PaillierSK.PublicKey, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j])
 			if err != nil {
-				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
+				errChs <- round.WrapError(errors.New("rxMtA failed"), Pi)
 				return
 			}
 
 			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.X, BigXShare, g, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.XShare, round.temp.XNonce)
 			if err != nil {
-				errChs <- round.WrapError(errors.New("prooflogstar failed"), Pi)
+				errChs <- round.WrapError(errors.New("proofLogStar failed"), Pi)
 				return
 			}
 
-			r2msg := NewKGRound3Message1(Pj, round.PartyID(), BigXShare, rxMta.Dji, rxMta.Fji, rxMta.Proofji, ProofLogstar)
-			round.out <- r2msg
+			r3msg := NewKGRound3Message1(Pj, round.PartyID(), BigXShare, rxMta.Dji, rxMta.Fji, rxMta.Proofji, ProofLogstar)
+			round.out <- r3msg
 
 			round.temp.RXShareBetas[j] = rxMta.Beta
-
-			if round.NeedsIdentifaction() {
-				// record transcript for presign identification 1
-				round.temp.RXMtAFs[j] = rxMta.Fji
-				round.temp.RXMtADs[j] = rxMta.Dji
-				round.temp.RXMtARXProofs[j] = rxMta.Proofji
-			}
 		}(j, Pj)
 	}
 	wg.Wait()

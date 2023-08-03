@@ -20,7 +20,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// These messages were generated from Protocol Buffers definitions into schnorr-signing.pb.go
+// These messages were generated from Protocol Buffers definitions into kcdsa-signing.pb.go
 // The following messages are registered on the Protocol Buffers "wire"
 
 var (
@@ -29,7 +29,9 @@ var (
 		(*SignRound1Message)(nil),
 		(*SignRound2Message1)(nil),
 		(*SignRound3Message1)(nil),
+		(*SignRound3Message2)(nil),
 		(*SignRound4Message1)(nil),
+		(*SignRound5Message1)(nil),
 	}
 )
 
@@ -162,7 +164,7 @@ func (m *SignRound3Message2) ValidateBasic() bool {
 }
 
 func (m *SignRound3Message2) RoundNumber() int {
-	return 1
+	return 3
 }
 
 func (m *SignRound3Message2) UnmarshalEncProof() (*zkpenc.ProofEnc, error) {

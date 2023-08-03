@@ -49,7 +49,7 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 			defer wg.Done()
 
 			proofMul := round.temp.R5msgProofMul[j]
-			ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.Ssid, big.NewInt(int64(j)))
 			ok := proofMul.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.R1msgK[j], round.temp.R1msgG[j], round.temp.R5msgH[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)

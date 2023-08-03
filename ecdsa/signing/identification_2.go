@@ -52,7 +52,7 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 
 			proofMulstar := round.temp.R5msgProofMulstar[j]
 			g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			ok := proofMulstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], g, round.temp.BigWs[j], round.temp.R1msgK[j], round.temp.R5msgH[j], round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofmul verify failed"), Pj)

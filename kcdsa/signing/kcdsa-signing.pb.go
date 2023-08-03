@@ -27,7 +27,7 @@ const (
 )
 
 //
-// Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
+// Represents a BROADCAST message sent during Round 1 of the KCDSA TSS signing protocol.
 type SignRound1Message struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -76,7 +76,7 @@ func (x *SignRound1Message) GetKCommitment() []byte {
 }
 
 //
-// Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
+// Represents a BROADCAST message sent during Round 2 of the KCDSA TSS signing protocol.
 type SignRound2Message1 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -133,13 +133,13 @@ func (x *SignRound2Message1) GetProofK() [][]byte {
 }
 
 //
-// Represents a BROADCAST message sent during Round 1 of the KCDSA TSS keygen protocol.
+// Represents a BROADCAST message sent during Round 3 of the KCDSA TSS signing protocol.
 type SignRound3Message1 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	K []byte `protobuf:"bytes,1,opt,name=K,proto3" json:"K,omitempty"` // used as mta, represent k substract e
+	K []byte `protobuf:"bytes,1,opt,name=K,proto3" json:"K,omitempty"` // used as mta, represent k subtract e
 	X []byte `protobuf:"bytes,2,opt,name=X,proto3" json:"X,omitempty"` // used as mta, x
 }
 
@@ -190,13 +190,13 @@ func (x *SignRound3Message1) GetX() []byte {
 }
 
 //
-// Represents a P2P message sent during Round 1 of the KCDSA TSS keygen protocol.
+// Represents a P2P message sent during Round 3 of the KCDSA TSS signing protocol.
 type SignRound3Message2 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	EncProof [][]byte `protobuf:"bytes,3,rep,name=EncProof,proto3" json:"EncProof,omitempty"` // used as mta, represent k substract e
+	EncProof [][]byte `protobuf:"bytes,3,rep,name=EncProof,proto3" json:"EncProof,omitempty"` // used as mta, represent k subtract e
 }
 
 func (x *SignRound3Message2) Reset() {
@@ -239,7 +239,7 @@ func (x *SignRound3Message2) GetEncProof() [][]byte {
 }
 
 //
-// Represents a P2P message sent to each party during Round 2 of the ECDSA TSS signing protocol.
+// Represents a P2P message sent to each party during Round 4 of the KCDSA TSS signing protocol.
 type SignRound4Message1 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -320,7 +320,7 @@ func (x *SignRound4Message1) GetLogstarProof() [][]byte {
 }
 
 //
-// Represents a P2P message sent to all parties during Round 3 of the ECDSA TSS signing protocol.
+// Represents a P2P message sent to all parties during Round 5 of the KCDSA TSS signing protocol.
 type SignRound5Message1 struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

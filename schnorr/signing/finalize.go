@@ -8,12 +8,10 @@ package signing
 
 import (
 	"context"
-	"crypto/elliptic"
 	"errors"
-	"math/big"
-
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
 	"github.com/Safulet/tss-lib-private/schnorr/signing/mina"
 	"github.com/Safulet/tss-lib-private/schnorr/signing/zil"
 	"github.com/Safulet/tss-lib-private/tss"
@@ -26,18 +24,7 @@ func getSignature(r []byte, s []byte) []byte {
 	return ret
 }
 
-func VerifySig(ctx context.Context, ec elliptic.Curve, R *crypto.ECPoint, z *big.Int, m []byte, Y *crypto.ECPoint) bool {
-	c_ := common.SHA512_256_TAGGED(ctx, []byte(TagChallenge), R.X().Bytes(), Y.X().Bytes(), m)
-	c := new(big.Int).SetBytes(c_)
-	LHS := crypto.ScalarBaseMult(ec, z)
-	RHS, err := R.Add(Y.ScalarMult(c))
-	if err != nil {
-		return false
-	}
-	return LHS.Equals(RHS)
-}
-
-func (round *finalization) Start(ctx context.Context) *tss.Error {
+func (round *finalization) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -72,6 +59,14 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		}
 		sumZ = modQ.Add(sumZ, zj)
 	}
+	if round.temp.KeyDerivationDelta != nil {
+		sumZDelta := modQ.Mul(round.temp.c, round.temp.KeyDerivationDelta)
+		if round.Network() == tss.ZIL {
+			sumZ = modQ.Sub(sumZ, sumZDelta)
+		} else {
+			sumZ = modQ.Add(sumZ, sumZDelta)
+		}
+	}
 	if sumZ.Cmp(zero) == 0 {
 		return round.WrapError(errors.New("sumZ cannot be zero"))
 	}
@@ -83,17 +78,17 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		round.data.R = round.temp.R.X().Bytes()
 	}
 	round.data.S = sumZ.Bytes()
-	round.data.M = round.temp.m
+	round.data.M = common.PadToLengthBytesInPlace(round.temp.m, 32)
 	round.data.Signature = getSignature(round.data.R, round.data.S)
 
 	var ok bool
 	switch round.Network() {
 	case tss.MINA:
-		ok = mina.MinaSchnorrVerify(round.key.PubKey, round.temp.m, round.data.Signature) == nil
+		ok = mina.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.temp.m, round.data.Signature) == nil
 	case tss.ZIL:
-		ok = zil.ZILSchnorrVerify(round.key.PubKey, round.data.M, round.data.Signature) == nil
+		ok = zil.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.temp.m, round.data.Signature) == nil
 	default:
-		ok = VerifySig(ctx, round.EC(), round.temp.R, sumZ, round.temp.m, round.key.PubKey)
+		ok = btc.SchnorrVerify(round.EC(), round.temp.pubKeyDelta, round.data.M, round.data.Signature) == nil
 	}
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
