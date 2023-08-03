@@ -45,6 +45,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		Vc[c] = round.temp.vs[c] // ours
 	}
 
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	// check shares
 	for j, Pj := range Ps {
 		if j == i {
@@ -70,7 +71,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		}
 
 		proof := round.temp.r2msg2Proof[j]
-		ok = proof.Verify(ctx, ContextJ, PjVs[0])
+		ok = proof.Verify(ctx, ContextJ, PjVs[0], rejectionSample)
 		if !ok {
 			return round.WrapError(errors.New("failed to verify schnorr proof"), Pj)
 		}

@@ -63,7 +63,8 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("failed to unmarshal Rj proof"), Pj)
 		}
-		ok = proof.Verify(ctx, ContextJ, Rj)
+		rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+		ok = proof.Verify(ctx, ContextJ, Rj, rejectionSample)
 		if !ok {
 			return round.WrapError(errors.New("failed to prove Rj"), Pj)
 		}

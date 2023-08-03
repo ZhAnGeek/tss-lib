@@ -37,7 +37,8 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	pir, err := zkpsch.NewProof(ctx, ContextI, round.temp.pointRi, round.temp.ri)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+	pir, err := zkpsch.NewProof(ctx, ContextI, round.temp.pointRi, round.temp.ri, rejectionSample)
 	if err != nil {
 		return round.WrapError(errors2.Wrapf(err, "NewZKProof(ri, pointRi)"))
 	}

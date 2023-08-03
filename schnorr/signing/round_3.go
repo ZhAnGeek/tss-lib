@@ -39,6 +39,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	// check proofs
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg := sync.WaitGroup{}
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -72,7 +73,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("failed to unmarshal Dj proof"), Pj)
 				return
 			}
-			ok = proofD.Verify(ctx, ContextJ, pointDj)
+			ok = proofD.Verify(ctx, ContextJ, pointDj, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to prove Dj"), Pj)
 				return
@@ -89,7 +90,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("failed to unmarshal Ej proof"), Pj)
 				return
 			}
-			ok = proofE.Verify(ctx, ContextJ, pointEj)
+			ok = proofE.Verify(ctx, ContextJ, pointEj, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to prove Ej"), Pj)
 				return

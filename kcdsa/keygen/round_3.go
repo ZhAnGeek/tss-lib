@@ -37,6 +37,8 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	// calculate xi
 	xi := round.temp.vsXshares[i].Share
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+
 	for j := range Ps {
 		if j == i {
 			continue
@@ -74,7 +76,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		}
 
 		proof := round.temp.r2msg2ProofX[j]
-		ok = proof.Verify(ctx, ContextJ, PjVs[0])
+		ok = proof.Verify(ctx, ContextJ, PjVs[0], rejectionSample)
 		if !ok {
 			return round.WrapError(errors.New("failed to verify schnorr proof"), Pj)
 		}
@@ -158,7 +160,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		}
 
 		proof := round.temp.r2msg2ProofR[j]
-		ok = proof.Verify(ctx, ContextJ, PjVs[0])
+		ok = proof.Verify(ctx, ContextJ, PjVs[0], rejectionSample)
 		if !ok {
 			return round.WrapError(errors.New("failed to verify schnorr proof"), Pj)
 		}
@@ -199,7 +201,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 			facProof := round.temp.r2msg1FacProof[j]
 			if ok := facProof.Verify(ctx, ContextI, round.EC(), round.save.NTildej[j],
-				round.save.PaillierSK.N, round.save.H1i, round.save.H2i); !ok {
+				round.save.PaillierSK.N, round.save.H1i, round.save.H2i, rejectionSample); !ok {
 				errChs <- round.WrapError(errors.New("pj fac proof verified fail"), Pj)
 				return
 			}
@@ -207,18 +209,18 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			encProof := round.temp.r2msg1Proof[j]
-			encProofVerified := encProof.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, Rj)
+			encProofVerified := encProof.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, Rj, rejectionSample)
 			if !encProofVerified {
 				errChs <- round.WrapError(errors.New("rj enc proof verify failed"), Pj)
 				return
 			}
-			rxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Rj, round.temp.XShare, BigXShare, round.save.PaillierPKs[j], &round.save.PaillierSK.PublicKey, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j])
+			rxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Rj, round.temp.XShare, BigXShare, round.save.PaillierPKs[j], &round.save.PaillierSK.PublicKey, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("rxMtA failed"), Pi)
 				return
 			}
 
-			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.X, BigXShare, g, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.XShare, round.temp.XNonce)
+			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.X, BigXShare, g, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.XShare, round.temp.XNonce, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proofLogStar failed"), Pi)
 				return

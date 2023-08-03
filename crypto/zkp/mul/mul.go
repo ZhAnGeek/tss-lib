@@ -32,7 +32,7 @@ var (
 )
 
 // NewProof implements proofmul
-func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rho, rhox *big.Int) (*ProofMul, error) {
+func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rho, rhox *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofMul, error) {
 	if pk == nil || X == nil || Y == nil || C == nil || rho == nil || rhox == nil {
 		return nil, errors.New("ProveMul constructor received nil value(s)")
 	}
@@ -54,7 +54,7 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *pailli
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), X, Y, C, A, B)...)
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 14.3
@@ -84,7 +84,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMul, error) {
 	}, nil
 }
 
-func (pf *ProofMul) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *big.Int) bool {
+func (pf *ProofMul) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C *big.Int, rejectionSample common.RejectionSampleFunc) bool {
 	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || X == nil || Y == nil || C == nil {
 		return false
 	}
@@ -124,7 +124,7 @@ func (pf *ProofMul) Verify(ctx context.Context, Session []byte, ec elliptic.Curv
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), X, Y, C, pf.A, pf.B)...)
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 14. Equality Check

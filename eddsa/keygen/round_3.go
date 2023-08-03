@@ -94,7 +94,8 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				return
 			}
 			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
-			ok = proof.Verify(ctx, ContextJ, PjVs[0])
+			rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+			ok = proof.Verify(ctx, ContextJ, PjVs[0], rejectionSample)
 			if !ok {
 				ch <- vssOut{errors.New("failed to prove Schnorr proof"), nil}
 				return

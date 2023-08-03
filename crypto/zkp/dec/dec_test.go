@@ -53,9 +53,9 @@ func TestDec(test *testing.T) {
 	assert.NoError(test, err)
 	assert.Equal(test, 0, rho2.Cmp(rho))
 
-	proof, err := NewProof(ctx, Session, ec, pk, C, x, NCap, s, t, y, rho2)
+	proof, err := NewProof(ctx, Session, ec, pk, C, x, NCap, s, t, y, rho2, common.RejectionSample)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(ctx, Session, ec, pk, C, x, NCap, s, t)
+	ok := proof.Verify(ctx, Session, ec, pk, C, x, NCap, s, t, common.RejectionSample)
 	assert.True(test, ok, "proof must verify")
 }

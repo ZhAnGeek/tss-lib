@@ -39,6 +39,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	// check proofs
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg := sync.WaitGroup{}
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -73,7 +74,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("failed to unmarshal Dj proof"), Pj)
 				return
 			}
-			ok = proofK.Verify(ctx, ContextJ, pointKj)
+			ok = proofK.Verify(ctx, ContextJ, pointKj, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to prove Dj"), Pj)
 				return
@@ -150,7 +151,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], kshare, KNonce)
+			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], kshare, KNonce, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pi)
 				return

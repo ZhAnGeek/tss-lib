@@ -64,7 +64,8 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	// Fig 5. Round 3.2 / Fig 6. Round 3.2 proofs
 	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
-	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.PaillierSK.N, SP, SQ)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.PaillierSK.N, SP, SQ, rejectionSample)
 	if err != nil {
 		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}

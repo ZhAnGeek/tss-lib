@@ -9,12 +9,13 @@ package signing
 import (
 	"context"
 	"fmt"
-	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	"math/big"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/Safulet/tss-lib-private/crypto/ckd"
 
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
@@ -69,7 +70,7 @@ func E2E(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 
 		keyDerivationDelta := big.NewInt(10)
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
@@ -152,7 +153,7 @@ func TestE2EConcurrent(t *testing.T) {
 	// init the parties
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 
 		keyDerivationDelta := delta
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
@@ -232,7 +233,7 @@ func TestE2EConcurrentFromECDSA(t *testing.T) {
 	// init the parties
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 
 		keyDerivationDelta := big.NewInt(10)
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
@@ -319,7 +320,7 @@ func E2EMina(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 		params.SetNetwork(tss.MINA)
 
 		keyDerivationDelta := big.NewInt(10)
@@ -403,7 +404,7 @@ func TestE2EConcurrentMina(t *testing.T) {
 	// init the parties
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(curve, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 		params.SetNetwork(tss.MINA)
 
 		keyDerivationDelta := delta
@@ -490,7 +491,7 @@ func E2EZil(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 		params.SetNetwork(tss.ZIL)
 
 		keyDerivationDelta := big.NewInt(10)
@@ -560,7 +561,7 @@ func TestE2EConcurrentZil(t *testing.T) {
 	// init the parties
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 		params.SetNetwork(tss.ZIL)
 
 		keyDerivationDelta := big.NewInt(10)
@@ -641,7 +642,7 @@ func TestE2EConcurrentFromECDSAZil(t *testing.T) {
 	// init the parties
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 		params.SetNetwork(tss.ZIL)
 
 		keyDerivationDelta := big.NewInt(10)

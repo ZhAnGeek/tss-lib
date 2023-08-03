@@ -62,7 +62,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 
 		P := presigning.NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*presigning.LocalParty)
 		parties = append(parties, P)
@@ -135,7 +135,7 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
 
 		keyDerivationDelta := big.NewInt(10)
 		P := NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*LocalParty)
@@ -214,7 +214,7 @@ func TestE2EConcurrentWithIdentification(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0, nil)
 
 		P := presigning.NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*presigning.LocalParty)
 		parties = append(parties, P)
@@ -287,7 +287,7 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0, nil)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*LocalParty)
@@ -351,7 +351,7 @@ identification:
 	identificationParties := make([]*LocalParty, len(signPIDs))
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d sign identification]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0, nil)
 
 		P, err := RestoreLocalParty(ctx, preSigDatas[i], params, keys[i], signDumps[i], outCh, sigCh, sdumpCh)
 		if err != nil {

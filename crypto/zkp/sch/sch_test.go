@@ -27,7 +27,8 @@ func TestSchnorrProof(t *testing.T) {
 	q := tss.EC().Params().N
 	u := common.GetRandomPositiveInt(q)
 	uG := crypto.ScalarBaseMult(tss.EC(), u)
-	proof, _ := NewProof(ctx, Session, uG, u)
+	rejectionSample := tss.GetRejectionSampleFunc(nil)
+	proof, _ := NewProof(ctx, Session, uG, u, rejectionSample)
 
 	assert.True(t, proof.A.IsOnCurve())
 	assert.NotZero(t, proof.A.X())
@@ -41,10 +42,11 @@ func TestSchnorrProofVerify(t *testing.T) {
 	u := common.GetRandomPositiveInt(q)
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 
-	proof, _ := NewProof(ctx, Session, X, u)
+	rejectionSample := tss.GetRejectionSampleFunc(nil)
+	proof, _ := NewProof(ctx, Session, X, u, rejectionSample)
 	proofBz := proof.Bytes()
 	proof2, _ := NewProofFromBytes(tss.EC(), proofBz[:])
-	res := proof2.Verify(ctx, Session, X)
+	res := proof2.Verify(ctx, Session, X, rejectionSample)
 
 	assert.True(t, res, "verify result must be true")
 }
@@ -56,8 +58,9 @@ func TestSchnorrProofAlphaVerify(t *testing.T) {
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 
 	alpha, A := NewAlpha(X.Curve())
-	proof, _ := NewProofWithAlpha(ctx, Session, X, A, alpha, u)
-	res := proof.Verify(ctx, Session, X)
+	rejectionSample := tss.GetRejectionSampleFunc(nil)
+	proof, _ := NewProofWithAlpha(ctx, Session, X, A, alpha, u, rejectionSample)
+	res := proof.Verify(ctx, Session, X, rejectionSample)
 
 	assert.True(t, res, "verify result must be true")
 }
@@ -70,8 +73,9 @@ func TestSchnorrProofVerifyBadX(t *testing.T) {
 	X := crypto.ScalarBaseMult(tss.EC(), u)
 	X2 := crypto.ScalarBaseMult(tss.EC(), u2)
 
-	proof, _ := NewProof(ctx, Session, X2, u2)
-	res := proof.Verify(ctx, Session, X)
+	rejectionSample := tss.GetRejectionSampleFunc(nil)
+	proof, _ := NewProof(ctx, Session, X2, u2, rejectionSample)
+	res := proof.Verify(ctx, Session, X, rejectionSample)
 
 	assert.False(t, res, "verify result must be false")
 }

@@ -32,7 +32,7 @@ type (
 )
 
 // NewProof implements proofaff-g
-func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint, x, y, rho, rhoy *big.Int) (*ProofAffg, error) {
+func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint, x, y, rho, rhoy *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofAffg, error) {
 	if ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil || x == nil || y == nil || rho == nil || rhoy == nil {
 		return nil, errors.New("NewProof() received a nil argument")
 	}
@@ -86,7 +86,7 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk0 *paill
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append([]*big.Int{}, ec.Params().B, ec.Params().N, ec.Params().P,
 			pk0.N, pk1.N, NCap, s, t, C, D, Y, X.X(), X.Y(), S, T, A, Bx.X(), Bx.Y(), By, E, F)...)
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 15.3
@@ -139,7 +139,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofAffg, error) {
 }
 
 // ProveAffg.Verify implements verification of aff-g proof
-func (pf *ProofAffg) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint) bool {
+func (pf *ProofAffg) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint, rejectionSample common.RejectionSampleFunc) bool {
 	if pf == nil || !pf.ValidateBasic() || ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil {
 		return false
 	}
@@ -173,7 +173,7 @@ func (pf *ProofAffg) Verify(ctx context.Context, Session []byte, ec elliptic.Cur
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append([]*big.Int{}, ec.Params().B, ec.Params().N, ec.Params().P,
 			pk0.N, pk1.N, NCap, s, t, C, D, Y, X.X(), X.Y(), pf.S, pf.T, pf.A, pf.Bx.X(), pf.Bx.Y(), pf.By, pf.E, pf.F)...)
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 15. Equality Check

@@ -34,6 +34,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	// Fig 5. Round 3.1 / Fig 6. Round 3.1
 	errChs := make(chan *tss.Error, (len(round.Parties().IDs())-1)*2)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
@@ -92,7 +93,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
 
 	ContextI := append(RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
-	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.NTildei, SP, SQ)
+	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.NTildei, SP, SQ, rejectionSample)
 	if err != nil {
 		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}
@@ -107,7 +108,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proofFac, err := zkpfac.NewProof(ctx, ContextI, round.EC(), round.save.NTildei, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+			proofFac, err := zkpfac.NewProof(ctx, ContextI, round.EC(), round.save.NTildei, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("create proofFac failed"), Pi)
 			}

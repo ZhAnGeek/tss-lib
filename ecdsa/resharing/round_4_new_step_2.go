@@ -41,7 +41,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 	Pi := round.PartyID()
 	i := Pi.Index
 	round.newOK[i] = true
-
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	// 1-3. verify paillier key proofs
 	culprits := make([]*tss.PartyID, 0, len(round.NewParties().IDs())) // who caused the error(s)
 	for _, msg := range round.temp.dgRound2Message1s {
@@ -71,7 +71,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("proofMod failed"), Pj)
 		}
-		if ok := proofMod.Verify(ctx, ContextJ, round.save.NTildej[j]); !ok {
+		if ok := proofMod.Verify(ctx, ContextJ, round.save.NTildej[j], rejectionSample); !ok {
 			culprits = append(culprits, Pj)
 			log.Warn(ctx, "proofMod verify failed for party %s", Pj)
 			continue
@@ -90,8 +90,9 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		ContextJ := common.AppendBigIntToBytesSlice(round.temp.SSID, big.NewInt(int64(j)))
 		SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
 		SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
+		rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 		proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.NTildei,
-			round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+			round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ, rejectionSample)
 		if err != nil {
 			return round.WrapError(errors.New("create proofFac failed"), Pi)
 		}

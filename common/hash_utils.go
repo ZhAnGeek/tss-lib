@@ -1,4 +1,4 @@
-// Copyright © 2019 Binance
+// Copyright © 2019-2021 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -8,6 +8,7 @@ package common
 
 import (
 	"crypto/sha256"
+	"crypto/sha512"
 	"math/big"
 )
 
@@ -31,15 +32,17 @@ func RejectionSampleV1(q *big.Int, eHash *big.Int) *big.Int { // e' = eHash
 func RejectionSampleV2(q *big.Int, eHash *big.Int) *big.Int { // e' = eHash
 	auxiliary := new(big.Int).Set(eHash)
 	e := new(big.Int).Set(q)
-	qBytesLen := len(q.Bytes())
+	qBytesLen := len(q.Bytes())%63 + 1 // [1,64]
 	one := new(big.Int).SetInt64(1)
 	for e.Cmp(q) != -1 {
 		eHashAdded := auxiliary.Add(auxiliary, one)
-		eHashReSample := sha256.Sum256(eHashAdded.Bytes())
-		// sample q bits
-		e = new(big.Int).SetBytes(eHashReSample[:qBytesLen])
+		reSampleBytes := sha512.Sum512(append([]byte("RejectSample"), eHashAdded.Bytes()...))
+		// sample qBytesLen bytes
+		e = new(big.Int).SetBytes(reSampleBytes[:qBytesLen])
 	}
 	return e
 }
 
-var RejectionSample func(q *big.Int, eHash *big.Int) *big.Int = RejectionSampleV2
+type RejectionSampleFunc func(q *big.Int, eHash *big.Int) *big.Int
+
+var RejectionSample RejectionSampleFunc = RejectionSampleV2

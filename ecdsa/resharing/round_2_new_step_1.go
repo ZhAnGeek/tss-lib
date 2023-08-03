@@ -33,6 +33,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 
 	Pi := round.PartyID()
 	i := Pi.Index
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 
 	// check consistency of SSID
 	r1msg := round.temp.dgRound1Messages[0].Content().(*DGRound1Message)
@@ -85,7 +86,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	// ProofMod
 	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
-	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.NTildei, SP, SQ)
+	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.NTildei, SP, SQ, rejectionSample)
 	if err != nil {
 		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}

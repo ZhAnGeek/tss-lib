@@ -25,6 +25,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 	round.allNewOK()
 	i := round.PartyID().Index
 
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	if round.IsNewCommittee() {
 		// for this P: SAVE data
 		round.save.BigXj = round.temp.newBigXjs
@@ -46,7 +47,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 				return round.WrapError(errors.New("proofFac failed"), Pj)
 			}
 			if ok := proofFac.Verify(ctx, ContextI, round.EC(), round.save.NTildej[j],
-				round.save.PaillierSK.N, round.save.H1i, round.save.H2i); !ok {
+				round.save.PaillierSK.N, round.save.H1i, round.save.H2i, rejectionSample); !ok {
 				culprits = append(culprits, Pj)
 				continue
 			}

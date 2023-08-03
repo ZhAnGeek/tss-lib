@@ -39,6 +39,7 @@ func (round *presign1) Start(ctx context.Context) *tss.Error {
 
 	// Fig 7. Round 1. generate ssid #TODO missing run_id & pre_data idx as input
 	round.temp.SsidNonce = new(big.Int).SetInt64(int64(round.Params().Nonce()))
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	ssid, err := round.getSSID(ctx)
 	if err != nil {
 		return round.WrapError(err, Pi)
@@ -70,7 +71,7 @@ func (round *presign1) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce)
+			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], KShare, KNonce, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pi)
 				return

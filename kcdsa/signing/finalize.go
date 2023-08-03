@@ -89,7 +89,8 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(errors.New("can not get proof log star"), Pj)
 		}
 		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
-		ok := proofLogstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.Ks[j], bigKxShare, round.temp.BigXAll, round.key.PaillierSK.N, round.key.H1i, round.key.H2i)
+		rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+		ok := proofLogstar.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.temp.Ks[j], bigKxShare, round.temp.BigXAll, round.key.PaillierSK.N, round.key.H1i, round.key.H2i, rejectionSample)
 		if !ok {
 			return round.WrapError(errors.New("proof log star verify failed"), Pj)
 		}

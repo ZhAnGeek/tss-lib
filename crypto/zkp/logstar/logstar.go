@@ -35,7 +35,7 @@ var (
 )
 
 // NewProof implements prooflogstar
-func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t, x, rho *big.Int) (*ProofLogstar, error) {
+func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t, x, rho *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofLogstar, error) {
 	if ec == nil || pk == nil || C == nil || X == nil || g == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
 		return nil, errors.New("ProveLogstar constructor received nil value(s)")
 	}
@@ -75,7 +75,7 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *pailli
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
 			C, X.X(), X.Y(), g.X(), g.Y(), S, A, Y.X(), Y.Y(), D)...)
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 25.3
@@ -113,7 +113,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofLogstar, error) {
 	}, nil
 }
 
-func (pf *ProofLogstar) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t *big.Int) bool {
+func (pf *ProofLogstar) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t *big.Int, rejectionSample common.RejectionSampleFunc) bool {
 	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || C == nil || X == nil || NCap == nil || s == nil || t == nil {
 		return false
 	}
@@ -144,7 +144,7 @@ func (pf *ProofLogstar) Verify(ctx context.Context, Session []byte, ec elliptic.
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
 			C, X.X(), X.Y(), g.X(), g.Y(), pf.S, pf.A, pf.Y.X(), pf.Y.Y(), pf.D)...)
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 25. equality checks

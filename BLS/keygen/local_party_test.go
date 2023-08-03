@@ -65,7 +65,7 @@ func E2EKeyGen(b *testing.B) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.Bls12381(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0, nil)
 		P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 
 		parties = append(parties, P)
@@ -206,7 +206,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.Bls12381(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0, nil)
 		P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 
 		parties = append(parties, P)
