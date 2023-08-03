@@ -100,6 +100,10 @@ func S256() elliptic.Curve {
 	return s256k1.S256()
 }
 
+func P256() elliptic.Curve {
+	return elliptic.P256()
+}
+
 func Edwards() elliptic.Curve {
 	return edwards25519.Edwards25519()
 }
