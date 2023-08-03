@@ -29,12 +29,12 @@ func MultiBytesToBigInts(bytes [][]byte) []*big.Int {
 	return ints
 }
 
-// Returns true when the byte slice is non-nil and non-empty
+// NonEmptyBytes Returns true when the byte slice is non-nil and non-empty
 func NonEmptyBytes(bz []byte) bool {
 	return bz != nil && 0 < len(bz)
 }
 
-// Returns true when all of the slices in the multi-dimensional byte slice are non-nil and non-empty
+// NonEmptyMultiBytes Returns true when all of the slices in the multi-dimensional byte slice are non-nil and non-empty
 func NonEmptyMultiBytes(bzs [][]byte, expectLen ...int) bool {
 	if len(bzs) == 0 {
 		return false
@@ -51,6 +51,8 @@ func NonEmptyMultiBytes(bzs [][]byte, expectLen ...int) bool {
 	return true
 }
 
+// PadToLengthBytesInPlace pad {0, ...} to the front of src if len(src) < length
+// output length is equal to the parameter length
 func PadToLengthBytesInPlace(src []byte, length int) []byte {
 	oriLen := len(src)
 	if oriLen < length {

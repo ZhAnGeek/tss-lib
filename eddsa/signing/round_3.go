@@ -8,10 +8,10 @@ package signing
 
 import (
 	"context"
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"math/big"
 
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/crypto"
@@ -39,7 +39,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 
 		msg := round.temp.signRound2Messages[j]
 		r2msg := msg.Content().(*SignRound2Message)

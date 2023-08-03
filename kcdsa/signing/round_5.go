@@ -53,7 +53,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 				return
 			}
 
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 
 			XD := message.UnmarshalDjiKX()
 			XF := message.UnmarshalFjiKX()

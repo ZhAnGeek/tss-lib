@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/Safulet/tss-lib-private/common"
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
 	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
@@ -39,7 +40,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 		if j == i {
 			continue
 		}
-		contextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+		contextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
@@ -58,7 +59,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
 			SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
 			proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.PaillierSK.N,

@@ -45,7 +45,7 @@ func (round *presignout) Start(ctx context.Context) *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
+			ContextJ := common.AppendBigIntToBytesSlice(round.temp.Ssid, big.NewInt(int64(j)))
 			Kj := round.temp.R1msgK[j]
 			BigDeltaSharej := round.temp.R3msgBigDeltaShare[j]
 			proofLogstar := round.temp.R3msgProofLogstar[j]
