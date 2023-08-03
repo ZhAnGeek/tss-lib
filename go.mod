@@ -11,7 +11,6 @@ require (
 	github.com/ethereum/go-ethereum v1.10.22
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/pkg/errors v0.9.1
-	github.com/roasbeef/btcd v0.0.0-20180418012700-a03db407e40d
 	github.com/stretchr/testify v1.7.2
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.1.0
