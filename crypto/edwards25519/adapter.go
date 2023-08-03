@@ -19,11 +19,11 @@ func NewPoint(x, y *big.Int) (*edwards25519.Point, error) {
 	xMod := new(big.Int).Mod(x, P)
 	yMod := new(big.Int).Mod(y, P)
 
-	xFe, err := new(field.Element).SetBytes(common.Reverse(common.PadToLengthBytesInPlace(xMod.Bytes(), 32)))
+	xFe, err := new(field.Element).SetBytes(common.ReverseBytes(common.PadToLengthBytesInPlace(xMod.Bytes(), 32)))
 	if err != nil {
 		return nil, err
 	}
-	yFe, err := new(field.Element).SetBytes(common.Reverse(common.PadToLengthBytesInPlace(yMod.Bytes(), 32)))
+	yFe, err := new(field.Element).SetBytes(common.ReverseBytes(common.PadToLengthBytesInPlace(yMod.Bytes(), 32)))
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +42,8 @@ func ToAffine(p *edwards25519.Point) (x, y *big.Int) {
 	zInvFe := new(field.Element).Invert(zFe)
 	xFe.Multiply(xFe, zInvFe)
 	yFe.Multiply(yFe, zInvFe)
-	x = new(big.Int).SetBytes(common.Reverse(xFe.Bytes()))
-	y = new(big.Int).SetBytes(common.Reverse(yFe.Bytes()))
+	x = new(big.Int).SetBytes(common.ReverseBytes(xFe.Bytes()))
+	y = new(big.Int).SetBytes(common.ReverseBytes(yFe.Bytes()))
 	return x, y
 }
 
@@ -118,7 +118,7 @@ func (curve Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 	if err != nil {
 		return nil, nil
 	}
-	r, err := edwards25519.NewScalar().SetCanonicalBytes(common.Reverse(common.PadToLengthBytesInPlace(k, 32)))
+	r, err := edwards25519.NewScalar().SetCanonicalBytes(common.ReverseBytes(common.PadToLengthBytesInPlace(k, 32)))
 	if err != nil {
 		return nil, nil
 	}
@@ -128,7 +128,7 @@ func (curve Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 }
 
 func (curve Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
-	r, err := edwards25519.NewScalar().SetCanonicalBytes(common.Reverse(common.PadToLengthBytesInPlace(k, 32)))
+	r, err := edwards25519.NewScalar().SetCanonicalBytes(common.ReverseBytes(common.PadToLengthBytesInPlace(k, 32)))
 	if err != nil {
 		return nil, nil
 	}

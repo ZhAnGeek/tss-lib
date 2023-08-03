@@ -92,7 +92,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	var lambda [64]byte
 
 	h.Sum(lambda[:0])
-	lambdaReduced := new(big.Int).Mod(new(big.Int).SetBytes(common.Reverse(lambda[:])), round.EC().Params().N)
+	lambdaReduced := new(big.Int).Mod(new(big.Int).SetBytes(common.ReverseBytes(lambda[:])), round.EC().Params().N)
 
 	// 8. compute si
 	modQ := common.ModInt(round.EC().Params().N)

@@ -40,7 +40,7 @@ func VerifyEdwards(pub *crypto.ECPoint, msg []byte, r, s *big.Int, hashFunc func
 	var digest [64]byte
 	h.Sum(digest[:0])
 
-	hReduced := new(big.Int).Mod(new(big.Int).SetBytes(common.Reverse(digest[:])), ec.Params().N)
+	hReduced := new(big.Int).Mod(new(big.Int).SetBytes(common.ReverseBytes(digest[:])), ec.Params().N)
 	retX, retY := ec.ScalarMult(negX, pub.Y(), hReduced.Bytes())
 	tmpX, tmpY := ec.ScalarBaseMult(s.Bytes())
 	retX, retY = ec.Add(retX, retY, tmpX, tmpY)

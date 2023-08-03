@@ -308,7 +308,7 @@ func DeriveChildKeyOfEddsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 	hmac512.Write(data)
 	ilr := hmac512.Sum(nil)
 
-	il28 := new(big.Int).SetBytes(ReverseBytes(ilr[:28])) // little endian to big endian
+	il28 := new(big.Int).SetBytes(common.ReverseBytes(ilr[:28])) // little endian to big endian
 	ilNum := new(big.Int).Mul(il28, big.NewInt(8))
 
 	deltaG := crypto.ScalarBaseMult(curve, ilNum)
@@ -354,14 +354,4 @@ func GenerateSeed(length uint8) ([]byte, error) {
 	}
 
 	return buf, nil
-}
-
-// ReverseBytes switch between big endian & little endian
-func ReverseBytes(input []byte) []byte {
-	out := make([]byte, len(input))
-	l := len(input)
-	for i := range input {
-		out[l-i-1] = input[i]
-	}
-	return out
 }

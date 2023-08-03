@@ -2,6 +2,7 @@ package edwards25519
 
 import (
 	"filippo.io/edwards25519"
+	"fmt"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
@@ -49,6 +50,7 @@ func TestDouble(t *testing.T) {
 	x, y := ec.Double(big.NewInt(0), big.NewInt(1))
 	assert.Equal(t, 0, x.Cmp(x2))
 	assert.Equal(t, 0, y.Cmp(y2))
+	fmt.Println("x:", x.String(), "y:", y.String())
 
 	G, err := NewPoint(ec.Params().Gx, ec.Params().Gy)
 	assert.NoError(t, err)
@@ -68,4 +70,13 @@ func TestDouble(t *testing.T) {
 	assert.Equal(t, 0, x.Cmp(x2))
 	assert.Equal(t, 0, y.Cmp(y2))
 
+	x, y = ec.ScalarBaseMult(big.NewInt(667).Bytes())
+	Point, err := NewPoint(x, y)
+	assert.NoError(t, err)
+
+	negX := new(big.Int).Sub(ec.Params().P, x)
+	PointNeg, err := NewPoint(negX, y)
+	assert.NoError(t, err)
+	PointNeg.Add(PointNeg, Point)
+	assert.Equal(t, 1, PointNeg.Equal(I))
 }

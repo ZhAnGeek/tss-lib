@@ -15,7 +15,6 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -51,11 +50,11 @@ func VerifySig(ec elliptic.Curve, _ context.Context, s *big.Int, e *big.Int, m [
 
 	W, _ := sY.Add(eG)
 	mHash := sha256.Sum256(m)
-	mHashPkBytes := append(mHash[:], ckd.ReverseBytes(W.X().Bytes())...)
+	mHashPkBytes := append(mHash[:], common.ReverseBytes(W.X().Bytes())...)
 	e2Bytes := sha256.Sum256(mHashPkBytes)
 
 	// e1 == e2
-	return e.Cmp(new(big.Int).SetBytes(ckd.ReverseBytes(e2Bytes[:]))) == 0
+	return e.Cmp(new(big.Int).SetBytes(common.ReverseBytes(e2Bytes[:]))) == 0
 }
 
 func (round *finalization) Start(ctx context.Context) *tss.Error {
@@ -112,8 +111,8 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	round.temp.e.FillBytes(eBytes)
 
 	// save the signature for final output
-	round.data.R = ckd.ReverseBytes(sBytes)
-	round.data.S = ckd.ReverseBytes(eBytes)
+	round.data.R = common.ReverseBytes(sBytes)
+	round.data.S = common.ReverseBytes(eBytes)
 	round.data.Signature = append(round.data.R, round.data.S...)
 
 	round.data.M = round.temp.m
