@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	filippo.io/edwards25519 v1.0.0-rc.1
+	github.com/armfazh/h2c-go-ref v0.0.0-20220607205856-3348f2e48a0b
 	github.com/btcsuite/btcd v0.22.3
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/coinbase/kryptology v1.8.0

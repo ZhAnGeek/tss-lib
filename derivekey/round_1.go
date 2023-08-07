@@ -8,6 +8,7 @@ package derivekey
 
 import (
 	"context"
+	"crypto/elliptic"
 	"errors"
 	"fmt"
 	zkpeqlog "github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
@@ -23,6 +24,71 @@ import (
 func newRound1(params *tss.Parameters, key *LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- tss.Message) tss.Round {
 	return &round1{
 		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+}
+
+func getHashToCurveInstance(ec elliptic.Curve) (h2c.HashToPoint, error) {
+	dst := "QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_"
+	hashToCurve, err := h2c.Secp256k1_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+	if err != nil {
+		return nil, err
+	}
+	if tss.SameCurve(ec, tss.Edwards()) {
+		dst = "QUUX-V01-CS02-with-edwards25519_XMD:SHA-512_ELL2_RO_"
+		hashToCurve, err = h2c.Edwards25519_XMDSHA512_ELL2_RO_.Get([]byte(dst))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if tss.SameCurve(ec, tss.Bls12381()) {
+		dst := "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_"
+		hashToCurve, err = h2c.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if tss.SameCurve(ec, tss.P256()) {
+		dst := "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_"
+		hashToCurve, err = h2c.P256_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return hashToCurve, nil
+}
+
+func getPathString(ec elliptic.Curve, scheme string, pChainCode, path []byte) (string, error) {
+	ecName, ok := tss.GetCurveName(ec)
+	if !ok {
+		return "", errors.New("error get curve name")
+	}
+	var fullPath = fmt.Sprintf("TSS-LIB#DeriveKey#EC#%s#SCHEME#%s#CHAINCODE#%s#PATH#%s",
+		ecName, scheme, string(pChainCode), string(path))
+	return fullPath, nil
+}
+
+func getH2CPoint(ec elliptic.Curve, hashToCurve h2c.HashToPoint, wPath string) (*crypto.ECPoint, error) {
+	h2cPoint := hashToCurve.Hash([]byte(wPath))
+	h2cPx := h2cPoint.X().Polynomial()[0]
+	h2cPy := h2cPoint.Y().Polynomial()[0]
+	if tss.SameCurve(tss.Bls12381(), ec) {
+		h2cPx1 := h2cPoint.X().Polynomial()[0]
+		h2cPx2 := h2cPoint.X().Polynomial()[1]
+		h2cPy1 := h2cPoint.Y().Polynomial()[0]
+		h2cPy2 := h2cPoint.Y().Polynomial()[1]
+		xBzs := make([]byte, 96)
+		yBzs := make([]byte, 96)
+		copy(xBzs[:48], common.PadToLengthBytesInPlace(h2cPx2.Bytes(), 48))
+		copy(xBzs[48:], common.PadToLengthBytesInPlace(h2cPx1.Bytes(), 48))
+		copy(yBzs[:48], common.PadToLengthBytesInPlace(h2cPy2.Bytes(), 48))
+		copy(yBzs[48:], common.PadToLengthBytesInPlace(h2cPy1.Bytes(), 48))
+		h2cPx.SetBytes(xBzs)
+		h2cPy.SetBytes(yBzs)
+	}
+	pointHi, err := crypto.NewECPoint(ec, h2cPx, h2cPy)
+	if err != nil {
+		return nil, err
+	}
+	return pointHi, nil
 }
 
 func (round *round1) Start(ctx context.Context) *tss.Error {
@@ -43,29 +109,16 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	}
 	round.temp.bssid = new(big.Int).SetBytes(ssid[:])
 
-	// ToDo make it general; remove h2c dependency
-	dst := "QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_"
-	hashToCurve, err := h2c.Secp256k1_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+	hashToCurve, err := getHashToCurveInstance(round.EC())
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	wpath := append([]byte("DeriveChildKey#SECP256K1#ChainCode#"), round.temp.pChainCode...)
-
-	if tss.SameCurve(tss.Edwards(), round.EC()) {
-		dst = "QUUX-V01-CS02-with-edwards25519_XMD:SHA-512_ELL2_RO_"
-		hashToCurve, err = h2c.Edwards25519_XMDSHA512_ELL2_RO_.Get([]byte(dst))
-		if err != nil {
-			return round.WrapError(err, round.PartyID())
-		}
-		wpath = append([]byte("DeriveChildKey#EDWARDS25519#ChainCode#"), round.temp.pChainCode...)
+	wPath, err := getPathString(round.EC(), "TBD", round.temp.pChainCode, round.temp.path)
+	if err != nil {
+		return round.WrapError(err, round.PartyID())
 	}
 
-	wpath = append(wpath, []byte("#Path#")...)
-	wpath = append(wpath, round.temp.path...)
-	h2cPoint := hashToCurve.Hash(wpath)
-	h2cPx := h2cPoint.X().Polynomial()[0]
-	h2cPy := h2cPoint.Y().Polynomial()[0]
-	pointHi, err := crypto.NewECPoint(round.EC(), h2cPx, h2cPy)
+	pointHi, err := getH2CPoint(round.EC(), hashToCurve, wPath)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

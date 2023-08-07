@@ -19,6 +19,7 @@ import (
 )
 
 // ECPoint convenience helper
+// For infinity point, coords == nil, nil, it's treated not on curve
 type ECPoint struct {
 	curve  elliptic.Curve
 	coords [2]*big.Int
@@ -30,35 +31,77 @@ var (
 	eightInv = new(big.Int).ModInverse(eight, edwards.Edwards().Params().N)
 )
 
-// Creates a new ECPoint and checks that the given coordinates are on the elliptic curve.
+// NewECPoint creates a new ECPoint and checks that the given coordinates are on the elliptic curve or infinity point.
 func NewECPoint(curve elliptic.Curve, X, Y *big.Int) (*ECPoint, error) {
+	if X == nil && Y == nil {
+		return NewInfinityPoint(curve), nil
+	}
+	x1, y1 := IntInfinityCoords(curve)
+	if X.Cmp(x1) == 0 && Y.Cmp(y1) == 0 {
+		return NewInfinityPoint(curve), nil
+	}
 	if !isOnCurve(curve, X, Y) {
 		return nil, fmt.Errorf("NewECPoint: the given point is not on the elliptic curve")
 	}
 	return &ECPoint{curve, [2]*big.Int{X, Y}}, nil
 }
 
-// Creates a new ECPoint without checking that the coordinates are on the elliptic curve.
+func NewInfinityPoint(curve elliptic.Curve) *ECPoint {
+	return &ECPoint{curve, [2]*big.Int{nil, nil}}
+}
+
+// NewECPointNoCurveCheck creates a new ECPoint without checking that the coordinates are on the elliptic curve.
 // Only use this function when you are completely sure that the point is already on the curve.
 func NewECPointNoCurveCheck(curve elliptic.Curve, X, Y *big.Int) *ECPoint {
 	return &ECPoint{curve, [2]*big.Int{X, Y}}
 }
 
 func (p *ECPoint) X() *big.Int {
+	if p.IsInfinityPoint() {
+		return nil
+	}
 	return new(big.Int).Set(p.coords[0])
 }
 
 func (p *ECPoint) Y() *big.Int {
+	if p.IsInfinityPoint() {
+		return nil
+	}
 	return new(big.Int).Set(p.coords[1])
 }
 
+func (p *ECPoint) Neg() *ECPoint {
+	k := new(big.Int).Sub(p.curve.Params().N, big.NewInt(1))
+	return p.ScalarMult(k)
+}
+
+func (p *ECPoint) Sub(p1 *ECPoint) (*ECPoint, error) {
+	nP1 := p1.Neg()
+	return p.Add(nP1)
+}
+
 func (p *ECPoint) Add(p1 *ECPoint) (*ECPoint, error) {
+	if IsInfinityCoords(p.curve, p.X(), p.Y()) {
+		return p1, nil
+	}
+	if IsInfinityCoords(p1.curve, p1.X(), p1.Y()) {
+		return p, nil
+	}
 	x, y := p.curve.Add(p.X(), p.Y(), p1.X(), p1.Y())
+	if IsInfinityCoords(p.curve, x, y) {
+		return NewInfinityPoint(p.curve), nil
+	}
 	return NewECPoint(p.curve, x, y)
 }
 
 func (p *ECPoint) ScalarMult(k *big.Int) *ECPoint {
+	if p.IsInfinityPoint() {
+		return p
+	}
 	x, y := p.curve.ScalarMult(p.X(), p.Y(), k.Bytes())
+	if IsInfinityCoords(p.curve, x, y) {
+		return NewInfinityPoint(p.curve)
+	}
 	newP, err := NewECPoint(p.curve, x, y) // it must be on the curve, no need to check.
 	if err != nil {
 		panic(fmt.Errorf("scalar mult to an ecpoint %s", err.Error()))
@@ -78,6 +121,41 @@ func (p *ECPoint) IsOnCurve() bool {
 	return isOnCurve(p.curve, p.coords[0], p.coords[1])
 }
 
+func (p *ECPoint) IsInfinityPoint() bool {
+	return p.coords[0] == nil && p.coords[1] == nil
+}
+
+func IsInfinityCoords(curve elliptic.Curve, x, y *big.Int) bool {
+	if x == nil && y == nil {
+		return true
+	}
+	x1, y1 := IntInfinityCoords(curve)
+	return x.Cmp(x1) == 0 && y.Cmp(y1) == 0
+}
+
+func IntInfinityCoords(curve elliptic.Curve) (*big.Int, *big.Int) {
+	if tss.SameCurve(curve, tss.Edwards()) {
+		return zero, one
+	}
+	if tss.SameCurve(curve, tss.Curve25519()) {
+		return one, zero
+	}
+	return zero, zero
+}
+
+func (p *ECPoint) IsInSubGroup() bool {
+	if tss.SameCurve(p.curve, tss.Edwards()) {
+		p1 := p.EightInvEight()
+		return p.Equals(p1)
+	}
+	if tss.SameCurve(p.curve, tss.Curve25519()) {
+		p1 := p.EightInvEight()
+		return p.Equals(p1)
+	}
+
+	return true
+}
+
 func (p *ECPoint) Curve() elliptic.Curve {
 	return p.curve
 }
@@ -85,6 +163,9 @@ func (p *ECPoint) Curve() elliptic.Curve {
 func (p *ECPoint) Equals(p2 *ECPoint) bool {
 	if p == nil || p2 == nil {
 		return false
+	}
+	if p.IsInfinityPoint() {
+		return p2.IsInfinityPoint()
 	}
 	return p.X().Cmp(p2.X()) == 0 && p.Y().Cmp(p2.Y()) == 0
 }
@@ -159,16 +240,24 @@ func UnFlattenECPoints(curve elliptic.Curve, in []*big.Int, noCurveCheck ...bool
 // ----- //
 
 func (p *ECPoint) Bytes() [2][]byte {
+	var x, y *big.Int
+	if !p.IsInfinityPoint() {
+		x, y = p.X(), p.Y()
+	} else {
+		x, y = IntInfinityCoords(p.curve)
+	}
 	return [...][]byte{
-		p.X().Bytes(),
-		p.Y().Bytes(),
+		x.Bytes(),
+		y.Bytes(),
 	}
 }
 
 func NewECPointFromBytes(ec elliptic.Curve, bzs [][]byte) (*ECPoint, error) {
-	point, err := NewECPoint(ec,
-		new(big.Int).SetBytes(bzs[0]),
-		new(big.Int).SetBytes(bzs[1]))
+	x, y := new(big.Int).SetBytes(bzs[0]), new(big.Int).SetBytes(bzs[1])
+	if IsInfinityCoords(ec, x, y) {
+		return NewInfinityPoint(ec), nil
+	}
+	point, err := NewECPoint(ec, x, y)
 	if err != nil {
 		return nil, err
 	}

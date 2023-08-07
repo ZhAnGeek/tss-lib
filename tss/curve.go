@@ -119,3 +119,14 @@ func Curve25519() elliptic.Curve {
 func Pallas() elliptic.Curve {
 	return curves.Pallas()
 }
+
+func GetAllCurvesList() []elliptic.Curve {
+	curvesList := []elliptic.Curve{
+		S256(),
+		P256(),
+		Pallas(),
+		Bls12381(),
+		Edwards(),
+		Curve25519()}
+	return curvesList
+}

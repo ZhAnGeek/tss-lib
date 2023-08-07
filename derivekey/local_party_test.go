@@ -8,12 +8,16 @@ package derivekey
 
 import (
 	"context"
+	"crypto/elliptic"
 	"encoding/json"
 	"fmt"
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/armfazh/h2c-go-ref"
 	"github.com/pkg/errors"
 	"io/ioutil"
+	"math/big"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -33,6 +37,8 @@ const (
 	testFixtureDirFormatECDSA   = "%s/../test/_ecdsa_fixtures_%d_%d"
 	testFixtureDirFormatEDDSA   = "%s/../test/_eddsa_fixtures_%d_%d"
 	testFixtureDirFormatSCHNORR = "%s/../test/_schnorr_fixtures_%d_%d"
+	testFixtureDirFormatPALLAS  = "%s/../test/_pallas_fixtures_%d_%d"
+	testFixtureDirFormatBLS     = "%s/../test/_bls_fixtures_%d_%d"
 	testFixtureFileFormat       = "keygen_data_%d.json"
 )
 
@@ -62,250 +68,122 @@ func TestH2C(t *testing.T) {
 	assert.NoError(t, err, "should hash to curve")
 }
 
+func TestH2CFOO(t *testing.T) {
+	dst := "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_"
+	hashToCurve, err := h2c.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+	assert.NoError(t, err, "should init h2c")
+	h2cPoint := hashToCurve.Hash([]byte("abc"))
+	h2cPx1 := h2cPoint.X().Polynomial()[0]
+	h2cPx2 := h2cPoint.X().Polynomial()[1]
+	h2cPy1 := h2cPoint.Y().Polynomial()[0]
+	h2cPy2 := h2cPoint.Y().Polynomial()[1]
+	fmt.Println("x1:", fmt.Sprintf("0x%x", h2cPx1))
+	fmt.Println("x2:", fmt.Sprintf("0x%x", h2cPx2))
+	fmt.Println("y1:", fmt.Sprintf("0x%x", h2cPy1))
+	fmt.Println("y2:", fmt.Sprintf("0x%x", h2cPy2))
+	xBzs := make([]byte, 96)
+	yBzs := make([]byte, 96)
+	copy(xBzs[:48], common.PadToLengthBytesInPlace(h2cPx2.Bytes(), 48))
+	copy(xBzs[48:], common.PadToLengthBytesInPlace(h2cPx1.Bytes(), 48))
+	copy(yBzs[:48], common.PadToLengthBytesInPlace(h2cPy2.Bytes(), 48))
+	copy(yBzs[48:], common.PadToLengthBytesInPlace(h2cPy1.Bytes(), 48))
+	_, err = bls12381.FromIntToPointG2(new(big.Int).SetBytes(xBzs),
+		new(big.Int).SetBytes(yBzs))
+	_, err = crypto.NewECPoint(tss.Bls12381(), new(big.Int).SetBytes(xBzs),
+		new(big.Int).SetBytes(yBzs))
+	assert.NoError(t, err, "should hash to curve")
+}
+
+func E2EConcurrent(ec elliptic.Curve, fixtureDir string, t *testing.T) {
+	ctx := context.Background()
+	setUp(log.ErrorLevel)
+
+	// PHASE: load keygen fixtures
+	keys, derivekeyPIDs, err := LoadKeygenTestFixtures(testThreshold+1, ec, fixtureDir) // 0 -- testParticipants-testThreshold-1)
+	assert.NoError(t, err, "should load keygen fixtures")
+	assert.Equal(t, testThreshold+1, len(keys))
+	assert.Equal(t, testThreshold+1, len(derivekeyPIDs))
+
+	// PHASE: deriveChildKey
+	p2pCtx := tss.NewPeerContext(derivekeyPIDs)
+	parties := make([]*LocalParty, 0, len(derivekeyPIDs))
+
+	errCh := make(chan *tss.Error, len(derivekeyPIDs))
+	outCh := make(chan tss.Message, len(derivekeyPIDs))
+	endCh := make(chan tss.Message, len(derivekeyPIDs))
+
+	updater := test.SharedPartyUpdater
+
+	path := []byte("/6667'/")
+	chainCode := []byte("testChainCodeABC")
+	// init the parties
+	wg := sync.WaitGroup{}
+	for i := 0; i < len(derivekeyPIDs); i++ {
+		params := tss.NewParameters(ec, p2pCtx, derivekeyPIDs[i], len(derivekeyPIDs), testThreshold, false, 0)
+
+		P := NewLocalParty(path, chainCode, params, keys[i], outCh, endCh).(*LocalParty)
+		parties = append(parties, P)
+		wg.Add(1)
+		go func(P *LocalParty) {
+			defer wg.Done()
+			if err := P.Start(ctx); err != nil {
+				errCh <- err
+			}
+		}(P)
+	}
+	wg.Wait()
+
+	var ended int32
+deriveChildKey:
+	for {
+		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case err := <-errCh:
+			log.Error(ctx, "Error: %s", err)
+			assert.FailNow(t, err.Error())
+			break deriveChildKey
+
+		case msg := <-outCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range parties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(ctx, P, msg, errCh)
+				}
+			} else {
+				if dest[0].Index == msg.GetFrom().Index {
+					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+				}
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
+			}
+
+		case <-endCh:
+			atomic.AddInt32(&ended, 1)
+			if atomic.LoadInt32(&ended) == int32(len(derivekeyPIDs)) {
+				// already verified in finalize.go
+				t.Logf("Done. Received derive result from %d participants", ended)
+
+				break deriveChildKey
+			}
+		}
+	}
+}
+
 func TestE2EConcurrentFromECDSA(t *testing.T) {
-	ctx := context.Background()
-	setUp(log.ErrorLevel)
-
-	// PHASE: load keygen fixtures
-	keys, derivekeyPIDs, err := LoadKeygenTestFixtures(testThreshold+1, testFixtureDirFormatECDSA) // 0 -- testParticipants-testThreshold-1)
-	assert.NoError(t, err, "should load keygen fixtures")
-	assert.Equal(t, testThreshold+1, len(keys))
-	assert.Equal(t, testThreshold+1, len(derivekeyPIDs))
-
-	// PHASE: deriveChildKey
-
-	p2pCtx := tss.NewPeerContext(derivekeyPIDs)
-	parties := make([]*LocalParty, 0, len(derivekeyPIDs))
-
-	errCh := make(chan *tss.Error, len(derivekeyPIDs))
-	outCh := make(chan tss.Message, len(derivekeyPIDs))
-	// endCh := make(chan common.SignatureData, len(derivekeyPIDs))
-	endCh := make(chan tss.Message, len(derivekeyPIDs))
-
-	updater := test.SharedPartyUpdater
-
-	path := []byte("/6667'/")
-	chainCode := []byte("testChainCodeABC")
-	// init the parties
-	wg := sync.WaitGroup{}
-	for i := 0; i < len(derivekeyPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, derivekeyPIDs[i], len(derivekeyPIDs), testThreshold, false, 0)
-
-		P := NewLocalParty(path, chainCode, params, keys[i], outCh, endCh).(*LocalParty)
-		parties = append(parties, P)
-		wg.Add(1)
-		go func(P *LocalParty) {
-			defer wg.Done()
-			if err := P.Start(ctx); err != nil {
-				errCh <- err
-			}
-		}(P)
-	}
-	wg.Wait()
-
-	var ended int32
-deriveChildKey:
-	for {
-		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
-		select {
-		case err := <-errCh:
-			log.Error(ctx, "Error: %s", err)
-			assert.FailNow(t, err.Error())
-			break deriveChildKey
-
-		case msg := <-outCh:
-			dest := msg.GetTo()
-			if dest == nil {
-				for _, P := range parties {
-					if P.PartyID().Index == msg.GetFrom().Index {
-						continue
-					}
-					go updater(ctx, P, msg, errCh)
-				}
-			} else {
-				if dest[0].Index == msg.GetFrom().Index {
-					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
-				}
-				go updater(ctx, parties[dest[0].Index], msg, errCh)
-			}
-
-		case <-endCh:
-			atomic.AddInt32(&ended, 1)
-			if atomic.LoadInt32(&ended) == int32(len(derivekeyPIDs)) {
-				// already verified in finalize.go
-				t.Logf("Done. Received derive result from %d participants", ended)
-
-				break deriveChildKey
-			}
-		}
-	}
+	E2EConcurrent(tss.S256(), testFixtureDirFormatECDSA, t)
+	E2EConcurrent(tss.Edwards(), testFixtureDirFormatEDDSA, t)
+	E2EConcurrent(tss.S256(), testFixtureDirFormatSCHNORR, t)
+	E2EConcurrent(tss.Bls12381(), testFixtureDirFormatBLS, t)
 }
 
-func TestE2EConcurrentFromEDDSA(t *testing.T) {
-	ctx := context.Background()
-	setUp(log.ErrorLevel)
-
-	// PHASE: load keygen fixtures
-	keys, derivekeyPIDs, err := LoadKeygenTestFixtures(testThreshold+1, testFixtureDirFormatEDDSA) // 0 -- testParticipants-testThreshold-1)
-	assert.NoError(t, err, "should load keygen fixtures")
-	assert.Equal(t, testThreshold+1, len(keys))
-	assert.Equal(t, testThreshold+1, len(derivekeyPIDs))
-
-	// PHASE: deriveChildKey
-
-	p2pCtx := tss.NewPeerContext(derivekeyPIDs)
-	parties := make([]*LocalParty, 0, len(derivekeyPIDs))
-
-	errCh := make(chan *tss.Error, len(derivekeyPIDs))
-	outCh := make(chan tss.Message, len(derivekeyPIDs))
-	// endCh := make(chan common.SignatureData, len(derivekeyPIDs))
-	endCh := make(chan tss.Message, len(derivekeyPIDs))
-
-	updater := test.SharedPartyUpdater
-
-	path := []byte("/6667'/")
-	chainCode := []byte("testChainCodeABC")
-	// init the parties
-	wg := sync.WaitGroup{}
-	for i := 0; i < len(derivekeyPIDs); i++ {
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, derivekeyPIDs[i], len(derivekeyPIDs), testThreshold, false, 0)
-
-		P := NewLocalParty(path, chainCode, params, keys[i], outCh, endCh).(*LocalParty)
-		parties = append(parties, P)
-		wg.Add(1)
-		go func(P *LocalParty) {
-			defer wg.Done()
-			if err := P.Start(ctx); err != nil {
-				errCh <- err
-			}
-		}(P)
-	}
-	wg.Wait()
-
-	var ended int32
-deriveChildKey:
-	for {
-		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
-		select {
-		case err := <-errCh:
-			log.Error(ctx, "Error: %s", err)
-			assert.FailNow(t, err.Error())
-			break deriveChildKey
-
-		case msg := <-outCh:
-			dest := msg.GetTo()
-			if dest == nil {
-				for _, P := range parties {
-					if P.PartyID().Index == msg.GetFrom().Index {
-						continue
-					}
-					go updater(ctx, P, msg, errCh)
-				}
-			} else {
-				if dest[0].Index == msg.GetFrom().Index {
-					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
-				}
-				go updater(ctx, parties[dest[0].Index], msg, errCh)
-			}
-
-		case <-endCh:
-			atomic.AddInt32(&ended, 1)
-			if atomic.LoadInt32(&ended) == int32(len(derivekeyPIDs)) {
-				// already verified in finalize.go
-				t.Logf("Done. Received derive result from %d participants", ended)
-
-				break deriveChildKey
-			}
-		}
-	}
-}
-
-func TestE2EConcurrentFromSCHNORR(t *testing.T) {
-	ctx := context.Background()
-	setUp(log.ErrorLevel)
-
-	// PHASE: load keygen fixtures
-	keys, derivekeyPIDs, err := LoadKeygenTestFixtures(testThreshold+1, testFixtureDirFormatSCHNORR) // 0 -- testParticipants-testThreshold-1)
-	assert.NoError(t, err, "should load keygen fixtures")
-	assert.Equal(t, testThreshold+1, len(keys))
-	assert.Equal(t, testThreshold+1, len(derivekeyPIDs))
-
-	// PHASE: deriveChildKey
-
-	p2pCtx := tss.NewPeerContext(derivekeyPIDs)
-	parties := make([]*LocalParty, 0, len(derivekeyPIDs))
-
-	errCh := make(chan *tss.Error, len(derivekeyPIDs))
-	outCh := make(chan tss.Message, len(derivekeyPIDs))
-	// endCh := make(chan common.SignatureData, len(derivekeyPIDs))
-	endCh := make(chan tss.Message, len(derivekeyPIDs))
-
-	updater := test.SharedPartyUpdater
-
-	path := []byte("/6667'/")
-	chainCode := []byte("testChainCodeABC")
-	// init the parties
-	wg := sync.WaitGroup{}
-	for i := 0; i < len(derivekeyPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, derivekeyPIDs[i], len(derivekeyPIDs), testThreshold, false, 0)
-
-		P := NewLocalParty(path, chainCode, params, keys[i], outCh, endCh).(*LocalParty)
-		parties = append(parties, P)
-		wg.Add(1)
-		go func(P *LocalParty) {
-			defer wg.Done()
-			if err := P.Start(ctx); err != nil {
-				errCh <- err
-			}
-		}(P)
-	}
-	wg.Wait()
-
-	var ended int32
-deriveChildKey:
-	for {
-		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
-		select {
-		case err := <-errCh:
-			log.Error(ctx, "Error: %s", err)
-			assert.FailNow(t, err.Error())
-			break deriveChildKey
-
-		case msg := <-outCh:
-			dest := msg.GetTo()
-			if dest == nil {
-				for _, P := range parties {
-					if P.PartyID().Index == msg.GetFrom().Index {
-						continue
-					}
-					go updater(ctx, P, msg, errCh)
-				}
-			} else {
-				if dest[0].Index == msg.GetFrom().Index {
-					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
-				}
-				go updater(ctx, parties[dest[0].Index], msg, errCh)
-			}
-
-		case <-endCh:
-			atomic.AddInt32(&ended, 1)
-			if atomic.LoadInt32(&ended) == int32(len(derivekeyPIDs)) {
-				// already verified in finalize.go
-				t.Logf("Done. Received derive result from %d participants", ended)
-
-				break deriveChildKey
-			}
-		}
-	}
-}
-
-func LoadKeygenTestFixtures(qty int, fixtureBase string, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
+func LoadKeygenTestFixtures(qty int, ec elliptic.Curve, fixtureBase string, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
 	keys := make([]LocalPartySaveData, 0, qty)
 	start := 0
 	if 0 < len(optionalStart) {
 		start = optionalStart[0]
 	}
-	// for i := start; i < qty; i++ {
 	for i := 0; i < qty; i++ {
 		fixtureFilePath := makeTestFixtureFilePath(i+start, fixtureBase)
 		bz, err := ioutil.ReadFile(fixtureFilePath)
@@ -321,11 +199,7 @@ func LoadKeygenTestFixtures(qty int, fixtureBase string, optionalStart ...int) (
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			if fixtureBase == testFixtureDirFormatEDDSA {
-				kbxj.SetCurve(tss.Edwards())
-			} else {
-				kbxj.SetCurve(tss.S256())
-			}
+			kbxj.SetCurve(ec)
 		}
 		// ToDo ecdsa different field name
 		// key.PubKey.SetCurve(tss.S256())

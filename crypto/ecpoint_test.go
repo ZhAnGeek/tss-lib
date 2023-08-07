@@ -166,3 +166,28 @@ func TestEdwardsEcpointJsonSerialization(t *testing.T) {
 	assert.True(t, point.Equals(&umpoint))
 	assert.True(t, reflect.TypeOf(point.Curve()) == reflect.TypeOf(umpoint.Curve()))
 }
+
+func TestInfinityPoint(t *testing.T) {
+	for _, ec := range tss.GetAllCurvesList() {
+		G, err := NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
+		assert.NoError(t, err, "construct identity point")
+		O, err := G.Sub(G)
+		assert.True(t, O.IsInfinityPoint(), "should be infinity point")
+		assert.NoError(t, err, "point sub should not fail")
+		O1 := G.ScalarMult(ec.Params().N)
+		assert.True(t, O1.IsInfinityPoint(), "should be infinity point")
+		O1 = O.ScalarMult(big.NewInt(23))
+		assert.True(t, O1.IsInfinityPoint(), "should be infinity point")
+
+		bzs := O.Bytes()
+		x := new(big.Int).SetBytes(bzs[0])
+		y := new(big.Int).SetBytes(bzs[1])
+		x1, y1 := IntInfinityCoords(ec)
+		assert.Zero(t, x.Cmp(x1), "serialize infinity point")
+		assert.Zero(t, y.Cmp(y1), "serialize infinity point")
+		O2, err := NewECPointFromBytes(ec, bzs[:])
+		assert.NoError(t, err, "deserialize infinity point")
+		assert.Nil(t, O2.X(), "infinity point coordinate should be nil")
+		assert.Nil(t, O2.Y(), "infinity point coordinate should be nil")
+	}
+}
