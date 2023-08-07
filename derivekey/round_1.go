@@ -7,18 +7,25 @@
 package derivekey
 
 import (
-	"context"
 	"crypto/elliptic"
 	"errors"
+)
+
+import (
+	"context"
 	"fmt"
-	zkpeqlog "github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
 	"github.com/Safulet/tss-lib-private/tss"
 
-	h2c "github.com/armfazh/h2c-go-ref"
+	"github.com/armfazh/h2c-go-ref"
+)
+
+const (
+	PathFormat = "TSS-LIB#DeriveKey#EC#%s#SCHEME#%s#CHAINCODE#%s#PATH#%s"
 )
 
 func newRound1(params *tss.Parameters, key *LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- tss.Message) tss.Round {
@@ -61,7 +68,7 @@ func getPathString(ec elliptic.Curve, scheme string, pChainCode, path []byte) (s
 	if !ok {
 		return "", errors.New("error get curve name")
 	}
-	var fullPath = fmt.Sprintf("TSS-LIB#DeriveKey#EC#%s#SCHEME#%s#CHAINCODE#%s#PATH#%s",
+	var fullPath = fmt.Sprintf(PathFormat,
 		ecName, scheme, string(pChainCode), string(path))
 	return fullPath, nil
 }

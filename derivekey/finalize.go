@@ -11,8 +11,8 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 	"errors"
-	"fmt"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 	"math/big"
 )
@@ -62,7 +62,8 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	ilr := hmac512.Sum(nil)
 	ilNum := new(big.Int).SetBytes(ilr[:32])
 	round.temp.cChainCode = ilr[32:]
-	fmt.Printf("Derived ilNum: 0x%x\nChildChaincode: 0x%x\n", ilNum, new(big.Int).SetBytes(round.temp.cChainCode))
+	log.Debug(ctx, "%s Derived ilNum: 0x%x\nChildChaincode: 0x%x\n",
+		round.PartyID(), ilNum, new(big.Int).SetBytes(round.temp.cChainCode))
 
 	result := NewDeriveKeyResultMessage(round.PartyID(), round.temp.bssid,
 		round.temp.pChainCode, round.temp.path, ilNum, round.temp.cChainCode)

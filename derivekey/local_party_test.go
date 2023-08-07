@@ -68,7 +68,7 @@ func TestH2C(t *testing.T) {
 	assert.NoError(t, err, "should hash to curve")
 }
 
-func TestH2CFOO(t *testing.T) {
+func TestH2CBLS(t *testing.T) {
 	dst := "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_"
 	hashToCurve, err := h2c.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 	assert.NoError(t, err, "should init h2c")
@@ -171,7 +171,7 @@ deriveChildKey:
 	}
 }
 
-func TestE2EConcurrentFromECDSA(t *testing.T) {
+func TestE2EConcurrent(t *testing.T) {
 	E2EConcurrent(tss.S256(), testFixtureDirFormatECDSA, t)
 	E2EConcurrent(tss.Edwards(), testFixtureDirFormatEDDSA, t)
 	E2EConcurrent(tss.S256(), testFixtureDirFormatSCHNORR, t)
@@ -201,8 +201,6 @@ func LoadKeygenTestFixtures(qty int, ec elliptic.Curve, fixtureBase string, opti
 		for _, kbxj := range key.BigXj {
 			kbxj.SetCurve(ec)
 		}
-		// ToDo ecdsa different field name
-		// key.PubKey.SetCurve(tss.S256())
 		keys = append(keys, key)
 	}
 

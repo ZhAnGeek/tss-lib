@@ -15,7 +15,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 )
 
-// PrepareForDeriveKey runs before signing, when the set of parties to be signed is determined.
+// PrepareForDeriveKey runs before derivekey, when the set of parties to run derivekey is determined.
 // Each party locally convert his (t, n) share x_i into an additive share w_i such that x = \sum_{j \in S} w_j
 // In addition, using the values X_j that were output from the key generation protocol,
 // the players can locally compute for all j \in S, W_j = g^{w_j}.
