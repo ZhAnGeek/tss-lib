@@ -26,7 +26,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-//
 // Represents a BROADCAST message sent to all parties during Round 4 of the ECDSA TSS signing protocol.
 type SignRound1Message struct {
 	state         protoimpl.MessageState
@@ -179,7 +178,6 @@ func (x *IdentificationRound1Message) GetQ3Enc() []byte {
 	return nil
 }
 
-//
 // Container for LocalDump
 type LocalDumpPB struct {
 	state         protoimpl.MessageState

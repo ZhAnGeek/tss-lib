@@ -12,6 +12,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
@@ -26,11 +27,15 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
+var (
+	suite = bls12381.GetBLSSignatureSuiteG1()
+	ec    = tss.GetBLSCurveBySuite(suite)
+)
+
 func setUp(level log.Level) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
-	tss.Bls12381()
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -59,7 +64,7 @@ func TestE2EConcurrent(t *testing.T) {
 	msg := big.NewInt(200).Bytes()
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(ec, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		keyDerivationDelta := big.NewInt(42)
 		P := NewLocalParty(ctx, msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
@@ -141,7 +146,7 @@ func E2ESigning(b *testing.B) {
 	msg := big.NewInt(200).Bytes()
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.Bls12381G2(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		keyDerivationDelta := big.NewInt(10)
 		P := NewLocalParty(ctx, msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)

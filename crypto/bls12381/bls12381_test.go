@@ -2,7 +2,6 @@ package bls12381
 
 import (
 	"crypto/aes"
-	"crypto/rand"
 	"math/big"
 	"testing"
 
@@ -10,43 +9,46 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var fuz = 10
-
-func randScalar(max *big.Int) *big.Int {
-	a, _ := rand.Int(rand.Reader, max)
-	return a
-}
-
 func TestSignAndVerify(t *testing.T) {
 	g2 := bls.NewG2()
 	m := big.NewInt(200).Bytes()
 	sk := big.NewInt(2).Bytes()
-	pk := g2.MulScalar(&bls.PointG2{}, g2.One(), new(big.Int).SetBytes(sk))
+	pk := G2MulScalarMont(&bls.PointG2{}, g2.One(), new(big.Int).SetBytes(sk))
 
 	publicKey := bls.NewG2().ToBytes(pk)
 
-	sk = PadToLengthBytesInPlace(sk, PrivateKeySize)
-
-	signature := Sign(sk, m)
-
-	assert.Equal(t, true, Verify(publicKey, m, signature))
-}
-
-func TestEncryptAndDecrypt(t *testing.T) {
-	g2 := bls.NewG2()
-	m := big.NewInt(200).Bytes()
-	sk := big.NewInt(2).Bytes()
-	pk := g2.MulScalar(&bls.PointG2{}, g2.One(), new(big.Int).SetBytes(sk))
-
-	publicKey := bls.NewG2().ToBytes(pk)
-
-	sk = PadToLengthBytesInPlace(sk, PrivateKeySize)
-	m = PadToLengthBytesInPlace(m, aes.BlockSize)
-	encrypted, err := Encrypt(publicKey, m)
+	sk, err := PadToLengthBytesInPlace(sk, PrivateKeySize)
 	if err != nil {
 		panic(err)
 	}
-	decryptedShare, err := DecryptShare(sk, encrypted)
+
+	signature := Sign(GetBLSSignatureSuiteG1(), sk, m)
+
+	assert.Equal(t, true, Verify(GetBLSSignatureSuiteG1(), publicKey, m, signature))
+}
+
+func TestEncryptAndDecryptSignatureG1Suite(t *testing.T) {
+	suite := GetBLSSignatureSuiteG1()
+	g2 := bls.NewG2()
+	m := big.NewInt(200).Bytes()
+	sk := big.NewInt(2).Bytes()
+
+	pk := G2MulScalarMont(&bls.PointG2{}, g2.One(), new(big.Int).SetBytes(sk))
+	publicKey := bls.NewG2().ToBytes(pk)
+
+	sk, err := PadToLengthBytesInPlace(sk, PrivateKeySize)
+	if err != nil {
+		panic(err)
+	}
+	m, err = PadToLengthBytesInPlace(m, aes.BlockSize)
+	if err != nil {
+		panic(err)
+	}
+	encrypted, err := Encrypt(suite, publicKey, m)
+	if err != nil {
+		panic(err)
+	}
+	decryptedShare, err := DecryptShare(suite, sk, encrypted)
 	if err != nil {
 		panic(err)
 	}
@@ -54,7 +56,44 @@ func TestEncryptAndDecrypt(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	decryptedResult, err := Decrypt([][]byte{decryptedShare}, encrypted, pubPoints)
+	decryptedResult, err := Decrypt(suite, [][]byte{decryptedShare}, encrypted, pubPoints, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	assert.Equal(t, 0, new(big.Int).SetBytes(decryptedResult).Cmp(new(big.Int).SetBytes(m)))
+}
+
+func TestEncryptAndDecryptSignatureG2Suite(t *testing.T) {
+	suite := GetBLSSignatureSuiteG2()
+	g1 := bls.NewG1()
+	m := big.NewInt(200).Bytes()
+	sk := big.NewInt(2).Bytes()
+
+	pk := G1MulScalarMont(&bls.PointG1{}, g1.One(), new(big.Int).SetBytes(sk))
+	publicKey := bls.NewG1().ToBytes(pk)
+
+	sk, err := PadToLengthBytesInPlace(sk, PrivateKeySize)
+	if err != nil {
+		panic(err)
+	}
+	m, err = PadToLengthBytesInPlace(m, aes.BlockSize)
+	if err != nil {
+		panic(err)
+	}
+	encrypted, err := Encrypt(suite, publicKey, m)
+	if err != nil {
+		panic(err)
+	}
+	decryptedShare, err := DecryptShare(suite, sk, encrypted)
+	if err != nil {
+		panic(err)
+	}
+	pubPoints := []*bls.PointG1{pk}
+	if err != nil {
+		panic(err)
+	}
+	decryptedResult, err := Decrypt(suite, [][]byte{decryptedShare}, encrypted, nil, pubPoints)
 	if err != nil {
 		panic(err)
 	}

@@ -67,6 +67,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		if err != nil {
 			return round.WrapError(errors.New("de-commitment failed"), Pj)
 		}
+		if len(PjVs) != round.Threshold()+1 {
+			return round.WrapError(errors.New("de-commitment length not correct"), Pj)
+		}
 		for c := 0; c <= round.Threshold(); c++ {
 			Vc[c], err = Vc[c].Add(PjVs[c])
 			if err != nil {
@@ -122,7 +125,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
+func (round *round3) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }
@@ -134,13 +137,4 @@ func (round *round3) Update() (bool, *tss.Error) {
 
 func (round *round3) NextRound() tss.Round {
 	return nil // finished!
-}
-
-// get ssid from local params
-func (round *base) getSSID(ctx context.Context) ([]byte, error) {
-	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
-	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                         // parties
-	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
-
-	return ssid, nil
 }

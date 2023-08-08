@@ -11,8 +11,14 @@ func FromIntToPointG2(x, y *big.Int) (*bls.PointG2, error) {
 	in := make([]byte, 192)
 	xx := x.Bytes()
 	yy := y.Bytes()
-	xx = PadToLengthBytesInPlace(xx, 96)
-	yy = PadToLengthBytesInPlace(yy, 96)
+	xx, err := PadToLengthBytesInPlace(xx, 96)
+	if err != nil {
+		return nil, err
+	}
+	yy, err = PadToLengthBytesInPlace(yy, 96)
+	if err != nil {
+		return nil, err
+	}
 	copy(in[:96], xx)
 	copy(in[96:], yy)
 	g2, err := p.FromBytes(in)
@@ -22,7 +28,7 @@ func FromIntToPointG2(x, y *big.Int) (*bls.PointG2, error) {
 	return g2, nil
 }
 
-//this function translate a G2 projective point into two big integers
+// this function translate a G2 projective point into two big integers
 func FromPointG2ToInt(g2 *bls.PointG2) (*big.Int, *big.Int) {
 	p := bls.NewG2()
 	out := p.ToBytes(g2) //out is in affine coordinates

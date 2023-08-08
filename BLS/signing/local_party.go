@@ -14,6 +14,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
 	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -44,9 +45,14 @@ type (
 	localTempData struct {
 		localMessageStore
 
+		suite         []byte
+		PublicKeySize int
+		SignatureSize int
+
 		wi                 *big.Int
+		BigWs              []*crypto.ECPoint
 		KeyDerivationDelta *big.Int
-		derivePubKey       *big.Int
+		pkDelta            *crypto.ECPoint
 
 		m   []byte
 		sig []*big.Int

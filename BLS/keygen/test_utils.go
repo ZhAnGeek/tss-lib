@@ -41,7 +41,6 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 	for i := start; i < qty; i++ {
 		fixtureFilePath := makeTestFixtureFilePath(i)
 		bz, err := ioutil.ReadFile(fixtureFilePath)
-		fmt.Println(len(bz))
 		if err != nil {
 			return nil, nil, errors.Wrapf(err,
 				"could not open the test fixture for party %d in the expected location: %s. run keygen tests first.",
@@ -53,21 +52,18 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 				"could not unmarshal fixture data for party %d located at: %s",
 				i, fixtureFilePath)
 		}
-		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.Bls12381())
-		}
-		key.PubKey.SetCurve(tss.Bls12381())
+		// for _, kbxj := range key.BigXj {
+		// 	kbxj.SetCurve(tss.Bls12381G2())
+		// }
+		// key.PubKey.SetCurve(tss.Bls12381G2())
 		keys = append(keys, key)
-		fmt.Println(len(keys))
 	}
-	fmt.Println("length is", len(keys))
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
 	for i, key := range keys {
 		pMoniker := fmt.Sprintf("%d", i+start+1)
 		partyIDs[i] = tss.NewPartyID(pMoniker, pMoniker, key.ShareID)
 	}
 	sortedPIDs := tss.SortPartyIDs(partyIDs)
-	fmt.Println("length is", len(keys))
 	return keys, sortedPIDs, nil
 }
 
@@ -94,10 +90,10 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 				"could not unmarshal fixture data for party %d located at: %s",
 				i, fixtureFilePath)
 		}
-		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.Bls12381())
-		}
-		key.PubKey.SetCurve(tss.Bls12381())
+		// for _, kbxj := range key.BigXj {
+		// 	kbxj.SetCurve(tss.Bls12381G2())
+		// }
+		// key.PubKey.SetCurve(tss.Bls12381G2())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))

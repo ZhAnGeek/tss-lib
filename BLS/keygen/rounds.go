@@ -7,6 +7,10 @@
 package keygen
 
 import (
+	"context"
+	"math/big"
+
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -89,4 +93,13 @@ func (round *base) SetStarted(status bool) {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
+}
+
+// get ssid from local params
+func (round *base) getSSID(ctx context.Context) ([]byte, error) {
+	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
+	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                         // parties
+	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
+
+	return ssid, nil
 }

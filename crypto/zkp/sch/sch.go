@@ -100,7 +100,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofSch, error) {
 
 	var x, y, z *big.Int
 	if ecName, ok := tss.GetCurveName(ec); ok {
-		if ecName == tss.BLS12381 {
+		if ecName == tss.BLS12381G2 || ecName == tss.BLS12381G1 {
 			x = new(big.Int).SetBytes(bzs[0])
 			y = new(big.Int).SetBytes(bzs[1])
 			z = new(big.Int).SetBytes(bzs[2])

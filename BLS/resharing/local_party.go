@@ -15,6 +15,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -49,9 +50,11 @@ type (
 		localMessageStore
 
 		// temp data (thrown away after rounds)
+		SSID      []byte
 		NewVs     vss.Vs
 		NewShares vss.Shares
 		VD        cmt.HashDeCommitment
+		proof     *zkpsch.ProofSch
 
 		// temporary storage of data that is persisted by the new party in round 5 if all "ACK" messages are received
 		newXi     *big.Int

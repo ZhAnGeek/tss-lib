@@ -19,13 +19,13 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// round 1 represents round 1 of the signing part of the pairing-based threshold signature spec on BLS12381
+// round 1 represents round 1 of the signing part of the pairing-based threshold signature spec on G2Curve
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- DecryptedData) tss.Round {
 	return &round1{
 		&base{params, *temp, *key, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start(ctx context.Context) *tss.Error {
+func (round *round1) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -37,7 +37,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
-	share, err := bls12381.DecryptShare(round.temp.wi.Bytes(), round.temp.m)
+	share, err := bls12381.DecryptShare(round.temp.suite, round.temp.wi.Bytes(), round.temp.m)
 
 	if err != nil {
 		return round.WrapError(err)
@@ -79,6 +79,16 @@ func (round *round1) NextRound() tss.Round {
 // ----- //
 func (round *round1) prepare() error {
 	i := round.PartyID().Index
+
+	if round.EC().Params().Gx.Cmp(bls12381.G2Curve().Params().Gx) == 0 {
+		round.temp.suite = bls12381.GetBLSSignatureSuiteG1()
+		round.temp.PublicKeySize = bls12381.PublicKeySizeG2
+		round.temp.SignatureSize = bls12381.SignatureSizeG1
+	} else if round.EC().Params().Gx.Cmp(bls12381.G1Curve().Params().Gx) == 0 {
+		round.temp.suite = bls12381.GetBLSSignatureSuiteG2()
+		round.temp.PublicKeySize = bls12381.PublicKeySizeG1
+		round.temp.SignatureSize = bls12381.SignatureSizeG2
+	}
 
 	xi := round.key.Xi
 	ks := round.key.Ks

@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -19,11 +20,10 @@ import (
 )
 
 var (
-	ErrNumSharesBelowThreshold = fmt.Errorf("not enough shares to satisfy the threshold")
-	zero                       = big.NewInt(0)
+	zero = big.NewInt(0)
 )
 
-func (round *round2) Start(ctx context.Context) *tss.Error {
+func (round *round2) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -41,29 +41,36 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 		}
 		r1msg := msg.Content().(*SignRound1Message)
 		round.temp.sig[j] = r1msg.UnmarshalSignature()
+
+		PKj := make([]byte, round.temp.PublicKeySize*2)
+		round.temp.BigWs[j].X().FillBytes(PKj[:round.temp.PublicKeySize])
+		round.temp.BigWs[j].Y().FillBytes(PKj[round.temp.PublicKeySize:])
+
+		if ok := bls12381.Verify(round.temp.suite, PKj, round.temp.m, round.temp.sig[j].Bytes()); !ok {
+			return round.WrapError(errors.New("Partial message failed to verify"), round.Parties().IDs()[j])
+		}
 	}
 
-	totalSign, err := AddOnSignature(round.temp.sig)
+	totalSign, err := AddOnSignature(round.temp.suite, round.temp.sig)
 
 	if err != nil {
 		fmt.Println("signature fail to construct")
 	}
 
-	totalPK := make([]byte, 192)
-	round.key.PubKey.X().FillBytes(totalPK[:96])
-	round.key.PubKey.Y().FillBytes(totalPK[96:])
-
+	PubKey := round.key.PubKey
 	if round.temp.KeyDerivationDelta.Cmp(zero) != 0 {
-		g2 := bls.NewG2()
-		totalPKPoint, _ := g2.FromBytes(totalPK)
-		bytes := bls12381.PadToLengthBytesInPlace(round.temp.derivePubKey.Bytes(), 192)
-		tmpPoint, _ := g2.FromBytes(bytes)
-		g2.MulScalar(tmpPoint, tmpPoint, big.NewInt(int64(round.Threshold()+1)))
-		g2.Add(totalPKPoint, totalPKPoint, tmpPoint)
-		totalPK = g2.ToBytes(totalPKPoint)
+		point, err := round.key.PubKey.Add(round.temp.pkDelta)
+		if err != nil {
+			return round.WrapError(err, round.PartyID())
+		}
+		PubKey = point
 	}
 
-	if !bls12381.Verify(totalPK, round.temp.m, totalSign.Bytes()) {
+	totalPK := make([]byte, round.temp.PublicKeySize*2)
+	PubKey.X().FillBytes(totalPK[:round.temp.PublicKeySize])
+	PubKey.Y().FillBytes(totalPK[round.temp.PublicKeySize:])
+
+	if !bls12381.Verify(round.temp.suite, totalPK, round.temp.m, totalSign.Bytes()) {
 		return round.WrapError(errors.New("fail to verify total signature"))
 	}
 
@@ -74,13 +81,43 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func AddOnSignature(sign []*big.Int) (*big.Int, error) {
+func AddOnSignature(suite []byte, sign []*big.Int) (*big.Int, error) {
+	if bytes.Compare(suite, bls12381.GetBLSSignatureSuiteG1()) == 0 {
+		return AddOnSignatureG1(sign)
+	}
+	return AddOnSignatureG2(sign)
+}
+
+func AddOnSignatureG1(sign []*big.Int) (*big.Int, error) {
 	g1 := bls.NewG1()
 	res := g1.Zero()
 	for _, s := range sign {
-		tmp := bls12381.PadToLengthBytesInPlace(s.Bytes(), 96)
-		addPoint, _ := g1.FromBytes(tmp)
+		tmp, err := bls12381.PadToLengthBytesInPlace(s.Bytes(), bls12381.SignatureSizeG1*2)
+		if err != nil {
+			return nil, err
+		}
+		addPoint, err := g1.FromBytes(tmp)
+		if err != nil {
+			return nil, err
+		}
 		g1.Add(res, res, addPoint)
 	}
 	return new(big.Int).SetBytes(g1.ToBytes(res)), nil
+}
+
+func AddOnSignatureG2(sign []*big.Int) (*big.Int, error) {
+	g2 := bls.NewG2()
+	res := g2.Zero()
+	for _, s := range sign {
+		tmp, err := bls12381.PadToLengthBytesInPlace(s.Bytes(), bls12381.SignatureSizeG2*2)
+		if err != nil {
+			return nil, err
+		}
+		addPoint, err := g2.FromBytes(tmp)
+		if err != nil {
+			return nil, err
+		}
+		g2.Add(res, res, addPoint)
+	}
+	return new(big.Int).SetBytes(g2.ToBytes(res)), nil
 }
