@@ -5,8 +5,8 @@
 // file LICENSE at the root of the source code distribution tree.
 
 syntax = "proto3";
-package binance.tsslib.schnorr.keygen;
-option go_package = "schnorr/keygen";
+package binance.tsslib.frost.keygen;
+option go_package = "frost/keygen";
 
 /*
  * Represents a BROADCAST message sent during Round 1 of the SCHNORR TSS keygen protocol.

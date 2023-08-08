@@ -155,3 +155,12 @@ A full review of this library was carried out by Kudelski Security and their fin
 ## References
 \[1\] https://eprint.iacr.org/2019/114.pdf
 
+## Migration Guide of Faster ECDSA Keygen
+
+1. faster ecdsa keygen needs an out channel with more capacity, for one party the out channel capacity should be 2. (for paillier key negotiation and ecdsa keygen are parallelized)
+
+2. faster ecdsa keygen needs handle twice output from end channel. one is for ecdsa keygen results, another is for paillier key negotiation results. Both are in ecdsa keygen.LocalPartySaveData scheme, with some fields empty.
+
+3. so once ecdsa keygen done, we can tell user the key has been generated. (in 1 second)
+
+4. once paillier key negotiation done, we can let user do further rounds. (in 20 seconds)

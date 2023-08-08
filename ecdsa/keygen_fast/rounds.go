@@ -4,27 +4,28 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package keygen
+package keygen_fast
 
 import (
 	"context"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (
-	TaskName = "schnorr-keygen"
+	TaskName = "universal-keygen"
 )
 
 type (
 	base struct {
 		*tss.Parameters
-		save    *LocalPartySaveData
+		save    *keygen.LocalPartySaveData
 		temp    *localTempData
 		out     chan<- tss.Message
-		end     chan<- LocalPartySaveData
+		end     chan<- keygen.LocalPartySaveData
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int
@@ -38,16 +39,19 @@ type (
 	round3 struct {
 		*round2
 	}
+	roundout struct {
+		*round3
+	}
 )
 
 var (
 	_ tss.Round = (*round1)(nil)
 	_ tss.Round = (*round2)(nil)
 	_ tss.Round = (*round3)(nil)
+	_ tss.Round = (*roundout)(nil)
 )
 
 // ----- //
-
 func (round *base) SetStarted(status bool) {
 	round.started = status
 	round.resetOK()

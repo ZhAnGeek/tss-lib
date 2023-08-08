@@ -4,13 +4,13 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package keygen
+package keygen_fast
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
+	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
@@ -18,8 +18,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/common"
-
+	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
@@ -28,8 +27,8 @@ import (
 )
 
 const (
-	testParticipants = TestParticipants
-	testThreshold    = TestThreshold
+	testParticipants = test.TestParticipants
+	testThreshold    = test.TestThreshold
 )
 
 func setUp(level log.Level) {
@@ -42,8 +41,10 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
 
+	// tss.SetCurve(elliptic.P256())
+
 	threshold := testThreshold
-	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
+	fixtures, pIDs, err := keygen.LoadKeygenTestFixtures(testParticipants)
 	if err != nil {
 		log.Info(ctx, "No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
@@ -53,32 +54,36 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	parties := make([]*LocalParty, 0, len(pIDs))
 
 	errCh := make(chan *tss.Error, len(pIDs))
-	outCh := make(chan tss.Message, len(pIDs))
-	endCh := make(chan LocalPartySaveData, len(pIDs))
+	outCh := make(chan tss.Message, 2*len(pIDs))
+	endCh := make(chan keygen.LocalPartySaveData, len(pIDs))
 
-	updater := test.SharedPartyUpdaterWithWg
+	updater := test.SharedPartyUpdater
 
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) {
-			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
+			P = NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams).(*LocalParty)
 		} else {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		}
 		parties = append(parties, P)
+	}
+	var wg sync.WaitGroup
+	for _, party := range parties {
+		wg.Add(1)
 		go func(P *LocalParty) {
+			defer wg.Done()
 			if err := P.Start(ctx); err != nil {
 				errCh <- err
 			}
-		}(P)
+		}(party)
 	}
+	wg.Wait()
 
 	// PHASE: keygen
 	var ended int32
-	wg := sync.WaitGroup{}
-	wg.Add(3 * len(pIDs) * (len(pIDs) - 1))
 keygen:
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
@@ -95,16 +100,15 @@ keygen:
 					if P.PartyID().Index == msg.GetFrom().Index {
 						continue
 					}
-					go updater(ctx, P, msg, errCh, &wg)
+					go updater(ctx, P, msg, errCh)
 				}
 			} else { // point-to-point!
 				if dest[0].Index == msg.GetFrom().Index {
 					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
 					return
 				}
-				go updater(ctx, parties[dest[0].Index], msg, errCh, &wg)
+				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
-
 		case save := <-endCh:
 			// SAVE a test fixture file for this P (if it doesn't already exist)
 			// .. here comes a workaround to recover this party's index (it was removed from save data)
@@ -113,28 +117,20 @@ keygen:
 			tryWriteTestFixtureFile(t, index, save)
 
 			atomic.AddInt32(&ended, 1)
-			if atomic.LoadInt32(&ended) == int32(len(pIDs)) {
-				wg.Wait()
+			if atomic.LoadInt32(&ended) == int32(len(pIDs))*2 {
 				t.Logf("Done. Received save data from %d participants", ended)
-
-				// combine shares for each Pj to get u
-				u := new(big.Int)
-				u = new(big.Int).Mod(u, tss.Edwards().Params().N)
-
-				// public key tests
-				t.Log("Public key tests done.")
-
 				break keygen
 			}
 		}
 	}
 }
 
-func tryWriteTestFixtureFile(t *testing.T, index int, data LocalPartySaveData) {
+func tryWriteTestFixtureFile(t *testing.T, index int, data keygen.LocalPartySaveData) {
 	fixtureFileName := makeTestFixtureFilePath(index)
 
 	dir := path.Dir(fixtureFileName)
-	os.MkdirAll(dir, 0751)
+	err := os.MkdirAll(dir, 0751)
+	assert.NoError(t, err)
 	// fixture file does not already exist?
 	// if it does, we won't re-create it here
 	fi, err := os.Stat(fixtureFileName)
@@ -153,7 +149,49 @@ func tryWriteTestFixtureFile(t *testing.T, index int, data LocalPartySaveData) {
 		}
 		t.Logf("Saved a test fixture file for party %d: %s", index, fixtureFileName)
 	} else {
-		t.Logf("Fixture file already exists for party %d; not re-creating: %s", index, fixtureFileName)
+		if err != nil {
+			assert.NoErrorf(t, err, "unable to open fixture file %s for writing", fixtureFileName)
+		}
+		bz, err := ioutil.ReadFile(fixtureFileName)
+		if err != nil {
+			assert.NoErrorf(t, err, "unable to open read file all %s", fixtureFileName)
+		}
+		var inObj keygen.LocalPartySaveData
+		if err = json.Unmarshal(bz, &inObj); err != nil {
+			assert.NoErrorf(t, err, "unable to unmaarshal json %s", fixtureFileName)
+		}
+		for _, kbxj := range inObj.BigXj {
+			if kbxj != nil {
+				kbxj.SetCurve(tss.S256())
+			}
+		}
+		if inObj.ECDSAPub != nil {
+			inObj.ECDSAPub.SetCurve(tss.S256())
+		}
+		// if no paillier keys
+		if inObj.NTildej == nil || inObj.NTildej[0] == nil {
+			inObj.NTildej = data.NTildej
+			inObj.H1j = data.H1j
+			inObj.H2j = data.H2j
+			inObj.PaillierPKs = data.PaillierPKs
+			inObj.LocalPreParams = data.LocalPreParams
+			fmt.Println("patched pallier")
+		}
+
+		// if no xi
+		if inObj.Xi == nil {
+			inObj.Xi = data.Xi
+			inObj.ShareID = data.ShareID
+			fmt.Println("patched Xi")
+		}
+
+		t.Logf("Fixture file already exists for party %d; try scanning any attributes to add: %s", index, fixtureFileName)
+		fd, err := os.OpenFile(fixtureFileName, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
+		bzs, err := json.Marshal(inObj)
+		_, err = fd.Write(bzs)
+		if err != nil {
+			t.Fatalf("unable to write to fixture file %s", fixtureFileName)
+		}
+		t.Logf("Saved a test fixture file for party %d: %s", index, fixtureFileName)
 	}
-	//
 }

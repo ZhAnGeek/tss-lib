@@ -16,7 +16,8 @@ import (
 	"runtime"
 	"sort"
 
-	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	keygen2 "github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/frost/keygen"
 	"github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/test"
@@ -120,7 +121,7 @@ func LoadKeygenTestFixturesFromECDSA(qty int, optionalStart ...int) ([]LocalPart
 				"could not open the test fixture for party %d in the expected location: %s. run keygen tests first.",
 				i, fixtureFilePath)
 		}
-		var key keygen.LocalPartySaveData
+		var key keygen2.LocalPartySaveData
 		if err = json.Unmarshal(bz, &key); err != nil {
 			return nil, nil, errors.Wrapf(err,
 				"could not unmarshal fixture data for party %d located at: %s",
@@ -131,13 +132,15 @@ func LoadKeygenTestFixturesFromECDSA(qty int, optionalStart ...int) ([]LocalPart
 		}
 		key.ECDSAPub.SetCurve(tss.S256())
 		keySchnorr := LocalPartySaveData{
-			LocalSecrets: LocalSecrets{
-				Xi:      key.LocalSecrets.Xi,
-				ShareID: key.LocalSecrets.ShareID,
+			keygen.LocalPartySaveData{
+				LocalSecrets: keygen.LocalSecrets{
+					Xi:      key.LocalSecrets.Xi,
+					ShareID: key.LocalSecrets.ShareID,
+				},
+				Ks:     key.Ks,
+				BigXj:  key.BigXj,
+				PubKey: key.ECDSAPub,
 			},
-			Ks:     key.Ks,
-			BigXj:  key.BigXj,
-			PubKey: key.ECDSAPub,
 		}
 		keys = append(keys, keySchnorr)
 	}

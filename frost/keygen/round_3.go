@@ -92,7 +92,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(errors.New("public key is not on the curve"))
 	}
 
-	needsNeg := PubKey.Y().Bit(0) != 0
+	needsNeg := PubKey.Y().Bit(0) != 0 && round.Params().IsSchnorr()
 	if needsNeg {
 		Y2 := new(big.Int).Sub(round.EC().Params().P, PubKey.Y())
 		PubKey2, err := crypto.NewECPoint(round.EC(), Vc[0].X(), Y2)
@@ -131,7 +131,6 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 					return round.WrapError(err)
 				}
 				round.save.BigXj[j] = BigXj2
-
 			}
 		}
 	}

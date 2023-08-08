@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	TaskName = "eddsa-keygen"
+	TaskName = "frost-keygen"
 )
 
 type (
@@ -45,6 +45,8 @@ var (
 	_ tss.Round = (*round2)(nil)
 	_ tss.Round = (*round3)(nil)
 )
+
+// ----- //
 
 func (round *base) SetStarted(status bool) {
 	round.started = status
@@ -104,9 +106,10 @@ func (round *base) resetOK() {
 // get ssid from local params
 func (round *base) getSSID(ctx context.Context) ([]byte, error) {
 	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
-	ssidList = append(ssidList, round.Parties().IDs().Keys()...)
-	ssidList = append(ssidList, big.NewInt(int64(round.number))) // round number
+	ssidList = append(ssidList, round.Parties().IDs().Keys()...)                                                         // parties
+	ssidList = append(ssidList, big.NewInt(int64(round.number)))
 	ssidList = append(ssidList, round.temp.ssidNonce)
+	// round number
 	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 
 	return ssid, nil

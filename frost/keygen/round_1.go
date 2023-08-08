@@ -35,6 +35,9 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	Pi := round.PartyID()
 	i := Pi.Index
 	round.ok[i] = true
+	ids := round.Parties().IDs().Keys()
+	round.save.ShareID = ids[i]
+	round.save.Ks = ids
 
 	round.temp.ssidNonce = new(big.Int).SetInt64(int64(0))
 	ssid, err := round.getSSID(ctx)
@@ -48,12 +51,10 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	round.temp.ui = ui
 
 	// compute the vss shares
-	ids := round.Parties().IDs().Keys()
 	vs, shares, err := vss.Create(round.Params().EC(), round.Threshold(), ui, ids)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	round.save.Ks = ids
 
 	// make commitment -> (C, D)
 	pGFlat, err := crypto.FlattenECPoints(vs)

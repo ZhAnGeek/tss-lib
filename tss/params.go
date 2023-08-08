@@ -32,6 +32,7 @@ type (
 		hashFunc            func() hash.Hash
 		network             string
 		version             *VersionInfo
+		schnorr             bool
 	}
 
 	ReSharingParameters struct {
@@ -108,6 +109,14 @@ func (params *Parameters) Nonce() int {
 
 func (params *Parameters) SetHashFunc(hashFunc func() hash.Hash) {
 	params.hashFunc = hashFunc
+}
+
+func (params *Parameters) SetIsSchnorr() {
+	params.schnorr = true
+}
+
+func (params *Parameters) IsSchnorr() bool {
+	return params.schnorr
 }
 
 func (params *Parameters) HashFunc() hash.Hash {

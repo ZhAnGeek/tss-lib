@@ -29,9 +29,9 @@ const (
 	TestThreshold    = test.TestThreshold
 )
 const (
-	testFixtureDirFormat      = "%s/../../test/_eddsa_fixtures_%d_%d"
-	testFixtureDirFormatECDSA = "%s/../../test/_ecdsa_fixtures_%d_%d"
-	testFixtureCurveDirFormat = "%s/../../test/_%s_fixtures_%d_%d"
+	testFixtureDirFormat      = "%s/../../../test/_frost_fixtures_%d_%d"
+	testFixtureDirFormatECDSA = "%s/../../../test/_ecdsa_fixtures_%d_%d"
+	testFixtureCurveDirFormat = "%s/../../../test/_%s_fixtures_%d_%d"
 	testFixtureFileFormat     = "keygen_data_%d.json"
 )
 
@@ -56,9 +56,9 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.Edwards())
+			kbxj.SetCurve(tss.S256())
 		}
-		key.EDDSAPub.SetCurve(tss.Edwards())
+		key.PubKey.SetCurve(tss.S256())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -93,7 +93,7 @@ func LoadKeygenTestFixturesWithCurve(qty int, curve elliptic.Curve, optionalStar
 		for _, kbxj := range key.BigXj {
 			kbxj.SetCurve(curve)
 		}
-		key.EDDSAPub.SetCurve(curve)
+		key.PubKey.SetCurve(curve)
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -129,9 +129,9 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.Edwards())
+			kbxj.SetCurve(tss.S256())
 		}
-		key.EDDSAPub.SetCurve(tss.Edwards())
+		key.PubKey.SetCurve(tss.S256())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -173,7 +173,7 @@ func LoadKeygenTestFixturesRandomSetWithCurve(qty int, curve elliptic.Curve, fix
 		for _, kbxj := range key.BigXj {
 			kbxj.SetCurve(curve)
 		}
-		key.EDDSAPub.SetCurve(curve)
+		key.PubKey.SetCurve(curve)
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))

@@ -22,6 +22,8 @@ import (
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
 	"github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -56,6 +58,8 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	endCh := make(chan LocalPartySaveData, len(pIDs))
 
 	updater := test.SharedPartyUpdaterWithWg
+
+	startGR := runtime.NumGoroutine()
 
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
@@ -118,10 +122,70 @@ keygen:
 
 				// combine shares for each Pj to get u
 				u := new(big.Int)
+				for j, Pj := range parties {
+					pShares := make(vss.Shares, 0)
+					for j2, P := range parties {
+						if j2 == j {
+							continue
+						}
+						// vssMsgs := P.temp.kgRound2Message1s
+						// share := vssMsgs[j].Content().(*KGRound2Message1).Share
+						share := P.temp.r2msg1Shares[j]
+						shareStruct := &vss.Share{
+							Threshold: threshold,
+							ID:        P.PartyID().KeyInt(),
+							// Share:     new(big.Int).SetBytes(share),
+							Share: new(big.Int).SetBytes(share.Bytes()),
+						}
+						pShares = append(pShares, shareStruct)
+					}
+					uj, err := pShares[:threshold+1].ReConstruct(tss.S256())
+					assert.NoError(t, err, "vss.ReConstruct should not throw error")
+
+					// uG test: u*G[j] == V[0]
+					assert.Equal(t, uj, Pj.temp.ui)
+					uG := crypto.ScalarBaseMult(tss.S256(), uj)
+					assert.True(t, uG.Equals(Pj.temp.vs[0]), "ensure u*G[j] == V_0")
+
+					// xj tests: BigXj == xj*G
+					xj := Pj.data.Xi
+					gXj := crypto.ScalarBaseMult(tss.S256(), xj)
+					BigXj := Pj.data.BigXj[j]
+					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
+
+					// fails if threshold cannot be satisfied (bad share)
+					{
+						badShares := pShares[:threshold]
+						badShares[len(badShares)-1].Share.Set(big.NewInt(0))
+						uj, err := pShares[:threshold].ReConstruct(tss.S256())
+						assert.NoError(t, err)
+						assert.NotEqual(t, parties[j].temp.ui, uj)
+						BigXjX, BigXjY := tss.S256().ScalarBaseMult(uj.Bytes())
+						assert.NotEqual(t, BigXjX, Pj.temp.vs[0].X())
+						assert.NotEqual(t, BigXjY, Pj.temp.vs[0].Y())
+					}
+					u = new(big.Int).Add(u, uj)
+				}
 				u = new(big.Int).Mod(u, tss.S256().Params().N)
+				pkX, pkY := save.PubKey.X(), save.PubKey.Y()
 
 				// public key tests
+				assert.NotZero(t, u, "u should not be zero")
+				ourPkX, ourPkY := tss.S256().ScalarBaseMult(u.Bytes())
+				if ourPkY.Bit(0) != 0 {
+					ourPkY = new(big.Int).Sub(tss.S256().Params().P, ourPkY)
+				}
+				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
+				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")
+
+				// make sure everyone has the same Schnorr public key
+				for _, Pj := range parties {
+					assert.Equal(t, pkX, Pj.data.PubKey.X())
+					assert.Equal(t, pkY, Pj.data.PubKey.Y())
+				}
+				t.Log("Public key distribution test done.")
+				t.Logf("Start goroutines: %d, End goroutines: %d", startGR, runtime.NumGoroutine())
 
 				break keygen
 			}
@@ -149,6 +213,8 @@ func TestE2EConcurrentAndSaveFixturesWithPallas(t *testing.T) {
 	endCh := make(chan LocalPartySaveData, len(pIDs))
 
 	updater := test.SharedPartyUpdaterWithWg
+
+	startGR := runtime.NumGoroutine()
 
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
@@ -211,10 +277,70 @@ keygen:
 
 				// combine shares for each Pj to get u
 				u := new(big.Int)
+				for j, Pj := range parties {
+					pShares := make(vss.Shares, 0)
+					for j2, P := range parties {
+						if j2 == j {
+							continue
+						}
+						// vssMsgs := P.temp.kgRound2Message1s
+						// share := vssMsgs[j].Content().(*KGRound2Message1).Share
+						share := P.temp.r2msg1Shares[j]
+						shareStruct := &vss.Share{
+							Threshold: threshold,
+							ID:        P.PartyID().KeyInt(),
+							// Share:     new(big.Int).SetBytes(share),
+							Share: new(big.Int).SetBytes(share.Bytes()),
+						}
+						pShares = append(pShares, shareStruct)
+					}
+					uj, err := pShares[:threshold+1].ReConstruct(curve)
+					assert.NoError(t, err, "vss.ReConstruct should not throw error")
+
+					// uG test: u*G[j] == V[0]
+					assert.Equal(t, uj, Pj.temp.ui)
+					uG := crypto.ScalarBaseMult(curve, uj)
+					assert.True(t, uG.Equals(Pj.temp.vs[0]), "ensure u*G[j] == V_0")
+
+					// xj tests: BigXj == xj*G
+					xj := Pj.data.Xi
+					gXj := crypto.ScalarBaseMult(curve, xj)
+					BigXj := Pj.data.BigXj[j]
+					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
+
+					// fails if threshold cannot be satisfied (bad share)
+					{
+						badShares := pShares[:threshold]
+						badShares[len(badShares)-1].Share.Set(big.NewInt(0))
+						uj, err := pShares[:threshold].ReConstruct(curve)
+						assert.NoError(t, err)
+						assert.NotEqual(t, parties[j].temp.ui, uj)
+						BigXjX, BigXjY := curve.ScalarBaseMult(uj.Bytes())
+						assert.NotEqual(t, BigXjX, Pj.temp.vs[0].X())
+						assert.NotEqual(t, BigXjY, Pj.temp.vs[0].Y())
+					}
+					u = new(big.Int).Add(u, uj)
+				}
 				u = new(big.Int).Mod(u, curve.Params().N)
+				pkX, pkY := save.PubKey.X(), save.PubKey.Y()
 
 				// public key tests
+				assert.NotZero(t, u, "u should not be zero")
+				ourPkX, ourPkY := curve.ScalarBaseMult(u.Bytes())
+				if ourPkY.Bit(0) != 0 {
+					ourPkY = new(big.Int).Sub(curve.Params().P, ourPkY)
+				}
+				assert.Equal(t, pkX, ourPkX, "pkX should match expected pk derived from u")
+				assert.Equal(t, pkY, ourPkY, "pkY should match expected pk derived from u")
 				t.Log("Public key tests done.")
+
+				// make sure everyone has the same Schnorr public key
+				for _, Pj := range parties {
+					assert.Equal(t, pkX, Pj.data.PubKey.X())
+					assert.Equal(t, pkY, Pj.data.PubKey.Y())
+				}
+				t.Log("Public key distribution test done.")
+				t.Logf("Start goroutines: %d, End goroutines: %d", startGR, runtime.NumGoroutine())
 
 				break keygen
 			}
