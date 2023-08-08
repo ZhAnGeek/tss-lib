@@ -19,17 +19,17 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/coinbase/kryptology/pkg/core/curves"
+
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
-	"github.com/armfazh/h2c-go-ref"
-	"github.com/pkg/errors"
-
+	"github.com/Safulet/tss-lib-private/crypto/hash2curve"
 	"github.com/Safulet/tss-lib-private/log"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -58,7 +58,7 @@ func makeTestFixtureFilePath(partyIndex int, fixtureBase string) string {
 
 func TestH2C(t *testing.T) {
 	dst := "QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_"
-	hashToCurve, err := h2c.Secp256k1_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+	hashToCurve, err := hash2curve.Secp256k1_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 	assert.NoError(t, err, "should init h2c")
 	h2cPoint := hashToCurve.Hash([]byte("abc"))
 	h2cPx := h2cPoint.X().Polynomial()[0]
@@ -71,7 +71,7 @@ func TestH2C(t *testing.T) {
 
 func TestH2CBLS(t *testing.T) {
 	dst := "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_"
-	hashToCurve, err := h2c.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+	hashToCurve, err := hash2curve.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 	assert.NoError(t, err, "should init h2c")
 	h2cPoint := hashToCurve.Hash([]byte("abc"))
 	h2cPx1 := h2cPoint.X().Polynomial()[0]
@@ -92,6 +92,18 @@ func TestH2CBLS(t *testing.T) {
 		new(big.Int).SetBytes(yBzs))
 	_, err = crypto.NewECPoint(tss.Bls12381G2(), new(big.Int).SetBytes(xBzs),
 		new(big.Int).SetBytes(yBzs))
+	assert.NoError(t, err, "should hash to curve")
+}
+
+func TestH2CPallas(t *testing.T) {
+	ec := curves.PALLAS()
+	msg := []byte("abc")
+	P := ec.Point.Hash(msg).(*curves.PointPallas)
+
+	fmt.Println("x:", P.X().BigInt().String())
+	fmt.Println("y:", P.Y().BigInt().String())
+
+	_, err := crypto.NewECPoint(tss.Pallas(), P.X().BigInt(), P.Y().BigInt())
 	assert.NoError(t, err, "should hash to curve")
 }
 
@@ -160,10 +172,16 @@ deriveChildKey:
 				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
 
-		case <-endCh:
+		case msg := <-endCh:
 			atomic.AddInt32(&ended, 1)
+			bz, _, err := msg.WireBytes()
+			assert.NoError(t, err)
+			pMsg, err := tss.ParseWireMessage(bz, msg.GetFrom(), msg.IsBroadcast())
+			assert.NoError(t, err)
+			res := pMsg.Content().(*DeriveKeyResultMessage)
+			ilNum := res.GetDelta()
+			t.Log(msg.GetFrom(), "ilNum:", new(big.Int).SetBytes(ilNum).String())
 			if atomic.LoadInt32(&ended) == int32(len(derivekeyPIDs)) {
-				// already verified in finalize.go
 				t.Logf("Done. Received derive result from %d participants", ended)
 
 				break deriveChildKey
@@ -177,6 +195,7 @@ func TestE2EConcurrent(t *testing.T) {
 	E2EConcurrent(tss.Edwards(), testFixtureDirFormatEDDSA, t)
 	E2EConcurrent(tss.S256(), testFixtureDirFormatSCHNORR, t)
 	E2EConcurrent(tss.Bls12381G2(), testFixtureDirFormatBLS, t)
+	E2EConcurrent(tss.Pallas(), testFixtureDirFormatPALLAS, t)
 }
 
 func LoadKeygenTestFixtures(qty int, ec elliptic.Curve, fixtureBase string, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {

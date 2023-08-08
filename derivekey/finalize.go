@@ -11,10 +11,11 @@ import (
 	"crypto/hmac"
 	"crypto/sha512"
 	"errors"
+	"math/big"
+
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
-	"math/big"
 )
 
 func (round *finalization) Start(ctx context.Context) *tss.Error {

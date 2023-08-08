@@ -11,13 +11,14 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
+	"github.com/coinbase/kryptology/pkg/core/curves"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/hash2curve"
 	"github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
 	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/armfazh/h2c-go-ref"
 )
 
 const (
@@ -29,29 +30,29 @@ func newRound1(params *tss.Parameters, key *LocalPartySaveData, data *common.Sig
 		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func getHashToCurveInstance(ec elliptic.Curve) (h2c.HashToPoint, error) {
+func getHashToCurveInstance(ec elliptic.Curve) (hash2curve.HashToPoint, error) {
 	dst := "QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_"
-	hashToCurve, err := h2c.Secp256k1_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+	hashToCurve, err := hash2curve.Secp256k1_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 	if err != nil {
 		return nil, err
 	}
 	if tss.SameCurve(ec, tss.Edwards()) {
 		dst = "QUUX-V01-CS02-with-edwards25519_XMD:SHA-512_ELL2_RO_"
-		hashToCurve, err = h2c.Edwards25519_XMDSHA512_ELL2_RO_.Get([]byte(dst))
+		hashToCurve, err = hash2curve.Edwards25519_XMDSHA512_ELL2_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}
 	}
 	if tss.SameCurve(ec, tss.Bls12381G2()) {
 		dst := "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_"
-		hashToCurve, err = h2c.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+		hashToCurve, err = hash2curve.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}
 	}
 	if tss.SameCurve(ec, tss.P256()) {
 		dst := "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_"
-		hashToCurve, err = h2c.P256_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+		hashToCurve, err = hash2curve.P256_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +70,16 @@ func getPathString(ec elliptic.Curve, scheme string, pChainCode, path []byte) (s
 	return fullPath, nil
 }
 
-func getH2CPoint(ec elliptic.Curve, hashToCurve h2c.HashToPoint, wPath string) (*crypto.ECPoint, error) {
+func getH2CPoint(ec elliptic.Curve, hashToCurve hash2curve.HashToPoint, wPath string) (*crypto.ECPoint, error) {
+	if tss.SameCurve(tss.Pallas(), ec) {
+		curve := curves.PALLAS()
+		h2cPoint := curve.Point.Hash([]byte(wPath)).(*curves.PointPallas)
+		pointHi, err := crypto.NewECPoint(ec, h2cPoint.X().BigInt(), h2cPoint.Y().BigInt())
+		if err != nil {
+			return nil, err
+		}
+		return pointHi, nil
+	}
 	h2cPoint := hashToCurve.Hash([]byte(wPath))
 	h2cPx := h2cPoint.X().Polynomial()[0]
 	h2cPy := h2cPoint.Y().Polynomial()[0]
