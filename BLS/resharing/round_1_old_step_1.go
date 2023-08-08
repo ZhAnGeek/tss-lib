@@ -78,7 +78,8 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	vCmt := commitments.NewHashCommitment(ctx, flatVis...)
 
 	ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
-	proof, err := zkpsch.NewProof(ctx, ContextI, vi[0], wi)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+	proof, err := zkpsch.NewProof(ctx, ContextI, vi[0], wi, rejectionSample)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

@@ -7,12 +7,9 @@
 package derivekey
 
 import (
+	"context"
 	"crypto/elliptic"
 	"errors"
-)
-
-import (
-	"context"
 	"fmt"
 	"math/big"
 
@@ -20,7 +17,6 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
 	"github.com/Safulet/tss-lib-private/tss"
-
 	"github.com/armfazh/h2c-go-ref"
 )
 
@@ -46,7 +42,7 @@ func getHashToCurveInstance(ec elliptic.Curve) (h2c.HashToPoint, error) {
 			return nil, err
 		}
 	}
-	if tss.SameCurve(ec, tss.Bls12381()) {
+	if tss.SameCurve(ec, tss.Bls12381G2()) {
 		dst := "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_"
 		hashToCurve, err = h2c.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 		if err != nil {
@@ -77,7 +73,7 @@ func getH2CPoint(ec elliptic.Curve, hashToCurve h2c.HashToPoint, wPath string) (
 	h2cPoint := hashToCurve.Hash([]byte(wPath))
 	h2cPx := h2cPoint.X().Polynomial()[0]
 	h2cPy := h2cPoint.Y().Polynomial()[0]
-	if tss.SameCurve(tss.Bls12381(), ec) {
+	if tss.SameCurve(tss.Bls12381G2(), ec) {
 		h2cPx1 := h2cPoint.X().Polynomial()[0]
 		h2cPx2 := h2cPoint.X().Polynomial()[1]
 		h2cPy1 := h2cPoint.Y().Polynomial()[0]

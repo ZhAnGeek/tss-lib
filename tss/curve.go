@@ -10,12 +10,13 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"errors"
+	"reflect"
+
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/crypto/curve25519"
 	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/coinbase/kryptology/pkg/core/curves"
-	"reflect"
 )
 
 type CurveName string
@@ -139,7 +140,8 @@ func GetAllCurvesList() []elliptic.Curve {
 		S256(),
 		P256(),
 		Pallas(),
-		Bls12381(),
+		Bls12381G1(),
+		Bls12381G2(),
 		Edwards(),
 		Curve25519()}
 	return curvesList

@@ -11,11 +11,6 @@ import (
 	"crypto/elliptic"
 	"encoding/json"
 	"fmt"
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/bls12381"
-	"github.com/armfazh/h2c-go-ref"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"math/big"
 	"path/filepath"
@@ -23,6 +18,12 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
+	"github.com/armfazh/h2c-go-ref"
+	"github.com/pkg/errors"
 
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
@@ -89,7 +90,7 @@ func TestH2CBLS(t *testing.T) {
 	copy(yBzs[48:], common.PadToLengthBytesInPlace(h2cPy1.Bytes(), 48))
 	_, err = bls12381.FromIntToPointG2(new(big.Int).SetBytes(xBzs),
 		new(big.Int).SetBytes(yBzs))
-	_, err = crypto.NewECPoint(tss.Bls12381(), new(big.Int).SetBytes(xBzs),
+	_, err = crypto.NewECPoint(tss.Bls12381G2(), new(big.Int).SetBytes(xBzs),
 		new(big.Int).SetBytes(yBzs))
 	assert.NoError(t, err, "should hash to curve")
 }
@@ -175,7 +176,7 @@ func TestE2EConcurrent(t *testing.T) {
 	E2EConcurrent(tss.S256(), testFixtureDirFormatECDSA, t)
 	E2EConcurrent(tss.Edwards(), testFixtureDirFormatEDDSA, t)
 	E2EConcurrent(tss.S256(), testFixtureDirFormatSCHNORR, t)
-	E2EConcurrent(tss.Bls12381(), testFixtureDirFormatBLS, t)
+	E2EConcurrent(tss.Bls12381G2(), testFixtureDirFormatBLS, t)
 }
 
 func LoadKeygenTestFixtures(qty int, ec elliptic.Curve, fixtureBase string, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {

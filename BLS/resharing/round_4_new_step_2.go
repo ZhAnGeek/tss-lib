@@ -68,7 +68,8 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		}
 
 		ContextJ := append(round.temp.SSID, big.NewInt(int64(j)).Bytes()...)
-		ok = proof.Verify(ctx, ContextJ, vj[0])
+		rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+		ok = proof.Verify(ctx, ContextJ, vj[0], rejectionSample)
 		if !ok {
 			return round.WrapError(errors.New("failed to verify schnorr proof"), round.Parties().IDs()[j])
 		}
