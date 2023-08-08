@@ -66,7 +66,7 @@ func TestE2EConcurrent(t *testing.T) {
 	keyDerivationDelta := big.NewInt(666777)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
+		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		P := NewLocalParty(msg, params, keys[i], keyDerivationDelta, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
@@ -189,7 +189,7 @@ func TestE2EConcurrentBlake2b(t *testing.T) {
 	keyDerivationDelta := big.NewInt(666777)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0, nil)
+		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 		params.SetHashFunc(func() hash.Hash {
 			hasher, _ := blake2b.New512(nil)
 			return hasher

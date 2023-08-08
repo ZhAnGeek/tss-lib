@@ -69,14 +69,14 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
-		params := tss.NewReSharingParameters(tss.Curve25519(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0, nil)
+		params := tss.NewReSharingParameters(tss.Curve25519(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 
 	// init the new parties
 	for _, pID := range newPIDs {
-		params := tss.NewReSharingParameters(tss.Curve25519(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0, nil)
+		params := tss.NewReSharingParameters(tss.Curve25519(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
 		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
 		newCommittee = append(newCommittee, P)
@@ -165,7 +165,7 @@ signing:
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.Curve25519(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0, nil)
+		params := tss.NewParameters(tss.Curve25519(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
 		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {

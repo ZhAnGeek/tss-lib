@@ -10,6 +10,7 @@ import (
 	"crypto/elliptic"
 	"crypto/sha512"
 	"errors"
+	"fmt"
 	"hash"
 	"time"
 )
@@ -47,16 +48,15 @@ const (
 )
 
 // Exported, used in `tss` client
-func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int, needsIdentification bool, nonce int, version *VersionInfo, optionalSafePrimeGenTimeout ...time.Duration) *Parameters {
-	var safePrimeGenTimeout time.Duration
-	if 0 < len(optionalSafePrimeGenTimeout) {
-		if 1 < len(optionalSafePrimeGenTimeout) {
-			panic(errors.New("GeneratePreParams: expected 0 or 1 item in `optionalSafePrimeGenTimeout`"))
+func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int, needsIdentification bool, nonce int, opts ...ConfigOpt) *Parameters {
+	config := NewConfig()
+	for _, opt := range opts {
+		err := opt(config)
+		if err != nil {
+			panic(errors.New(fmt.Sprintf("Error happened when initial config %s", err.Error())))
 		}
-		safePrimeGenTimeout = optionalSafePrimeGenTimeout[0]
-	} else {
-		safePrimeGenTimeout = defaultSafePrimeGenTimeout
 	}
+
 	return &Parameters{
 		ec:                  ec,
 		parties:             ctx,
@@ -64,9 +64,9 @@ func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyC
 		partyCount:          partyCount,
 		threshold:           threshold,
 		needsIdentifaction:  needsIdentification,
-		safePrimeGenTimeout: safePrimeGenTimeout,
+		safePrimeGenTimeout: config.SafePrimeTimeout,
 		nonce:               nonce,
-		version:             version,
+		version:             config.VersionInfo,
 	}
 }
 
@@ -128,8 +128,8 @@ func (params *Parameters) Network() string {
 // ----- //
 
 // Exported, used in `tss` client
-func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold, nonce int, version *VersionInfo) *ReSharingParameters {
-	params := NewParameters(ec, ctx, partyID, partyCount, threshold, false, nonce, version) // No identification in resharing
+func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold, nonce int, opts ...ConfigOpt) *ReSharingParameters {
+	params := NewParameters(ec, ctx, partyID, partyCount, threshold, false, nonce, opts...) // No identification in resharing
 	return &ReSharingParameters{
 		Parameters:    params,
 		newParties:    newCtx,
