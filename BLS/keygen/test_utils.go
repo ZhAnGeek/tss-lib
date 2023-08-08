@@ -28,7 +28,7 @@ const (
 	TestThreshold    = test.TestParticipants / 2
 )
 const (
-	testFixtureDirFormat  = "%s/../../test/_bls_fixtures"
+	testFixtureDirFormat  = "%s/../../test/_bls_fixtures_1_3"
 	testFixtureFileFormat = "keygen_data_%d.json"
 )
 

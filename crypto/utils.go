@@ -18,6 +18,8 @@ import (
 
 var (
 	HmacSize = 32
+	zero = new(big.Int).SetInt64(0)
+	one  = new(big.Int).SetInt64(1)
 )
 
 func GenerateNTildei(safePrimes [2]*big.Int) (NTildei, h1i, h2i *big.Int, err error) {

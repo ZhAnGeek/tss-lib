@@ -75,7 +75,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(errors.New("share from old committee did not pass Verify()"), round.Parties().IDs()[j])
 		}
 
-		newXi = new(big.Int).Add(newXi, sharej.Share)
+		newXi = modQ.Add(newXi, sharej.Share)
 	}
 
 	// 9-12.

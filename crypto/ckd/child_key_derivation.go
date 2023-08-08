@@ -17,11 +17,11 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcutil/base58"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -296,11 +296,7 @@ func DeriveChildKeyOfEddsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 		return nil, nil, err
 	}
 
-	pubKeyBytes := edwards.PublicKey{
-		Curve: edwards.Edwards(),
-		X:     pk.PublicKey.X(),
-		Y:     pk.PublicKey.Y(),
-	}.Serialize()
+	pubKeyBytes := edwards25519.EcPointToEncodedBytes(pk.PublicKey.X(), pk.PublicKey.Y())[:]
 
 	data := make([]byte, 37)
 	data[0] = 0x2
@@ -312,7 +308,7 @@ func DeriveChildKeyOfEddsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 	hmac512.Write(data)
 	ilr := hmac512.Sum(nil)
 
-	il28 := new(big.Int).SetBytes(ReverseBytes(ilr[:28])) // little endian to big endian
+	il28 := new(big.Int).SetBytes(common.ReverseBytes(ilr[:28])) // little endian to big endian
 	ilNum := new(big.Int).Mul(il28, big.NewInt(8))
 
 	deltaG := crypto.ScalarBaseMult(curve, ilNum)
@@ -358,14 +354,4 @@ func GenerateSeed(length uint8) ([]byte, error) {
 	}
 
 	return buf, nil
-}
-
-// ReverseBytes switch between big endian & little endian
-func ReverseBytes(input []byte) []byte {
-	out := make([]byte, len(input))
-	l := len(input)
-	for i := range input {
-		out[l-i-1] = input[i]
-	}
-	return out
 }

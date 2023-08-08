@@ -10,13 +10,12 @@ import (
 	"bytes"
 	"crypto/elliptic"
 	"errors"
-	"reflect"
-
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/crypto/curve25519"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	s256k1 "github.com/btcsuite/btcd/btcec"
 	"github.com/coinbase/kryptology/pkg/core/curves"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
+	"reflect"
 )
 
 type CurveName string
@@ -43,7 +42,7 @@ func init() {
 	registry = make(map[CurveName]elliptic.Curve)
 	registry[Secp256k1] = s256k1.S256()
 	registry[Nist256p1] = elliptic.P256()
-	registry[Ed25519] = edwards.Edwards()
+	registry[Ed25519] = edwards25519.Edwards25519()
 	registry[BLS12381G2] = bls12381.G2Curve()
 	registry[BLS12381G1] = bls12381.G1Curve()
 	registry[C25519] = curve25519.C25519()
@@ -104,8 +103,12 @@ func S256() elliptic.Curve {
 	return s256k1.S256()
 }
 
+func P256() elliptic.Curve {
+	return elliptic.P256()
+}
+
 func Edwards() elliptic.Curve {
-	return edwards.Edwards()
+	return edwards25519.Edwards25519()
 }
 
 func Bls12381G2() elliptic.Curve {
@@ -129,4 +132,15 @@ func Curve25519() elliptic.Curve {
 
 func Pallas() elliptic.Curve {
 	return curves.Pallas()
+}
+
+func GetAllCurvesList() []elliptic.Curve {
+	curvesList := []elliptic.Curve{
+		S256(),
+		P256(),
+		Pallas(),
+		Bls12381(),
+		Edwards(),
+		Curve25519()}
+	return curvesList
 }

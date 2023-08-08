@@ -13,7 +13,6 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
 	"github.com/pkg/errors"
 
@@ -102,9 +101,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	// compute challenge
 	// bigKs sum le is ok
-	mHashKXBytes := append(round.temp.mHash, ckd.ReverseBytes(BigKsSum.X().Bytes())...)
+	mHashKXBytes := append(round.temp.mHash, common.ReverseBytes(BigKsSum.X().Bytes())...)
 	e := sha256.Sum256(mHashKXBytes)
-	round.temp.e = new(big.Int).SetBytes(ckd.ReverseBytes(e[:]))
+	round.temp.e = new(big.Int).SetBytes(common.ReverseBytes(e[:]))
 
 	tInverse := new(big.Int).ModInverse(new(big.Int).SetInt64(int64(round.Params().PartyCount())), round.EC().Params().N)
 	modN := common.ModInt(round.EC().Params().N)

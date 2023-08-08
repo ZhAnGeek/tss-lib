@@ -18,8 +18,6 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/common"
-
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
@@ -41,6 +39,7 @@ func setUp(level log.Level) {
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
+	ec := tss.Edwards()
 
 	threshold := testThreshold
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
@@ -61,7 +60,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.Edwards(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(ec, p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		} else {

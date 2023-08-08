@@ -4,18 +4,17 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package signing
+package derivekey
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
-	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/eddsa/keygen"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -26,77 +25,112 @@ var _ tss.Party = (*LocalParty)(nil)
 var _ fmt.Stringer = (*LocalParty)(nil)
 
 type (
+	LocalSecrets struct {
+		// secret fields (not shared, but stored locally)
+		Xi, ShareID *big.Int // xi, kj
+	}
+
+	// LocalPartySaveData is saved locally to user's HD when done
+	LocalPartySaveData struct {
+		LocalSecrets
+
+		// original indexes (ki in signing preparation phase)
+		Ks []*big.Int
+
+		// public keys (Xj = uj*G for each Pj)
+		BigXj []*crypto.ECPoint // Xj
+
+		// used for test assertions (maybe discarded)
+		PubKey *crypto.ECPoint // y
+	}
+
 	LocalParty struct {
 		*tss.BaseParty
 		params *tss.Parameters
 
-		keys keygen.LocalPartySaveData
+		keys LocalPartySaveData
 		temp localTempData
 		data common.SignatureData
 
 		// outbound messaging
 		out chan<- tss.Message
-		end chan<- common.SignatureData
+		// end chan<- common.SignatureData
+		end chan<- tss.Message
 	}
 
 	localMessageStore struct {
-		signRound1Messages,
-		signRound2Messages,
-		signRound3Messages []tss.ParsedMessage
+		derivekeyRound1Messages []tss.ParsedMessage
 	}
 
 	localTempData struct {
 		localMessageStore
 
-		// temp data (thrown away after sign) / round 1
-		ssid               []byte
-		ssidNonce          *big.Int
-		wi                 *big.Int
-		ri                 *big.Int
-		m                  []byte
-		KeyDerivationDelta *big.Int
-		pointRi            *crypto.ECPoint
-		deCommit           cmt.HashDeCommitment
+		// child key path
+		path []byte
+		// parent chain code
+		pChainCode []byte
+		cChainCode []byte
 
-		// round 2
-		cjs []*big.Int
-		si  *big.Int
+		// temp data
+		bssid *big.Int
+		wi    *big.Int
+		bigWs []*crypto.ECPoint
 
-		// round 3
-		r   *big.Int
-		PKX *big.Int
-		PKY *big.Int
+		pointHi *crypto.ECPoint
+		pointVi *crypto.ECPoint
 	}
 )
 
 func NewLocalParty(
-	msg []byte,
+	path []byte,
+	chainCode []byte,
 	params *tss.Parameters,
-	key keygen.LocalPartySaveData,
-	keyDerivationDelta *big.Int,
+	key LocalPartySaveData,
 	out chan<- tss.Message,
-	end chan<- common.SignatureData,
+	end chan<- tss.Message,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
 		params:    params,
-		keys:      keygen.BuildLocalSaveDataSubset(key, params.Parties().IDs()),
+		keys:      BuildLocalSaveDataSubset(key, params.Parties().IDs()),
 		temp:      localTempData{},
-		data:      common.SignatureData{},
 		out:       out,
 		end:       end,
 	}
 	// msgs init
-	p.temp.signRound1Messages = make([]tss.ParsedMessage, partyCount)
-	p.temp.signRound2Messages = make([]tss.ParsedMessage, partyCount)
-	p.temp.signRound3Messages = make([]tss.ParsedMessage, partyCount)
+	p.temp.derivekeyRound1Messages = make([]tss.ParsedMessage, partyCount)
 
 	// temp data init
-	p.temp.KeyDerivationDelta = keyDerivationDelta
-	p.temp.m = msg
-	p.temp.cjs = make([]*big.Int, partyCount)
+	p.temp.path = path
+	p.temp.pChainCode = chainCode
 	return p
+}
+
+func NewLocalPartySaveData(partyCount int) (saveData LocalPartySaveData) {
+	saveData.Ks = make([]*big.Int, partyCount)
+	saveData.BigXj = make([]*crypto.ECPoint, partyCount)
+	return
+}
+
+// BuildLocalSaveDataSubset re-creates the LocalPartySaveData to contain data for only the list of signing parties.
+func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.SortedPartyIDs) LocalPartySaveData {
+	keysToIndices := make(map[string]int, len(sourceData.Ks))
+	for j, kj := range sourceData.Ks {
+		keysToIndices[hex.EncodeToString(kj.Bytes())] = j
+	}
+	newData := NewLocalPartySaveData(sortedIDs.Len())
+	newData.LocalSecrets = sourceData.LocalSecrets
+	newData.PubKey = sourceData.PubKey
+	for j, id := range sortedIDs {
+		savedIdx, ok := keysToIndices[hex.EncodeToString(id.Key)]
+		if !ok {
+			panic(errors.New("BuildLocalSaveDataSubset: unable to find a signer party in the local save data"))
+		}
+		newData.Ks[j] = sourceData.Ks[savedIdx]
+		newData.BigXj[j] = sourceData.BigXj[savedIdx]
+	}
+	return newData
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
@@ -128,18 +162,6 @@ func (p *LocalParty) UpdateFromBytes(ctx context.Context, wireBytes []byte, from
 	return p.Update(ctx, msg)
 }
 
-func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
-	if msg.GetFrom() == nil || !msg.GetFrom().ValidateBasic() {
-		return false, p.WrapError(fmt.Errorf("received msg with an invalid sender: %s", msg))
-	}
-	// check that the message's "from index" will fit into the array
-	if maxFromIdx := len(p.params.Parties().IDs()) - 1; maxFromIdx < msg.GetFrom().Index {
-		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d <= %d)",
-			maxFromIdx, msg.GetFrom().Index), msg.GetFrom())
-	}
-	return p.BaseParty.ValidateMessage(msg)
-}
-
 func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (bool, *tss.Error) {
 	// ValidateBasic is cheap; double-check the message here in case the public StoreMessage was called externally
 	if ok, err := p.ValidateMessage(msg); !ok || err != nil {
@@ -150,14 +172,8 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 	// switch/case is necessary to store any messages beyond current round
 	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
 	switch msg.Content().(type) {
-	case *SignRound1Message:
-		p.temp.signRound1Messages[fromPIdx] = msg
-
-	case *SignRound2Message:
-		p.temp.signRound2Messages[fromPIdx] = msg
-
-	case *SignRound3Message:
-		p.temp.signRound3Messages[fromPIdx] = msg
+	case *DeriveKeyRound1Message:
+		p.temp.derivekeyRound1Messages[fromPIdx] = msg
 
 	default: // unrecognised message, just ignore!
 		log.Warn(ctx, "unrecognised message ignored: %v", msg)

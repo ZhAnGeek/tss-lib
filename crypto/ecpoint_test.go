@@ -14,10 +14,10 @@ import (
 	"testing"
 
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 
 	. "github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -144,15 +144,16 @@ func TestS256EcpointJsonSerialization(t *testing.T) {
 }
 
 func TestEdwardsEcpointJsonSerialization(t *testing.T) {
-	ec := edwards.Edwards()
+	ec := tss.Edwards()
 	tss.RegisterCurve("ed25519", ec)
 
 	pubKeyBytes, err := hex.DecodeString("ae1e5bf5f3d6bf58b5c222088671fcbe78b437e28fae944c793897b26091f249")
 	assert.NoError(t, err)
-	pbk, err := edwards.ParsePubKey(pubKeyBytes)
-	assert.NoError(t, err)
+	pkx, pky := edwards25519.EncodedBytesToEcPoint(pubKeyBytes)
+	assert.NotNil(t, pkx, "PubKey.X should not be nil")
+	assert.NotNil(t, pky, "PubKey.Y should not be nil")
 
-	point, err := NewECPoint(ec, pbk.X, pbk.Y)
+	point, err := NewECPoint(ec, pkx, pky)
 	assert.NoError(t, err)
 	bz, err := json.Marshal(point)
 	assert.NoError(t, err)
@@ -164,4 +165,29 @@ func TestEdwardsEcpointJsonSerialization(t *testing.T) {
 
 	assert.True(t, point.Equals(&umpoint))
 	assert.True(t, reflect.TypeOf(point.Curve()) == reflect.TypeOf(umpoint.Curve()))
+}
+
+func TestInfinityPoint(t *testing.T) {
+	for _, ec := range tss.GetAllCurvesList() {
+		G, err := NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
+		assert.NoError(t, err, "construct identity point")
+		O, err := G.Sub(G)
+		assert.True(t, O.IsInfinityPoint(), "should be infinity point")
+		assert.NoError(t, err, "point sub should not fail")
+		O1 := G.ScalarMult(ec.Params().N)
+		assert.True(t, O1.IsInfinityPoint(), "should be infinity point")
+		O1 = O.ScalarMult(big.NewInt(23))
+		assert.True(t, O1.IsInfinityPoint(), "should be infinity point")
+
+		bzs := O.Bytes()
+		x := new(big.Int).SetBytes(bzs[0])
+		y := new(big.Int).SetBytes(bzs[1])
+		x1, y1 := IntInfinityCoords(ec)
+		assert.Zero(t, x.Cmp(x1), "serialize infinity point")
+		assert.Zero(t, y.Cmp(y1), "serialize infinity point")
+		O2, err := NewECPointFromBytes(ec, bzs[:])
+		assert.NoError(t, err, "deserialize infinity point")
+		assert.Nil(t, O2.X(), "infinity point coordinate should be nil")
+		assert.Nil(t, O2.Y(), "infinity point coordinate should be nil")
+	}
 }

@@ -8,16 +8,16 @@ package resharing_test
 
 import (
 	"context"
+	"crypto/sha512"
+	"github.com/Safulet/tss-lib-private/crypto"
 	"math/big"
 	"sync/atomic"
 	"testing"
 
 	"github.com/Safulet/tss-lib-private/log"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/eddsa/keygen"
 	. "github.com/Safulet/tss-lib-private/eddsa/resharing"
 	"github.com/Safulet/tss-lib-private/eddsa/signing"
@@ -34,14 +34,12 @@ func setUp(level log.Level) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
-
-	// only for test
-	tss.SetCurve(tss.Edwards())
 }
 
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
+	ec := tss.Edwards()
 
 	threshold, newThreshold := testThreshold, testThreshold
 
@@ -70,14 +68,14 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
-		params := tss.NewReSharingParameters(tss.Edwards(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
+		params := tss.NewReSharingParameters(ec, oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 
 	// init the new parties
 	for _, pID := range newPIDs {
-		params := tss.NewReSharingParameters(tss.Edwards(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
+		params := tss.NewReSharingParameters(ec, oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
 		P := NewLocalParty(params, save, outCh, endCh).(*LocalParty)
 		newCommittee = append(newCommittee, P)
@@ -144,7 +142,7 @@ func TestE2EConcurrent(t *testing.T) {
 				for j, key := range newKeys {
 					// xj test: BigXj == xj*G
 					xj := key.Xi
-					gXj := crypto.ScalarBaseMult(tss.Edwards(), xj)
+					gXj := crypto.ScalarBaseMult(ec, xj)
 					BigXj := key.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 				}
@@ -166,7 +164,7 @@ signing:
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.Edwards(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
+		params := tss.NewParameters(ec, signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
 		keyDerivationDelta := big.NewInt(0)
 		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], keyDerivationDelta, signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
@@ -208,20 +206,12 @@ signing:
 
 				// BEGIN EDDSA verify
 				pkX, pkY := signKeys[0].EDDSAPub.X(), signKeys[0].EDDSAPub.Y()
-				pk := edwards.PublicKey{
-					Curve: tss.Edwards(),
-					X:     pkX,
-					Y:     pkY,
-				}
+				pk, err := crypto.NewECPoint(ec, pkX, pkY)
+				assert.NoError(t, err, "construct eddsa pk point")
 
-				newSig, err := edwards.ParseSignature(signData.Signature)
-				if err != nil {
-					println("new sig error, ", err.Error())
-				}
-
-				ok := edwards.Verify(&pk, big.NewInt(42).Bytes(),
-					newSig.R, newSig.S)
-
+				sigR := new(big.Int).SetBytes(signData.R)
+				sigS := new(big.Int).SetBytes(signData.S)
+				ok := signing.VerifyEdwards(pk, big.NewInt(42).Bytes(), sigR, sigS, sha512.New)
 				assert.True(t, ok, "eddsa verify must pass")
 				t.Log("EDDSA signing test done.")
 				// END EDDSA verify
