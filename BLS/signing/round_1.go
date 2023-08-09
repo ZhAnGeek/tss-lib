@@ -79,11 +79,11 @@ func (round *round1) NextRound() tss.Round {
 func (round *round1) prepare() error {
 	i := round.PartyID().Index
 
-	if round.EC().Params().Gx.Cmp(bls12381.G2Curve().Params().Gx) == 0 {
+	if tss.SameCurve(round.EC(), tss.Bls12381G2()) {
 		round.temp.suite = bls12381.GetBLSSignatureSuiteG1()
 		round.temp.PublicKeySize = bls12381.PublicKeySizeG2
 		round.temp.SignatureSize = bls12381.SignatureSizeG1
-	} else if round.EC().Params().Gx.Cmp(bls12381.G1Curve().Params().Gx) == 0 {
+	} else if tss.SameCurve(round.EC(), tss.Bls12381G1()) {
 		round.temp.suite = bls12381.GetBLSSignatureSuiteG2()
 		round.temp.PublicKeySize = bls12381.PublicKeySizeG1
 		round.temp.SignatureSize = bls12381.SignatureSizeG2

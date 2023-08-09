@@ -30,9 +30,9 @@ func (round *round1) Start(_ context.Context) *tss.Error {
 	}
 
 	var suite []byte
-	if round.EC().Params().Gx.Cmp(bls12381.G2Curve().Params().Gx) == 0 {
+	if tss.SameCurve(round.EC(), tss.Bls12381G2()) {
 		suite = bls12381.GetBLSSignatureSuiteG1()
-	} else if round.EC().Params().Gx.Cmp(bls12381.G1Curve().Params().Gx) == 0 {
+	} else if tss.SameCurve(round.EC(), tss.Bls12381G1()) {
 		suite = bls12381.GetBLSSignatureSuiteG2()
 	}
 	round.number = 1
