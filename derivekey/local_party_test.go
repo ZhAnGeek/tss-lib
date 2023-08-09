@@ -40,6 +40,7 @@ const (
 	testFixtureDirFormatSCHNORR = "%s/../test/_schnorr_fixtures_%d_%d"
 	testFixtureDirFormatPALLAS  = "%s/../test/_pallas_fixtures_%d_%d"
 	testFixtureDirFormatBLS     = "%s/../test/_bls_fixtures_%d_%d"
+	testFixtureDirFormatKCDSA   = "%s/../test/_kcdsa_fixtures_%d_%d"
 	testFixtureFileFormat       = "keygen_data_%d.json"
 )
 
@@ -196,6 +197,7 @@ func TestE2EConcurrent(t *testing.T) {
 	E2EConcurrent(tss.S256(), testFixtureDirFormatSCHNORR, t)
 	E2EConcurrent(tss.Bls12381G2(), testFixtureDirFormatBLS, t)
 	E2EConcurrent(tss.Pallas(), testFixtureDirFormatPALLAS, t)
+	E2EConcurrent(tss.Curve25519(), testFixtureDirFormatKCDSA, t)
 }
 
 func LoadKeygenTestFixtures(qty int, ec elliptic.Curve, fixtureBase string, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {

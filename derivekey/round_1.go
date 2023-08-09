@@ -11,8 +11,9 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"github.com/coinbase/kryptology/pkg/core/curves"
 	"math/big"
+
+	"github.com/coinbase/kryptology/pkg/core/curves"
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
@@ -53,6 +54,13 @@ func getHashToCurveInstance(ec elliptic.Curve) (hash2curve.HashToPoint, error) {
 	if tss.SameCurve(ec, tss.P256()) {
 		dst := "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_"
 		hashToCurve, err = hash2curve.P256_XMDSHA256_SSWU_RO_.Get([]byte(dst))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if tss.SameCurve(ec, tss.Curve25519()) {
+		dst := "QUUX-V01-CS02-with-curve25519_XMD:SHA-512_ELL2_RO_"
+		hashToCurve, err = hash2curve.Curve25519_XMDSHA512_ELL2_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}
