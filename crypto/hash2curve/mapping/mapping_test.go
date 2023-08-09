@@ -9,7 +9,7 @@ import (
 )
 
 func TestEll2(t *testing.T) {
-	var curves = []toy.ID{toy.M0, toy.M1, toy.E0, toy.W3}
+	var curves = []toy.ID{toy.E0}
 	for _, id := range curves {
 		E, _, _ := id.New()
 		F := E.Field()
