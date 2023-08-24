@@ -10,10 +10,6 @@ import (
 	"math/big"
 )
 
-const (
-	SafeBitLen = 1024
-)
-
 var (
 	one = big.NewInt(1)
 )
