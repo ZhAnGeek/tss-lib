@@ -66,6 +66,20 @@ func (preParams LocalPreParams) Validate() bool {
 		preParams.H2i != nil
 }
 
+func (data LocalPartySaveData) ValidatePreparamsSaved() bool {
+	if data.NTildej == nil && len(data.NTildej) == 0 {
+		return false
+	}
+
+	for _, nj := range data.NTildej {
+		if nj == nil || nj.Cmp(new(big.Int).SetUint64(0)) == 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (preParams LocalPreParams) ValidateWithProof() bool {
 	return preParams.Validate() &&
 		// preParams.Alpha != nil &&
