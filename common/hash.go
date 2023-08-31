@@ -11,6 +11,7 @@ import (
 	"crypto"
 	"crypto/sha256"
 	"encoding/binary"
+	"hash"
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/log"
@@ -20,11 +21,8 @@ const (
 	hashInputDelimiter = byte('$')
 )
 
-// SHA512_256 SHA-512/256 is protected against length extension attacks and is more performant than SHA-256 on 64-bit architectures.
-// https://en.wikipedia.org/wiki/Template:Comparison_of_SHA_functions
-func SHA512_256(ctx context.Context, in ...[]byte) []byte {
+func SHA512_256Util(ctx context.Context, h hash.Hash, in ...[]byte) []byte {
 	var data []byte
-	state := crypto.SHA512_256.New()
 	inLen := len(in)
 	if inLen == 0 {
 		return nil
@@ -51,136 +49,61 @@ func SHA512_256(ctx context.Context, in ...[]byte) []byte {
 	}
 	// n < len(data) or an error will never happen.
 	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
-	if _, err := state.Write(data); err != nil {
-		log.Error(ctx, "SHA512_256 Write() failed: %v", err)
+	if _, err := h.Write(data); err != nil {
+		log.Error(ctx, "SHA512_256Util Write() failed: %v", err)
 		return nil
 	}
-	return state.Sum(nil)
+	return h.Sum(nil)
+}
+
+// SHA512_256 SHA-512/256 is protected against length extension attacks and is more performant than SHA-256 on 64-bit architectures.
+// https://en.wikipedia.org/wiki/Template:Comparison_of_SHA_functions
+func SHA512_256(ctx context.Context, in ...[]byte) []byte {
+	//var data []byte
+	state := crypto.SHA512_256.New()
+	return SHA512_256Util(ctx, state, in...)
 }
 
 // SHA512_256_TAGGED Tagged version of SHA512_256
 func SHA512_256_TAGGED(ctx context.Context, tag []byte, in ...[]byte) []byte {
 	tagBz := SHA512_256(ctx, tag)
-	var data []byte
+	//var data []byte
 	state := crypto.SHA512_256.New()
 	state.Write(tagBz)
 	state.Write(tagBz)
-	inLen := len(in)
-	if inLen == 0 {
-		return nil
-	}
-	bzSize := 0
-	// prevent hash collisions with this prefix containing the block count
-	inLenBz := make([]byte, 64/8)
-	// converting between int and uint64 doesn't change the sign bit, but it may be interpreted as a larger value.
-	// this prefix is never read/interpreted, so that doesn't matter.
-	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
-	for _, bz := range in {
-		bzSize += len(bz)
-	}
-	dataCap := len(inLenBz) + bzSize + inLen + (inLen * 8)
-	data = make([]byte, 0, dataCap)
-	data = append(data, inLenBz...)
-	for _, bz := range in {
-		data = append(data, bz...)
-		data = append(data, hashInputDelimiter) // safety delimiter
-		dataLen := make([]byte, 8)              // 64-bits
-		binary.LittleEndian.PutUint64(dataLen, uint64(len(bz)))
-		data = append(data, dataLen...) // Security audit: length of each byte buffer should be added after
-		// each security delimiters in order to enforce proper domain separation
-	}
-	// n < len(data) or an error will never happen.
-	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
-	if _, err := state.Write(data); err != nil {
-		log.Error(ctx, "SHA512_256 Write() failed: %v", err)
-		return nil
-	}
-	return state.Sum(nil)
+	return SHA512_256Util(ctx, state, in...)
 }
 
 // SHA512_256i hash for big.Int slice
 func SHA512_256i(ctx context.Context, in ...*big.Int) *big.Int {
-	var data []byte
 	state := crypto.SHA512_256.New()
-	inLen := len(in)
-	if inLen == 0 {
-		return nil
-	}
-	bzSize := 0
-	// prevent hash collisions with this prefix containing the block count
-	inLenBz := make([]byte, 64/8)
-	// converting between int and uint64 doesn't change the sign bit, but it may be interpreted as a larger value.
-	// this prefix is never read/interpreted, so that doesn't matter.
-	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
-	ptrs := make([][]byte, inLen)
-	for i, n := range in {
-		ptrs[i] = n.Bytes()
-		bzSize += len(ptrs[i])
-	}
-	dataCap := len(inLenBz) + bzSize + inLen + (inLen * 8)
-	data = make([]byte, 0, dataCap)
-	data = append(data, inLenBz...)
-	for i := range in {
-		data = append(data, ptrs[i]...)
-		data = append(data, hashInputDelimiter) // safety delimiter
-		dataLen := make([]byte, 8)              // 64-bits
-		binary.LittleEndian.PutUint64(dataLen, uint64(len(ptrs[i])))
-		data = append(data, dataLen...) // Security audit: length of each byte buffer should be added after
-		// each security delimiters in order to enforce proper domain separation
-	}
-	// n < len(data) or an error will never happen.
-	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
-	if _, err := state.Write(data); err != nil {
-		log.Error(ctx, "SHA512_256i Write() failed: %v", err)
-		return nil
-	}
-	return new(big.Int).SetBytes(state.Sum(nil))
-}
-
-// SHA512_256i_TAGGED tagged version of SHA512_256i
-func SHA512_256i_TAGGED(ctx context.Context, tag []byte, in ...*big.Int) *big.Int {
-	tagBz := SHA512_256(ctx, tag)
-	var data []byte
-	state := crypto.SHA512_256.New()
-	state.Write(tagBz)
-	state.Write(tagBz)
-	inLen := len(in)
-	if inLen == 0 {
-		return nil
-	}
-	bzSize := 0
-	// prevent hash collisions with this prefix containing the block count
-	inLenBz := make([]byte, 64/8)
-	// converting between int and uint64 doesn't change the sign bit, but it may be interpreted as a larger value.
-	// this prefix is never read/interpreted, so that doesn't matter.
-	binary.LittleEndian.PutUint64(inLenBz, uint64(inLen))
-	ptrs := make([][]byte, inLen)
+	
+	ptrs := make([][]byte, len(in))
 	for i, n := range in {
 		if n == nil {
 			ptrs[i] = zero.Bytes()
 		} else {
 			ptrs[i] = n.Bytes()
 		}
-		bzSize += len(ptrs[i])
 	}
-	dataCap := len(inLenBz) + bzSize + inLen + (inLen * 8)
-	data = make([]byte, 0, dataCap)
-	data = append(data, inLenBz...)
-	for i := range in {
-		data = append(data, ptrs[i]...)
-		data = append(data, hashInputDelimiter) // safety delimiter
-		dataLen := make([]byte, 8)              // 64-bits
-		binary.LittleEndian.PutUint64(dataLen, uint64(len(ptrs[i])))
-		data = append(data, dataLen...) // Security audit: length of each byte buffer should be added after
-		// each security delimiters in order to enforce proper domain separation
+	return new(big.Int).SetBytes(SHA512_256Util(ctx, state, ptrs...))
+}
+
+// SHA512_256i_TAGGED tagged version of SHA512_256i
+func SHA512_256i_TAGGED(ctx context.Context, tag []byte, in ...*big.Int) *big.Int {
+	tagBz := SHA512_256(ctx, tag)
+	state := crypto.SHA512_256.New()
+	state.Write(tagBz)
+	state.Write(tagBz)
+	ptrs := make([][]byte, len(in))
+	for i, n := range in {
+		if n == nil {
+			ptrs[i] = zero.Bytes()
+		} else {
+			ptrs[i] = n.Bytes()
+		}
 	}
-	// n < len(data) or an error will never happen.
-	// see: https://golang.org/pkg/hash/#Hash and https://github.com/golang/go/wiki/Hashing#the-hashhash-interface
-	if _, err := state.Write(data); err != nil {
-		log.Error(ctx, "SHA512_256i Write() failed: %v", err)
-		return nil
-	}
-	return new(big.Int).SetBytes(state.Sum(nil))
+	return new(big.Int).SetBytes(SHA512_256Util(ctx, state, ptrs...))
 }
 
 func TaggedHash256(tag []byte, msgs ...[]byte) []byte {
