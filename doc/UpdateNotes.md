@@ -35,6 +35,7 @@
 * (derivekey protocol) Hardened child key derivation protocol
 * RejectSample update (serious security bug, not backward compatible)
 * Hash function update (not backward compatible)
+* Frost keygen protocol and faster ECDSA keygen
 
 ## Commitments that are not included
 
