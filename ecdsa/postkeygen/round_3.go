@@ -30,13 +30,13 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	// Fig 7. Round 1. create proof enc
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
-	wg := sync.WaitGroup{}
 	Pi := round.PartyID()
 	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
+		wg := sync.WaitGroup{}
 		contextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 
 		wg.Add(1)
@@ -56,10 +56,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 			SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
 			SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
-			proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.PaillierSK.N,
+			proofFac, err := zkpfac.NewProof(ctx, contextJ, round.EC(), round.save.LocalPreParams.PaillierSK.N,
 				round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ, rejectionSample)
 
 			if err != nil {
@@ -68,8 +67,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			r3msg1 := NewKGRound3Message1(Pj, round.PartyID(), proofFac)
 			round.out <- r3msg1
 		}(j, Pj)
+
+		wg.Wait()
 	}
-	wg.Wait()
 	close(errChs)
 	for err := range errChs {
 		return err
