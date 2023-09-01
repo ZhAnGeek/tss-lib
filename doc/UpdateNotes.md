@@ -50,43 +50,25 @@
 
 ## Migration Guide of Faster ECDSA Keygen
 
-1. faster ecdsa keygen needs an out channel with more capacity, for one party the out channel capacity should be 2. (for paillier key negotiation and ecdsa keygen are parallelized)
+1. for ecdsa keygen_fast we only generate xi, shareXi, pubkey
 
-2. faster ecdsa keygen needs handle twice output from end channel. one is for ecdsa keygen results, another is for paillier key negotiation results. Both are in ecdsa keygen.LocalPartySaveData scheme, with some fields empty.
+2. for ecdsa postkeygen we will generate Paillier key and run trusted setup.
 
 3. so once ecdsa keygen done, we can tell user the key has been generated. (in 1 second)
 
-4. once paillier key negotiation done, we can let user do further rounds. (in 20 seconds)
+4. you can decide when to run paillier key trusted setup, once paillier key negotiation done, we can let user do further rounds. (in 20 seconds)
 
 ### example
-#### Channel Make
-```go=
-errCh := make(chan *tss.Error, len(pIDs))
-outCh := make(chan tss.Message, 2*len(pIDs))
-endCh := make(chan keygen.LocalPartySaveData, len(pIDs))
-```
 
 #### NewLocalParty
 ```go=
-NewLocalParty(params, outCh, endCh)
+keygen_fast.NewLocalParty(params, outCh, endCh)
+postkeygen.NewLocalParty(params, outCh, endCh, preParams) // preParams is optional
 ```
 
 #### Accept Results
+**write to same file for usage, ensure they are in same json format with original ecdsa keygen.**
 ```go=
-case save := <-endCh:
-    // SAVE a test fixture file for this P (if it doesn't already exist)
-    // .. here comes a workaround to recover this party's index (it was removed from save data)
-    index, err := save.OriginalIndex()
-    assert.NoErrorf(t, err, "should not be an error getting a party's index from save data")
-    tryWriteTestFixtureFile(t, index, save)
-
-    atomic.AddInt32(&ended, 1)
-    if atomic.LoadInt32(&ended) == int32(len(pIDs))*2 {
-        t.Logf("Done. Received save data from %d participants", ended)
-        break keygen
-    }
-
-
 func tryWriteTestFixtureFile(t *testing.T, index int, data keygen.LocalPartySaveData) {
 	fixtureFileName := makeTestFixtureFilePath(index)
 
@@ -188,11 +170,3 @@ params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold, fal
                             tss.WithSafePrimeGenTimeout(time.Millisecond*1000))
 
 ```
-
-### Log Changes
-
-`universal-keygen` keygen name for universal including xi and Paillier key setup
-
-`frost-keygen` keygen name for xi
-
-`WARN: unrecognised message ignored` expected log

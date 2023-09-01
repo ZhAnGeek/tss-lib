@@ -1,10 +1,10 @@
-// Copyright © 2019 Binance
+// Copyright © 2019-2021 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package keygen_fast
+package postkeygen
 
 import (
 	"context"
@@ -25,7 +25,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	round.number = 3
 	round.started = true
 	round.resetOK()
-
+	if round.temp.resolved {
+		return nil
+	}
 	i := round.PartyID().Index
 	round.ok[i] = true
 

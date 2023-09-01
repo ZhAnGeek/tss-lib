@@ -66,6 +66,32 @@ func (preParams LocalPreParams) Validate() bool {
 		preParams.H2i != nil
 }
 
+func (data LocalPartySaveData) ValidatePreparamsSaved() bool {
+	if (data.NTildej == nil || len(data.NTildej) == 0) || (data.H1j == nil || len(data.H1j) == 0) || (data.H2j == nil || len(data.H2j) == 0) || (data.H1i == nil) {
+		return false
+	}
+
+	for _, nj := range data.NTildej {
+		if nj == nil || nj.Cmp(new(big.Int).SetUint64(0)) == 0 {
+			return false
+		}
+	}
+
+	for _, hj := range data.H1j {
+		if hj == nil || hj.Cmp(new(big.Int).SetUint64(0)) == 0 {
+			return false
+		}
+	}
+
+	for _, hj := range data.H2j {
+		if hj == nil || hj.Cmp(new(big.Int).SetUint64(0)) == 0 {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (preParams LocalPreParams) ValidateWithProof() bool {
 	return preParams.Validate() &&
 		// preParams.Alpha != nil &&

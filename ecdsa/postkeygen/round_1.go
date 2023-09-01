@@ -4,13 +4,14 @@
 // terms governing use, modification, and redistribution, is contained in the
 // file LICENSE at the root of the source code distribution tree.
 
-package keygen_fast
+package postkeygen
 
 import (
 	"context"
 	"errors"
 
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -21,6 +22,12 @@ func newRoundStart(params *tss.Parameters, save *keygen.LocalPartySaveData, temp
 func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
+	}
+	// Paillier key already generate
+	if round.save.ValidatePreparamsSaved() {
+		log.Info(ctx, "you have trusted setup for this keygen")
+		round.end <- *round.save
+		return nil
 	}
 	round.number = 1
 	round.started = true
