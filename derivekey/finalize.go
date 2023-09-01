@@ -49,7 +49,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		if err != nil {
 			return round.WrapError(err, round.PartyID())
 		}
-		ok := proof.Verify(ctx, round.temp.bssid.Bytes(), round.EC(), pointG, round.temp.pointHi, round.temp.bigWs[j], pointVj)
+		ok := proof.Verify(ctx, round.temp.bssid.Bytes(), round.EC(), pointG, round.temp.pointHi, round.temp.bigWs[j], pointVj, tss.GetRejectionSampleFunc(round.Version()))
 		if !ok {
 			return round.WrapError(errors.New("proof verification failed"), Pj)
 		}

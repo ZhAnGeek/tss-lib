@@ -155,7 +155,8 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	proof, err := zkpeqlog.NewProof(ctx, ssid, round.EC(), pointG, pointHi, round.temp.bigWs[i], pointVi, round.temp.wi)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+	proof, err := zkpeqlog.NewProof(ctx, ssid, round.EC(), pointG, pointHi, round.temp.bigWs[i], pointVi, round.temp.wi, rejectionSample)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

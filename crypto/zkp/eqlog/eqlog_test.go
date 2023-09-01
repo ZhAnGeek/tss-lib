@@ -8,9 +8,11 @@ package zkpeqlog_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/crypto"
 	. "github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
@@ -31,17 +33,17 @@ func TestEqLog(test *testing.T) {
 		x := g.ScalarMult(k)
 		y := h.ScalarMult(k)
 
-		proof, err := NewProof(ctx, Session, ec, g, h, x, y, k)
+		proof, err := NewProof(ctx, Session, ec, g, h, x, y, k, common.RejectionSampleV2)
 		assert.NoError(test, err)
 
 		proofBzs := proof.Bytes()
 		proof, err = NewProofFromBytes(proofBzs[:])
 
-		ok := proof.Verify(ctx, Session, ec, g, h, x, y)
+		ok := proof.Verify(ctx, Session, ec, g, h, x, y, common.RejectionSampleV2)
 		assert.True(test, ok)
 
 		hp := h.ScalarMult(big.NewInt(1357))
-		ok = proof.Verify(ctx, Session, ec, g, hp, x, y)
+		ok = proof.Verify(ctx, Session, ec, g, hp, x, y, common.RejectionSampleV2)
 		assert.False(test, ok)
 	}
 }

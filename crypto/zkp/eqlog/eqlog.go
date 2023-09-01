@@ -11,9 +11,10 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/tss"
-	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
 )
@@ -29,7 +30,7 @@ type (
 )
 
 // NewProof implements proofenc
-func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, g, h, x, y *crypto.ECPoint, k *big.Int) (*ProofEqLog, error) {
+func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, g, h, x, y *crypto.ECPoint, k *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofEqLog, error) {
 	if ec == nil || g == nil || h == nil || x == nil || y == nil {
 		return nil, errors.New("ProfEqLog constructor received nil value(s)")
 	}
@@ -59,7 +60,7 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, g, h, x, y
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, g.X(), g.Y(), h.X(), h.Y(), x.X(), x.Y(),
 			cmt1.X(), cmt1.Y(), cmt2.X(), cmt2.Y())
-		ch = common.RejectionSample(q, eHash)
+		ch = rejectionSample(q, eHash)
 	}
 
 	// Fig 14.3
@@ -80,7 +81,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofEqLog, error) {
 	}, nil
 }
 
-func (pf *ProofEqLog) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, g, h, x, y *crypto.ECPoint) bool {
+func (pf *ProofEqLog) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, g, h, x, y *crypto.ECPoint, rejectionSample common.RejectionSampleFunc) bool {
 	if pf == nil || !pf.ValidateBasic() || ec == nil || g == nil || h == nil || x == nil || y == nil {
 		return false
 	}
@@ -119,7 +120,7 @@ func (pf *ProofEqLog) Verify(ctx context.Context, Session []byte, ec elliptic.Cu
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, g.X(), g.Y(), h.X(), h.Y(), x.X(), x.Y(),
 			cmt1.X(), cmt1.Y(), cmt2.X(), cmt2.Y())
-		ch = common.RejectionSample(q, eHash)
+		ch = rejectionSample(q, eHash)
 	}
 	if ch.Cmp(pf.C) != 0 {
 		return false

@@ -88,15 +88,15 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	round.temp.VD = vCmt.D
 	round.temp.NewShares = shares
 	round.temp.proof = proof
+	round.temp.SSID = ssid
 
 	// 5. "broadcast" C_i to members of the NEW committee
 	r1msg := NewDGRound1Message(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
 		round.input.PubKey, vCmt.C, ssid)
+
 	round.temp.dgRound1Messages[i] = r1msg
 	round.out <- r1msg
-
-	round.temp.SSID = ssid
 
 	return nil
 }

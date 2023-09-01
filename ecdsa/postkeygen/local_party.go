@@ -52,8 +52,6 @@ type (
 		ProofPrms []*zkpprm.ProofPrm
 		ProofMods []*zkpmod.ProofMod
 		ProofFacs []*zkpfac.ProofFac
-
-		resolved bool
 	}
 )
 
