@@ -89,9 +89,6 @@ func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round2) Update() (bool, *tss.Error) {
-	if round.temp.resolved {
-		return true, nil
-	}
 	for j, msg := range round.temp.ProofPrms {
 		if round.ok[j] {
 			continue

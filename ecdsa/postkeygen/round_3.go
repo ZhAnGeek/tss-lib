@@ -25,9 +25,6 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	round.number = 3
 	round.started = true
 	round.resetOK()
-	if round.temp.resolved {
-		return nil
-	}
 	i := round.PartyID().Index
 	round.ok[i] = true
 

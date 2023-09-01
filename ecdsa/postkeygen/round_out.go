@@ -12,18 +12,12 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
 func (round *roundout) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
-	}
-	if round.temp.resolved {
-		round.end <- *round.save
-		log.Info(ctx, "already trusted setup")
-		return nil
 	}
 	round.number = 4
 	round.started = true
