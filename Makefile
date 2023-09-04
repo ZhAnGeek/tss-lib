@@ -8,7 +8,7 @@ all: protob test
 
 protob:
 	@echo "--> Building Protocol Buffers"
-	@for protocol in message derivekey signature ecdsa-keygen ecdsa-presigning ecdsa-signing ecdsa-resharing eddsa-keygen eddsa-signing eddsa-resharing schnorr-keygen schnorr-signing schnorr-resharing; do \
+	@for protocol in bls-decryption bls-encryption bls-keygen bls-resharing bls-signing derivekey ecdsa-keygen ecdsa-postkeygen ecdsa-presigning ecdsa-resharing ecdsa-signing eddsa-resharing eddsa-signing frost-keygen kcdsa-keygen kcdsa-resharing kcdsa-signing message schnorr-resharing schnorr-signing signature; do \
 		echo "Generating $$protocol.pb.go" ; \
 		protoc --go_out=. ./protob/$$protocol.proto ; \
 	done
