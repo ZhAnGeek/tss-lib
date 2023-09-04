@@ -14,6 +14,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -36,6 +37,7 @@ func NewDGRound1Message(
 	from *tss.PartyID,
 	eddsaPub *crypto.ECPoint,
 	vct cmt.HashCommitment,
+	ssid []byte,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:             from,
@@ -47,6 +49,7 @@ func NewDGRound1Message(
 		EddsaPubX:   eddsaPub.X().Bytes(),
 		EddsaPubY:   eddsaPub.Y().Bytes(),
 		VCommitment: vct.Bytes(),
+		Ssid:        ssid,
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -56,7 +59,8 @@ func (m *DGRound1Message) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.EddsaPubX) &&
 		common.NonEmptyBytes(m.EddsaPubY) &&
-		common.NonEmptyBytes(m.VCommitment)
+		common.NonEmptyBytes(m.VCommitment) &&
+		common.NonEmptyBytes(m.Ssid)
 }
 
 func (m *DGRound1Message) RoundNumber() int {
@@ -72,6 +76,10 @@ func (m *DGRound1Message) UnmarshalEDDSAPub(ec elliptic.Curve) (*crypto.ECPoint,
 
 func (m *DGRound1Message) UnmarshalVCommitment() *big.Int {
 	return new(big.Int).SetBytes(m.GetVCommitment())
+}
+
+func (m *DGRound1Message) UnmarshalSSID() []byte {
+	return m.GetSsid()
 }
 
 // ----- //
@@ -134,6 +142,7 @@ func NewDGRound3Message2(
 	to []*tss.PartyID,
 	from *tss.PartyID,
 	vdct cmt.HashDeCommitment,
+	proof *zkpsch.ProofSch,
 ) tss.ParsedMessage {
 	meta := tss.MessageRouting{
 		From:             from,
@@ -142,8 +151,10 @@ func NewDGRound3Message2(
 		IsToOldCommittee: false,
 	}
 	vDctBzs := common.BigIntsToBytes(vdct)
+	proofBzs := proof.Bytes()
 	content := &DGRound3Message2{
 		VDecommitment: vDctBzs,
+		Proof:         proofBzs[:],
 	}
 	msg := tss.NewMessageWrapper(meta, content)
 	return tss.NewMessage(meta, content, msg)
@@ -161,6 +172,10 @@ func (m *DGRound3Message2) RoundNumber() int {
 func (m *DGRound3Message2) UnmarshalVDeCommitment() cmt.HashDeCommitment {
 	deComBzs := m.GetVDecommitment()
 	return cmt.NewHashDeCommitmentFromBytes(deComBzs)
+}
+
+func (m *DGRound3Message2) UnmarshalZKProof(ec elliptic.Curve) (*zkpsch.ProofSch, error) {
+	return zkpsch.NewProofFromBytes(ec, m.GetProof())
 }
 
 // ----- //

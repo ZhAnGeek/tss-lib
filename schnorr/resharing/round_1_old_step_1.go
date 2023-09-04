@@ -10,10 +10,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
 
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/schnorr/keygen"
 	"github.com/Safulet/tss-lib-private/schnorr/signing"
 	"github.com/Safulet/tss-lib-private/tss"
@@ -63,14 +66,33 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	}
 	vCmt := commitments.NewHashCommitment(ctx, flatVis...)
 
+	ssidList := []*big.Int{round.EC().Params().P, round.EC().Params().N, round.EC().Params().B, round.EC().Params().Gx, round.EC().Params().Gy} // ec curve
+	ssidList = append(ssidList, round.OldParties().IDs().Keys()...)                                                                             // old parties
+	ssidList = append(ssidList, round.NewParties().IDs().Keys()...)                                                                             // new parties
+	BigXjList, err := crypto.FlattenECPoints(round.input.BigXj)
+	if err != nil {
+		return round.WrapError(errors.New("read BigXj failed"), Pi)
+	}
+	ssidList = append(ssidList, BigXjList...) // BigXj
+	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
+
+	ContextI := append(ssid, big.NewInt(int64(i)).Bytes()...)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+	proof, err := zkpsch.NewProof(ctx, ContextI, vi[0], wi, rejectionSample)
+	if err != nil {
+		return round.WrapError(err, round.PartyID())
+	}
+
 	// 4. populate temp data
 	round.temp.VD = vCmt.D
 	round.temp.NewShares = shares
+	round.temp.SSID = ssid
+	round.temp.proof = proof
 
 	// 5. "broadcast" C_i to members of the NEW committee
 	r1msg := NewDGRound1Message(
 		round.NewParties().IDs().Exclude(round.PartyID()), round.PartyID(),
-		round.input.PubKey, vCmt.C)
+		round.input.PubKey, vCmt.C, ssid)
 	round.temp.dgRound1Messages[i] = r1msg
 	round.out <- r1msg
 

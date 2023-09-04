@@ -14,6 +14,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
 	"github.com/Safulet/tss-lib-private/crypto/vss"
+	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/eddsa/keygen"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
@@ -57,6 +58,9 @@ type (
 		newXi     *big.Int
 		newKs     []*big.Int
 		newBigXjs []*crypto.ECPoint // Xj to save in round 5
+
+		proof *zkpsch.ProofSch
+		SSID  []byte
 	}
 )
 
