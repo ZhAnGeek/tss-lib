@@ -140,7 +140,7 @@ func (m *DGRound1Message) UnmarshalPubKeySchnorr(ec elliptic.Curve) (*crypto.ECP
 		new(big.Int).SetBytes(m.PubYSchnorr))
 }
 
-func (m *DGRound1Message) UnmarshalSsid() []byte {
+func (m *DGRound1Message) UnmarshalSSID() []byte {
 	return m.Ssid
 }
 

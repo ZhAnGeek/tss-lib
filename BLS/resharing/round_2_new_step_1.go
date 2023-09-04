@@ -35,7 +35,7 @@ func (round *round2) Start(_ context.Context) *tss.Error {
 	r1msg := round.temp.dgRound1Messages[0].Content().(*DGRound1Message)
 	SSID := r1msg.UnmarshalSSID()
 	for j, Pj := range round.OldParties().IDs() {
-		if j == 0 || j == i {
+		if j == 0 {
 			continue
 		}
 		msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)

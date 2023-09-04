@@ -29,13 +29,13 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	round.ok[i] = true
 
 	// Fig 7. Round 1. create proof enc
-	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	Pi := round.PartyID()
 	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
+		errChs := make(chan *tss.Error, 3)
 		wg := sync.WaitGroup{}
 		contextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
 
@@ -69,10 +69,14 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		}(j, Pj)
 
 		wg.Wait()
-	}
-	close(errChs)
-	for err := range errChs {
-		return err
+		close(errChs)
+		culprits := make([]*tss.PartyID, 0)
+		for err := range errChs {
+			culprits = append(culprits, err.Culprits()...)
+		}
+		if len(culprits) > 0 {
+			return round.WrapError(errors.New("round4: failed to verify proofs"), culprits...)
+		}
 	}
 
 	return nil
