@@ -41,7 +41,8 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	proofH, err := zkpmul.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, rho, round.temp.KNonce)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Params().Version())
+	proofH, err := zkpmul.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, rho, round.temp.KNonce, rejectionSample)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
@@ -100,7 +101,8 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 			continue
 		}
 
-		proofDec, err := zkpdec.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], DeltaShare2, nonce)
+		rejectionSample := tss.GetRejectionSampleFunc(round.Params().Version())
+		proofDec, err := zkpdec.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], DeltaShare2, nonce, rejectionSample)
 		if err != nil {
 			return round.WrapError(err, Pi)
 		}

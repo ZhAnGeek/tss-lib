@@ -15,6 +15,7 @@ message DGRound1Message {
     bytes pub_x = 1;
     bytes pub_y = 2;
     bytes v_commitment = 3;
+    bytes ssid = 4;
 }
 
 /*
@@ -35,6 +36,7 @@ message DGRound3Message1 {
  */
 message DGRound3Message2 {
     repeated bytes v_decommitment = 1;
+    repeated bytes proof = 2;
 }
 
 /*

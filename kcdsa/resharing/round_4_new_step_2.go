@@ -38,6 +38,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 
 	Pi := round.PartyID()
 	i := Pi.Index
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 
 	// for other P: save Paillier
 	for j, message := range round.temp.dgRound1MessagesNewParty {
@@ -67,7 +68,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		if err != nil {
 			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
 		}
-		if ok := proofMod.Verify(ctx, contextJ, round.save.NTildej[j]); !ok {
+		if ok := proofMod.Verify(ctx, contextJ, round.save.NTildej[j], rejectionSample); !ok {
 			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
 		}
 
@@ -83,7 +84,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
 		SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
 		proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.PaillierSK.N,
-			round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+			round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ, rejectionSample)
 		if err != nil {
 			return round.WrapError(errors.New("create proofFac failed"), Pi)
 		}

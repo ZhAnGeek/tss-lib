@@ -34,14 +34,14 @@ func TestMod(test *testing.T) {
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2, big.NewInt(1))
 
-	proof, err := NewProof(ctx, Session, N, P, Q)
+	proof, err := NewProof(ctx, Session, N, P, Q, common.RejectionSample)
 	assert.NoError(test, err)
 
 	proofBzs := proof.Bytes()
 	proof, err = NewProofFromBytes(proofBzs[:])
 	assert.NoError(test, err)
 
-	ok := proof.Verify(ctx, Session, N)
+	ok := proof.Verify(ctx, Session, N, common.RejectionSample)
 	assert.True(test, ok, "proof must verify")
 }
 
@@ -103,7 +103,7 @@ func TestForged(test *testing.T) {
 	N := new(big.Int).Mul(P, Q)
 	proof, err := NewProofForged(ctx, Session, N, P, Q)
 	assert.NoError(test, err)
-	ok := proof.Verify(ctx, Session, N)
+	ok := proof.Verify(ctx, Session, N, common.RejectionSample)
 	assert.False(test, ok, "proof must verify")
 }
 
@@ -115,13 +115,13 @@ func TestSmallA(test *testing.T) {
 	p2, q2 := new(big.Int).Lsh(p, 1), new(big.Int).Lsh(q, 1)
 	P, Q := new(big.Int).Add(p2, big.NewInt(1)), new(big.Int).Add(q2,
 		big.NewInt(1))
-	proof, err := NewProof(ctx, Session, N, P, Q)
+	proof, err := NewProof(ctx, Session, N, P, Q, common.RejectionSample)
 	assert.NoError(test, err)
 
 	var Abz []byte
 	Abz = append(Abz, byte(255))
 	proof.A = new(big.Int).SetBytes(Abz)
 
-	ok := proof.Verify(ctx, Session, N)
+	ok := proof.Verify(ctx, Session, N, common.RejectionSample)
 	assert.False(test, ok, "proof must verify")
 }

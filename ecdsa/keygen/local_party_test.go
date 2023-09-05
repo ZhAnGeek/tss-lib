@@ -19,6 +19,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
@@ -88,7 +89,7 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	pIDs := tss.GenerateTestPartyIDs(1)
 	p2pCtx := tss.NewPeerContext(pIDs)
 	threshold := 1
-	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold, false, 0)
+	params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[0], len(pIDs), threshold, false, 0, tss.WithRejectionSampleVersion(tss.RejectionSampleV1), tss.WithSafePrimeGenTimeout(time.Millisecond*1000))
 
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
 	if err != nil {

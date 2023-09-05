@@ -13,7 +13,6 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
 	"github.com/pkg/errors"
 
@@ -39,6 +38,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	// check proofs
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg := sync.WaitGroup{}
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -73,7 +73,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(errors.New("failed to unmarshal Dj proof"), Pj)
 				return
 			}
-			ok = proofK.Verify(ctx, ContextJ, pointKj)
+			ok = proofK.Verify(ctx, ContextJ, pointKj, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to prove Dj"), Pj)
 				return
@@ -101,9 +101,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	// compute challenge
 	// bigKs sum le is ok
-	mHashKXBytes := append(round.temp.mHash, ckd.ReverseBytes(BigKsSum.X().Bytes())...)
+	mHashKXBytes := append(round.temp.mHash, common.ReverseBytes(BigKsSum.X().Bytes())...)
 	e := sha256.Sum256(mHashKXBytes)
-	round.temp.e = new(big.Int).SetBytes(ckd.ReverseBytes(e[:]))
+	round.temp.e = new(big.Int).SetBytes(common.ReverseBytes(e[:]))
 
 	tInverse := new(big.Int).ModInverse(new(big.Int).SetInt64(int64(round.Params().PartyCount())), round.EC().Params().N)
 	modN := common.ModInt(round.EC().Params().N)
@@ -117,7 +117,11 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
 
-	X, XNonce, err := round.key.PaillierSK.EncryptAndReturnRandomness(round.temp.wi)
+	wi := round.temp.wi
+	if round.temp.KeyDerivationDelta != nil {
+		wi = modN.Mul(round.temp.wi, round.temp.KeyDerivationDelta)
+	}
+	X, XNonce, err := round.key.PaillierSK.EncryptAndReturnRandomness(wi)
 	if err != nil {
 		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
@@ -127,7 +131,13 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	round.temp.XNonce = XNonce
 	round.temp.X = X
-	round.temp.XShare = round.temp.wi
+	round.temp.XShare = wi
+
+	round.temp.pubKeyDelta = round.key.PubKey
+	if round.temp.KeyDerivationDelta != nil {
+		KeyDerivationDeltaInverse := modN.ModInverse(round.temp.KeyDerivationDelta)
+		round.temp.pubKeyDelta = round.key.PubKey.ScalarMult(KeyDerivationDeltaInverse)
+	}
 
 	r3msg1 := NewSignRound3Message1(round.PartyID(), K, X)
 	round.out <- r3msg1
@@ -150,7 +160,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], kshare, KNonce)
+			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, K, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], kshare, KNonce, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pi)
 				return

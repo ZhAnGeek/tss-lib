@@ -26,7 +26,7 @@ type MtAOut struct {
 	Proofji *zkpaffg.ProofAffg
 }
 
-func NewMtA(ctx context.Context, Session []byte, ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.ECPoint, pkj *paillier.PublicKey, pki *paillier.PublicKey, NCap, s, t *big.Int) (*MtAOut, error) {
+func NewMtA(ctx context.Context, Session []byte, ec elliptic.Curve, Kj *big.Int, gammai *big.Int, BigGammai *crypto.ECPoint, pkj *paillier.PublicKey, pki *paillier.PublicKey, NCap, s, t *big.Int, rejectionSample common.RejectionSampleFunc) (*MtAOut, error) {
 	q := ec.Params().N
 	q3 := new(big.Int).Mul(q, q)
 	q3 = new(big.Int).Mul(q, q3)
@@ -52,7 +52,7 @@ func NewMtA(ctx context.Context, Session []byte, ec elliptic.Curve, Kj *big.Int,
 		return nil, err
 	}
 
-	Psiji, err := zkpaffg.NewProof(ctx, Session, ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij)
+	Psiji, err := zkpaffg.NewProof(ctx, Session, ec, pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij, rejectionSample)
 	if err != nil {
 		return nil, err
 	}

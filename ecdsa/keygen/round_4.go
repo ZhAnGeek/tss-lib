@@ -31,6 +31,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	// Fig 5. Output 1. / Fig 6. Output 1.
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
@@ -43,7 +44,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r3msgpfmod[j].Verify(ctx, ContextJ, round.save.NTildej[j]); !ok {
+			if ok := round.temp.r3msgpfmod[j].Verify(ctx, ContextJ, round.save.NTildej[j], rejectionSample); !ok {
 				errChs <- round.WrapError(errors.New("proofMod verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -51,7 +52,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		wg.Add(1)
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
-			if ok := round.temp.r3msgpffac[j].Verify(ctx, ContextJ, round.EC(), round.save.NTildej[j], round.save.NTildei, round.save.H1i, round.save.H2i); !ok {
+			if ok := round.temp.r3msgpffac[j].Verify(ctx, ContextJ, round.EC(), round.save.NTildej[j], round.save.NTildei, round.save.H1i, round.save.H2i, rejectionSample); !ok {
 				errChs <- round.WrapError(errors.New("proofFac verify failed"), Pj)
 			}
 		}(j, Pj)
@@ -150,7 +151,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 
 	ContextI := append(round.temp.RidAllBz, big.NewInt(int64(i)).Bytes()[:]...)
 	// proof, err := zkpsch.NewProof(ctx, ContextI, round.save.BigXj[i], round.save.Xi)
-	proof, err := zkpsch.NewProofWithAlpha(ctx, ContextI, round.save.BigXj[i], round.temp.Ai, round.temp.alphai, round.save.Xi)
+	proof, err := zkpsch.NewProofWithAlpha(ctx, ContextI, round.save.BigXj[i], round.temp.Ai, round.temp.alphai, round.save.Xi, rejectionSample)
 	if err != nil {
 		return round.WrapError(err)
 	}

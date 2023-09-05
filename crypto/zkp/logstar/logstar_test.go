@@ -48,9 +48,9 @@ func TestLogstar(test *testing.T) {
 	assert.NoError(test, err)
 
 	g := crypto.ScalarBaseMult(ec, big.NewInt(1))
-	proof, err := NewProof(ctx, Session, ec, pk, C, X, g, NCap, s, t, x, rho)
+	proof, err := NewProof(ctx, Session, ec, pk, C, X, g, NCap, s, t, x, rho, common.RejectionSample)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(ctx, Session, ec, pk, C, X, g, NCap, s, t)
+	ok := proof.Verify(ctx, Session, ec, pk, C, X, g, NCap, s, t, common.RejectionSample)
 	assert.True(test, ok, "proof must verify")
 }

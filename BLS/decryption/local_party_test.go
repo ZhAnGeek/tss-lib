@@ -8,17 +8,23 @@ package decryption
 
 import (
 	"context"
+	"github.com/Safulet/tss-lib-private/log"
 	"math/big"
 	"sync/atomic"
 	"testing"
 
 	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/log"
+	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
 	test "github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
+)
+
+var (
+	suite = bls12381.GetBLSSignatureSuiteG1()
+	ec    = tss.GetBLSCurveBySuite(suite)
 )
 
 const (
@@ -30,7 +36,7 @@ func setUp(level log.Level) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
-	tss.Bls12381()
+	tss.Bls12381G2()
 }
 
 func TestE2EConcurrent(t *testing.T) {
@@ -56,15 +62,16 @@ func TestE2EConcurrent(t *testing.T) {
 
 	updater := test.SharedPartyUpdater
 
-	text := new(big.Int).SetBytes([]byte("Hello World World World World"))
-	msg, err := crypto.EncryptByECPoint(keys[0].PubKey, text.Bytes())
+	textOri := "Hello world 1, 2, 3, 4, 5, 6, 7"
+	text := new(big.Int).SetBytes([]byte(textOri))
+	msg, err := crypto.EncryptByECPoint(suite, keys[0].PubKey, text.Bytes())
 	if err != nil {
 		t.FailNow()
 	}
 
 	// init the parties
 	for i := 0; i < len(ePIDS); i++ {
-		params := tss.NewParameters(tss.Bls12381(), p2pCtx, ePIDS[i], len(ePIDS), threshold, false, 0)
+		params := tss.NewParameters(ec, p2pCtx, ePIDS[i], len(ePIDS), threshold, false, 0)
 		P := NewLocalParty(ctx, msg, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
@@ -104,7 +111,7 @@ decryption:
 			if atomic.LoadInt32(&ended) == int32(len(ePIDS)) {
 				t.Logf("Done. Received save data from %d participants", ended)
 				t.Logf("res %v", new(big.Int).SetBytes(res.ClearText))
-				assert.Equal(t, string(res.ClearText), "Hello World World World World")
+				assert.Equal(t, textOri, string(res.ClearText))
 				break decryption
 			}
 		}

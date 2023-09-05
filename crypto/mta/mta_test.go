@@ -51,9 +51,9 @@ func TestMtA(test *testing.T) {
 	NCap, s, t, err := keygen.LoadNTildeH1H2FromTestFixture(1)
 	assert.NoError(test, err)
 
-	MtaOut, err := NewMtA(ctx, Session, ec, Kj, gammai, BigGammai, pkj, pki, NCap, s, t)
+	MtaOut, err := NewMtA(ctx, Session, ec, Kj, gammai, BigGammai, pkj, pki, NCap, s, t, RejectionSample)
 	assert.NoError(test, err)
 
-	ok := MtaOut.Proofji.Verify(ctx, Session, ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai)
+	ok := MtaOut.Proofji.Verify(ctx, Session, ec, pkj, pki, NCap, s, t, Kj, MtaOut.Dji, MtaOut.Fji, BigGammai, RejectionSample)
 	assert.True(test, ok)
 }

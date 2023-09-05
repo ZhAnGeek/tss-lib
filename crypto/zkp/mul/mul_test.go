@@ -48,10 +48,11 @@ func TestMul(test *testing.T) {
 	C, rho, err := pk.HomoMultObfuscate(x, Y)
 	assert.NoError(test, err)
 
-	proof, err := NewProof(ctx, Session, ec, pk, X, Y, C, x, rho, rhox)
+	rejectionSample := tss.GetRejectionSampleFunc(nil)
+	proof, err := NewProof(ctx, Session, ec, pk, X, Y, C, x, rho, rhox, rejectionSample)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(ctx, Session, ec, pk, X, Y, C)
+	ok := proof.Verify(ctx, Session, ec, pk, X, Y, C, rejectionSample)
 	assert.True(test, ok, "proof must verify")
 }
 
@@ -82,6 +83,7 @@ func TestMulForged(test *testing.T) {
 	// no arguments needed
 	proof, err := NewProofForged()
 	assert.NoError(test, err)
-	ok := proof.Verify(ctx, Session, ec, pk, X, Y, C)
+	rejectionSample := tss.GetRejectionSampleFunc(nil)
+	ok := proof.Verify(ctx, Session, ec, pk, X, Y, C, rejectionSample)
 	assert.False(test, ok, "proof must verify")
 }

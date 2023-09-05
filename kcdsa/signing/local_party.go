@@ -52,6 +52,9 @@ type (
 	localTempData struct {
 		localMessageStore
 
+		KeyDerivationDelta *big.Int
+		pubKeyDelta        *crypto.ECPoint // derived child public key
+
 		mHash []byte
 		// temp data (thrown away after sign) / round 1
 		ssid      []byte
@@ -98,6 +101,7 @@ func NewLocalParty(
 	msg []byte,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
+	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
 	end chan<- common.SignatureData,
 ) tss.Party {
@@ -111,6 +115,10 @@ func NewLocalParty(
 		out:       out,
 		end:       end,
 	}
+
+	// temp data init
+	p.temp.KeyDerivationDelta = keyDerivationDelta
+
 	// msgs init
 	p.temp.signRound1Messages = make([]tss.ParsedMessage, partyCount)
 	p.temp.signRound2Messages = make([]tss.ParsedMessage, partyCount)

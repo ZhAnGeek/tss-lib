@@ -1,0 +1,27 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib.derivekey;
+option go_package = "derivekey/";
+
+/*
+ * Represents a BROADCAST message sent to all parties during Round 1 of the derive key protocol.
+ */
+message DeriveKeyRound1Message {
+    bytes bssid = 1;
+    bytes partial_eval_x = 2;
+    bytes partial_eval_y = 3;
+    repeated bytes proof = 4;
+}
+
+message DeriveKeyResultMessage {
+    bytes bssid = 1;
+    bytes parent_chain_code = 2;
+    bytes path = 3;
+    bytes delta = 4;
+    bytes child_chain_code = 5;
+}

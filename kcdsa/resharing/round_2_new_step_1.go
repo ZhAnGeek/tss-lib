@@ -35,13 +35,13 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 
 	// check consistency of SSID
 	r1msg := round.temp.dgRound1Messages[0].Content().(*DGRound1Message)
-	SSID := r1msg.UnmarshalSsid()
+	SSID := r1msg.UnmarshalSSID()
 	for j, Pj := range round.OldParties().IDs() {
-		if j == 0 || j == i {
+		if j == 0 {
 			continue
 		}
 		r1msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)
-		SSIDj := r1msg.UnmarshalSsid()
+		SSIDj := r1msg.UnmarshalSSID()
 		if !bytes.Equal(SSID, SSIDj) {
 			return round.WrapError(errors.New("ssid mismatch"), Pj)
 		}
@@ -64,7 +64,8 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	// Fig 5. Round 3.2 / Fig 6. Round 3.2 proofs
 	SP := new(big.Int).Add(new(big.Int).Lsh(round.save.P, 1), one)
 	SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.Q, 1), one)
-	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.PaillierSK.N, SP, SQ)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+	proofMod, err := zkpmod.NewProof(ctx, ContextI, round.save.PaillierSK.N, SP, SQ, rejectionSample)
 	if err != nil {
 		return round.WrapError(errors.New("create proofMod failed"), Pi)
 	}

@@ -8,54 +8,20 @@ package keygen
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"math/big"
 
-	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	"github.com/Safulet/tss-lib-private/log"
+	frost "github.com/Safulet/tss-lib-private/frost/keygen"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-// Implements Party
-// Implements Stringer
-var _ tss.Party = (*LocalParty)(nil)
-var _ fmt.Stringer = (*LocalParty)(nil)
-
-type (
-	LocalParty struct {
-		*tss.BaseParty
-		params *tss.Parameters
-
-		temp localTempData
-		data LocalPartySaveData
-
-		// outbound messaging
-		out chan<- tss.Message
-		end chan<- LocalPartySaveData
-	}
-
-	localMessageStore struct {
-		kgRound1Messages,
-		kgRound2Message1s,
-		kgRound2Message2s,
-		kgRound3Messages []tss.ParsedMessage
-	}
-
-	localTempData struct {
-		localMessageStore
-
-		// temp data (thrown away after keygen)
-		ssid          []byte
-		ssidNonce     *big.Int
-		ui            *big.Int // used for tests
-		KGCs          []cmt.HashCommitment
-		vs            vss.Vs
-		shares        vss.Shares
-		deCommitPolyG cmt.HashDeCommitment
-	}
+const (
+	TaskName = "eddsa-keygen"
 )
+
+type LocalParty struct {
+	*frost.LocalParty
+	frostEnd chan frost.LocalPartySaveData
+	end      chan<- LocalPartySaveData
+}
 
 // Exported, used in `tss` client
 func NewLocalParty(
@@ -63,102 +29,23 @@ func NewLocalParty(
 	out chan<- tss.Message,
 	end chan<- LocalPartySaveData,
 ) tss.Party {
-	partyCount := params.PartyCount()
-	data := NewLocalPartySaveData(partyCount)
-	p := &LocalParty{
-		BaseParty: new(tss.BaseParty),
-		params:    params,
-		temp:      localTempData{},
-		data:      data,
-		out:       out,
-		end:       end,
+	frostEnd := make(chan frost.LocalPartySaveData, params.PartyCount())
+	return &LocalParty{
+		frost.NewLocalParty(params, out, frostEnd).(*frost.LocalParty),
+		frostEnd,
+		end,
 	}
-	// msgs init
-	p.temp.kgRound1Messages = make([]tss.ParsedMessage, partyCount)
-	p.temp.kgRound2Message1s = make([]tss.ParsedMessage, partyCount)
-	p.temp.kgRound2Message2s = make([]tss.ParsedMessage, partyCount)
-	p.temp.kgRound3Messages = make([]tss.ParsedMessage, partyCount)
-	// temp data init
-	p.temp.KGCs = make([]cmt.HashCommitment, partyCount)
-	return p
-}
-
-func (p *LocalParty) FirstRound() tss.Round {
-	return newRound1(p.params, &p.data, &p.temp, p.out, p.end)
 }
 
 func (p *LocalParty) Start(ctx context.Context) *tss.Error {
-	return tss.BaseStart(ctx, p, TaskName)
-}
-
-func (p *LocalParty) Update(ctx context.Context, msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(ctx, p, msg, TaskName)
-}
-
-func (p *LocalParty) UpdateFromBytes(ctx context.Context, wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
-	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
-	if err != nil {
-		return false, p.WrapError(err)
-	}
-	return p.Update(ctx, msg)
-}
-
-func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
-	if ok, err := p.BaseParty.ValidateMessage(msg); !ok || err != nil {
-		return ok, err
-	}
-	// check that the message's "from index" will fit into the array
-	if maxFromIdx := p.params.PartyCount() - 1; maxFromIdx < msg.GetFrom().Index {
-		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d <= %d)",
-			p.params.PartyCount(), msg.GetFrom().Index), msg.GetFrom())
-	}
-	return true, nil
-}
-
-func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (bool, *tss.Error) {
-	// ValidateBasic is cheap; double-check the message here in case the public StoreMessage was called externally
-	if ok, err := p.ValidateMessage(msg); !ok || err != nil {
-		return ok, err
-	}
-	fromPIdx := msg.GetFrom().Index
-
-	// switch/case is necessary to store any messages beyond current round
-	// this does not handle message replays. we expect the caller to apply replay and spoofing protection.
-	switch msg.Content().(type) {
-	case *KGRound1Message:
-		p.temp.kgRound1Messages[fromPIdx] = msg
-	case *KGRound2Message1:
-		p.temp.kgRound2Message1s[fromPIdx] = msg
-	case *KGRound2Message2:
-		p.temp.kgRound2Message2s[fromPIdx] = msg
-	default: // unrecognised message, just ignore!
-		log.Warn(ctx, "unrecognised message ignored: %v", msg)
-		return false, nil
-	}
-	return true, nil
-}
-
-// recovers a party's original index in the set of parties during keygen
-func (save LocalPartySaveData) OriginalIndex() (int, error) {
-	index := -1
-	ki := save.ShareID
-	for j, kj := range save.Ks {
-		if kj.Cmp(ki) != 0 {
-			continue
+	go func() {
+		select {
+		case save := <-p.frostEnd:
+			p.end <- LocalPartySaveData{
+				save,
+				save.PubKey,
+			}
 		}
-		index = j
-		break
-	}
-	if index < 0 {
-		return -1, errors.New("a party index could not be recovered from Ks")
-	}
-	return index, nil
-}
-
-func (p *LocalParty) PartyID() *tss.PartyID {
-	return p.params.PartyID()
-}
-
-func (p *LocalParty) String() string {
-	return fmt.Sprintf("id: %s, %s", p.PartyID(), p.BaseParty.String())
+	}()
+	return p.LocalParty.Start(ctx)
 }

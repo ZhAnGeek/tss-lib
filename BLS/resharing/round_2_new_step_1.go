@@ -7,13 +7,14 @@
 package resharing
 
 import (
+	"bytes"
 	"context"
 	"errors"
 
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *round2) Start(ctx context.Context) *tss.Error {
+func (round *round2) Start(_ context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -30,10 +31,26 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	Pi := round.PartyID()
 	i := Pi.Index
 
+	// check consistency of SSID
+	r1msg := round.temp.dgRound1Messages[0].Content().(*DGRound1Message)
+	SSID := r1msg.UnmarshalSSID()
+	for j, Pj := range round.OldParties().IDs() {
+		if j == 0 {
+			continue
+		}
+		msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)
+		SSIDj := msg.UnmarshalSSID()
+		if !bytes.Equal(SSID, SSIDj) {
+			return round.WrapError(errors.New("ssid mismatch"), Pj)
+		}
+	}
+
 	// 1. "broadcast" "ACK" members of the OLD committee
 	r2msg := NewDGRound2Message(round.OldParties().IDs(), Pi)
 	round.temp.dgRound2Messages[i] = r2msg
 	round.out <- r2msg
+
+	round.temp.SSID = SSID
 
 	return nil
 }

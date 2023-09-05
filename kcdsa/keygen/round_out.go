@@ -31,6 +31,7 @@ func (round *round_out) Start(ctx context.Context) *tss.Error {
 	modN := common.ModInt(new(big.Int).Set(round.EC().Params().N))
 	sumRXShare := round.temp.RXShare
 	bigRXShare := round.temp.BigRXShare
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -40,7 +41,7 @@ func (round *round_out) Start(ctx context.Context) *tss.Error {
 		bigXSharej := round.temp.BigXAll
 		Rj := round.temp.r1msg1R[j]
 		ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
-		ok := proofLogstarj.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], Rj, bigRXSharej, bigXSharej, round.save.PaillierSK.N, round.save.H1i, round.save.H2i)
+		ok := proofLogstarj.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], Rj, bigRXSharej, bigXSharej, round.save.PaillierSK.N, round.save.H1i, round.save.H2i, rejectionSample)
 		if !ok {
 			return round.WrapError(errors.New("failed to verify logstar"), Pj)
 		}

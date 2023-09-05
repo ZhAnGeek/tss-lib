@@ -10,10 +10,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"math/big"
-
-	"github.com/agl/ed25519/edwards25519"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -30,34 +30,30 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	round.started = true
 	round.resetOK()
 
+	modQ := common.ModInt(round.EC().Params().N)
 	sumS := round.temp.si
-	oneBytes := bigIntToEncodedBytes(big.NewInt(1))
 	for j := range round.Parties().IDs() {
 		round.ok[j] = true
 		if j == round.PartyID().Index {
 			continue
 		}
 		r3msg := round.temp.signRound3Messages[j].Content().(*SignRound3Message)
-		sjBytes := bigIntToEncodedBytes(r3msg.UnmarshalS())
-		var tmpSumS [32]byte
-		edwards25519.ScMulAdd(&tmpSumS, sumS, oneBytes, sjBytes)
-		sumS = &tmpSumS
+		sumS = modQ.Add(sumS, r3msg.UnmarshalS())
 	}
-	s := encodedBytesToBigInt(sumS)
 
 	// save the signature for final output
-	round.data.Signature = append(bigIntToEncodedBytes(round.temp.r)[:], sumS[:]...)
+	round.data.Signature = append(edwards25519.BigIntToEncodedBytes(round.temp.r)[:],
+		edwards25519.BigIntToEncodedBytes(sumS)[:]...)
 	round.data.R = round.temp.r.Bytes()
-	round.data.S = s.Bytes()
+	round.data.S = sumS.Bytes()
 	round.data.M = round.temp.m
 
-	pk := edwards.PublicKey{
-		Curve: round.EC(),
-		X:     round.temp.PKX,
-		Y:     round.temp.PKY,
+	pk, err := crypto.NewECPoint(round.EC(), round.temp.PKX, round.temp.PKY)
+	if err != nil {
+		return round.WrapError(fmt.Errorf("pubkey construction failed"))
 	}
 
-	ok := VerifyEdwards(&pk, round.temp.m, round.temp.r, s, round.HashFunc)
+	ok := VerifyEdwards(pk, round.temp.m, round.temp.r, sumS, round.HashFunc)
 	if !ok {
 		return round.WrapError(fmt.Errorf("signature verification failed"))
 	}

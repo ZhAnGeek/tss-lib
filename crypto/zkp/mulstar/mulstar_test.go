@@ -53,9 +53,9 @@ func TestMulstar(test *testing.T) {
 	D, rho, err := pk.HomoMultObfuscate(x, C)
 	assert.NoError(test, err)
 
-	proof, err := NewProof(ctx, Session, ec, pk, g, X, C, D, NCap, s, t, x, rho)
+	proof, err := NewProof(ctx, Session, ec, pk, g, X, C, D, NCap, s, t, x, rho, common.RejectionSample)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(ctx, Session, ec, pk, g, X, C, D, NCap, s, t)
+	ok := proof.Verify(ctx, Session, ec, pk, g, X, C, D, NCap, s, t, common.RejectionSample)
 	assert.True(test, ok, "proof must verify")
 }

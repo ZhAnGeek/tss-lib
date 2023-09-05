@@ -22,6 +22,7 @@ import (
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
+
 	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
 	. "github.com/Safulet/tss-lib-private/ecdsa/resharing"
 	"github.com/Safulet/tss-lib-private/ecdsa/signing"

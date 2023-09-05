@@ -9,12 +9,13 @@ package signing
 import (
 	"context"
 	"fmt"
-	"github.com/Safulet/tss-lib-private/crypto/ckd"
 	"math/big"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/Safulet/tss-lib-private/crypto/ckd"
 
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"

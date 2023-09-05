@@ -29,6 +29,7 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 
 	wg := sync.WaitGroup{}
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -38,7 +39,7 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 			ContextJ := common.AppendBigIntToBytesSlice(round.temp.RidAllBz, big.NewInt(int64(j)))
-			ok := round.temp.r4msgpfsch[j].Verify(ctx, ContextJ, round.save.BigXj[j])
+			ok := round.temp.r4msgpfsch[j].Verify(ctx, ContextJ, round.save.BigXj[j], rejectionSample)
 			if !ok || !round.temp.r4msgpfsch[j].A.Equals(round.temp.r2msgAs[j]) {
 				errChs <- round.WrapError(errors.New("proofSch verify failed"), Pj)
 			}

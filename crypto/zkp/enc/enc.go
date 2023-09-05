@@ -32,7 +32,7 @@ var (
 )
 
 // NewProof implements proofenc
-func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *big.Int) (*ProofEnc, error) {
+func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, K, NCap, s, t, k, rho *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofEnc, error) {
 	if ec == nil || pk == nil || K == nil || NCap == nil || s == nil || t == nil || k == nil || rho == nil {
 		return nil, errors.New("ProveEnc constructor received nil value(s)")
 	}
@@ -66,7 +66,7 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *pailli
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(),
 			ec.Params().B, ec.Params().N, ec.Params().P, NCap, s, t, K, S, A, C)...)
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 14.3
@@ -97,7 +97,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofEnc, error) {
 	}, nil
 }
 
-func (pf *ProofEnc) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, K *big.Int) bool {
+func (pf *ProofEnc) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, NCap, s, t, K *big.Int, rejectionSample common.RejectionSampleFunc) bool {
 	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || NCap == nil || s == nil || t == nil || K == nil {
 		return false
 	}
@@ -140,7 +140,7 @@ func (pf *ProofEnc) Verify(ctx context.Context, Session []byte, ec elliptic.Curv
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
 			NCap, s, t, K, pf.S, pf.A, pf.C)...)
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 14. Equality Check

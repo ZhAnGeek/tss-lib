@@ -31,6 +31,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 
 	// Fig 7. Round 1. create proof enc
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
@@ -50,7 +51,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 				errChs <- round.WrapError(fmt.Errorf("ProofMod failed"), Pj)
 			}
 			proofMod := round.temp.ProofMods[j]
-			if ok := proofMod.Verify(ctx, contextJ, round.save.NTildej[j]); !ok {
+			if ok := proofMod.Verify(ctx, contextJ, round.save.NTildej[j], rejectionSample); !ok {
 				errChs <- round.WrapError(fmt.Errorf("ProofMod failed"), Pj)
 			}
 		}(j, Pj)
@@ -63,9 +64,9 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 			SP := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.P, 1), big.NewInt(1))
 			SQ := new(big.Int).Add(new(big.Int).Lsh(round.save.LocalPreParams.Q, 1), big.NewInt(1))
 			proofFac, err := zkpfac.NewProof(ctx, ContextJ, round.EC(), round.save.LocalPreParams.PaillierSK.N,
-				round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ)
+				round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ, rejectionSample)
 
-			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.R, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.RShare, round.temp.RNonce)
+			proof, err := zkpenc.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.R, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.RShare, round.temp.RNonce, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(fmt.Errorf("ProofEnc failed: %v", err), Pi)
 				return
@@ -82,13 +83,13 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	}
 
 	// compute Schnorr prove
-	proof, err := zkpsch.NewProof(ctx, ContextI, round.temp.vs[0], round.temp.ui)
+	proof, err := zkpsch.NewProof(ctx, ContextI, round.temp.vs[0], round.temp.ui, rejectionSample)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
 
 	// compute Schnorr prove
-	rproof, err := zkpsch.NewProof(ctx, ContextI, round.temp.rvs[0], round.temp.ri)
+	rproof, err := zkpsch.NewProof(ctx, ContextI, round.temp.rvs[0], round.temp.ri, rejectionSample)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

@@ -70,10 +70,11 @@ func E2E(b *testing.B) {
 	wg := sync.WaitGroup{}
 
 	b.StartTimer()
+	keyDerivation := new(big.Int).SetInt64(10)
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.Curve25519(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(msg, params, keys[i], keyDerivation, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {
@@ -138,10 +139,11 @@ func TestE2EConcurrent(t *testing.T) {
 	msg := big.NewInt(200).Bytes()
 	// init the parties
 	wg := sync.WaitGroup{}
+	keyDerivation := new(big.Int).SetInt64(10)
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.Curve25519(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(msg, params, keys[i], keyDerivation, outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {

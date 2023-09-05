@@ -38,6 +38,7 @@ func (round *presign2) Start(ctx context.Context) *tss.Error {
 	round.ok[i] = true
 
 	// Fig 7. Round 2.1 verify received proof enc
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg := sync.WaitGroup{}
 	for j, Pj := range round.Parties().IDs() {
@@ -51,7 +52,7 @@ func (round *presign2) Start(ctx context.Context) *tss.Error {
 			Kj := round.temp.R1msgK[j]
 			proof := round.temp.R1msgProof[j]
 			ContextJ := common.AppendBigIntToBytesSlice(round.temp.Ssid, big.NewInt(int64(j)))
-			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj)
+			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.NTildei, round.key.H1i, round.key.H2i, Kj, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round2: proofEnc verify failed"), Pj)
 				return
@@ -85,19 +86,19 @@ func (round *presign2) Start(ctx context.Context) *tss.Error {
 
 			Kj := round.temp.R1msgK[j]
 
-			DeltaMtA, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			DeltaMtA, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.GammaShare, BigGammaShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("MtADelta failed"), Pi)
 				return
 			}
 
-			ChiMtA, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.W, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			ChiMtA, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.W, round.temp.BigWs[i], round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("MtAChi failed"), Pi)
 				return
 			}
 
-			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, BigGammaShare, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.GammaShare, round.temp.GNonce)
+			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.G, BigGammaShare, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.GammaShare, round.temp.GNonce, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("prooflogstar failed"), Pi)
 				return

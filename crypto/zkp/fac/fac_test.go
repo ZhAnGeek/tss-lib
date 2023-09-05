@@ -31,7 +31,6 @@ var (
 func TestFac(test *testing.T) {
 	ctx := context.Background()
 	ec := tss.EC()
-	// q := ec.Params().N
 
 	N0p := common.GetRandomPrimeInt(testSafePrimeBits)
 	N0q := common.GetRandomPrimeInt(testSafePrimeBits)
@@ -40,19 +39,31 @@ func TestFac(test *testing.T) {
 	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits), common.GetRandomPrimeInt(testSafePrimeBits)}
 	NCap, s, t, err := crypto.GenerateNTildei(primes)
 	assert.NoError(test, err)
-	proof, err := NewProof(ctx, Session, ec, N0, NCap, s, t, N0p, N0q)
+	proof, err := NewProof(ctx, Session, ec, N0, NCap, s, t, N0p, N0q, common.RejectionSample)
 	assert.NoError(test, err)
 
-	ok := proof.Verify(ctx, Session, ec, N0, NCap, s, t)
+	ok := proof.Verify(ctx, Session, ec, N0, NCap, s, t, common.RejectionSample)
 	assert.True(test, ok, "proof must verify")
 
-	N0p = common.GetRandomPrimeInt(1548)
-	N0q = common.GetRandomPrimeInt(500)
+	N0p = common.GetRandomPrimeInt(1024)
+	N0q = common.GetRandomPrimeInt(1024)
 	N0 = new(big.Int).Mul(N0p, N0q)
 
-	proof, err = NewProof(ctx, Session, ec, N0, NCap, s, t, N0p, N0q)
+	proof, err = NewProof(ctx, Session, ec, N0, NCap, s, t, N0p, N0q, common.RejectionSample)
 	assert.NoError(test, err)
 
-	ok = proof.Verify(ctx, Session, ec, N0, NCap, s, t)
+	ok = proof.Verify(ctx, Session, ec, N0, NCap, s, t, common.RejectionSample)
 	assert.True(test, ok, "proof must verify")
+
+	// factor should have bits [1024-16, 1024+16]
+	smallFactor := 900
+	N0p = common.GetRandomPrimeInt(smallFactor)
+	N0q = common.GetRandomPrimeInt(2048 - smallFactor)
+	N0 = new(big.Int).Mul(N0p, N0q)
+
+	proof, err = NewProof(ctx, Session, ec, N0, NCap, s, t, N0p, N0q, common.RejectionSample)
+	assert.NoError(test, err)
+
+	ok = proof.Verify(ctx, Session, ec, N0, NCap, s, t, common.RejectionSample)
+	assert.False(test, ok, "proof must not verify")
 }

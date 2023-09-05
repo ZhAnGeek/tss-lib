@@ -164,9 +164,10 @@ signing:
 	signOutCh := make(chan tss.Message, len(signPIDs))
 	signEndCh := make(chan common.SignatureData, len(signPIDs))
 
+	keyDerivation := new(big.Int).SetInt64(10)
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(tss.Curve25519(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
-		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], signOutCh, signEndCh).(*signing.LocalParty)
+		P := signing.NewLocalParty(big.NewInt(42).Bytes(), params, signKeys[j], keyDerivation, signOutCh, signEndCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 		go func(P *signing.LocalParty) {
 			if err := P.Start(ctx); err != nil {

@@ -11,8 +11,9 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
-	"github.com/Safulet/tss-lib-private/tss"
 	"math/big"
+
+	"github.com/Safulet/tss-lib-private/tss"
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
@@ -30,7 +31,7 @@ type (
 )
 
 // NewProof implements proofsch
-func NewProof(ctx context.Context, Session []byte, X *crypto.ECPoint, x *big.Int) (*ProofSch, error) {
+func NewProof(ctx context.Context, Session []byte, X *crypto.ECPoint, x *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofSch, error) {
 	if x == nil || X == nil || !X.ValidateBasic() {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
@@ -47,7 +48,7 @@ func NewProof(ctx context.Context, Session []byte, X *crypto.ECPoint, x *big.Int
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, ec.Params().B, ec.Params().N, ec.Params().P,
 			X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 22.3
@@ -69,7 +70,7 @@ func NewAlpha(ec elliptic.Curve) (*big.Int, *crypto.ECPoint) {
 }
 
 // NewProof implements proofsch
-func NewProofWithAlpha(ctx context.Context, Session []byte, X, A *crypto.ECPoint, alpha, x *big.Int) (*ProofSch, error) {
+func NewProofWithAlpha(ctx context.Context, Session []byte, X, A *crypto.ECPoint, alpha, x *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofSch, error) {
 	if x == nil || X == nil || !X.ValidateBasic() {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
@@ -82,7 +83,7 @@ func NewProofWithAlpha(ctx context.Context, Session []byte, X, A *crypto.ECPoint
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, ec.Params().B, ec.Params().N, ec.Params().P,
 			X.X(), X.Y(), g.X(), g.Y(), A.X(), A.Y())
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 22.3
@@ -99,7 +100,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofSch, error) {
 
 	var x, y, z *big.Int
 	if ecName, ok := tss.GetCurveName(ec); ok {
-		if ecName == tss.BLS12381 {
+		if ecName == tss.BLS12381G2 || ecName == tss.BLS12381G1 {
 			x = new(big.Int).SetBytes(bzs[0])
 			y = new(big.Int).SetBytes(bzs[1])
 			z = new(big.Int).SetBytes(bzs[2])
@@ -123,7 +124,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofSch, error) {
 	}, nil
 }
 
-func (pf *ProofSch) Verify(ctx context.Context, Session []byte, X *crypto.ECPoint) bool {
+func (pf *ProofSch) Verify(ctx context.Context, Session []byte, X *crypto.ECPoint, rejectionSample common.RejectionSampleFunc) bool {
 	if pf == nil || !pf.ValidateBasic() || X == nil {
 		return false
 	}
@@ -135,7 +136,7 @@ func (pf *ProofSch) Verify(ctx context.Context, Session []byte, X *crypto.ECPoin
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, ec.Params().B, ec.Params().N, ec.Params().P,
 			X.X(), X.Y(), g.X(), g.Y(), pf.A.X(), pf.A.Y())
-		e = common.RejectionSample(q, eHash)
+		e = rejectionSample(q, eHash)
 	}
 
 	// Fig 22. Verification

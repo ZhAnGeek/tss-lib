@@ -12,29 +12,18 @@ import (
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/frost/keygen"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-type (
-	LocalSecrets struct {
-		// secret fields (not shared, but stored locally)
-		Xi, ShareID *big.Int // xi, kj
-	}
+type LocalSecrets struct {
+	keygen.LocalSecrets
+}
 
-	// Everything in LocalPartySaveData is saved locally to user's HD when done
-	LocalPartySaveData struct {
-		LocalSecrets
-
-		// original indexes (ki in signing preparation phase)
-		Ks []*big.Int
-
-		// public keys (Xj = uj*G for each Pj)
-		BigXj []*crypto.ECPoint // Xj
-
-		// used for test assertions (may be discarded)
-		EDDSAPub *crypto.ECPoint // y
-	}
-)
+type LocalPartySaveData struct {
+	keygen.LocalPartySaveData
+	EDDSAPub *crypto.ECPoint
+}
 
 func NewLocalPartySaveData(partyCount int) (saveData LocalPartySaveData) {
 	saveData.Ks = make([]*big.Int, partyCount)

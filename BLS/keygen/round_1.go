@@ -48,6 +48,9 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	// compute the vss shares
 	ids := round.Parties().IDs().Keys()
 	vs, shares, err := vss.Create(round.Params().EC(), round.Threshold(), ui, ids)
+	if err != nil {
+		return round.WrapError(err, Pi)
+	}
 	round.save.Ks = ids
 
 	// make commitment -> (C, D)

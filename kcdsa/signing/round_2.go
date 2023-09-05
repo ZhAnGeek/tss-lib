@@ -41,7 +41,8 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	}
 
 	// 2. compute Schnorr prove
-	proofK, err := zkpsch.NewProof(ctx, ContextI, round.temp.pointKi, round.temp.ki)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
+	proofK, err := zkpsch.NewProof(ctx, ContextI, round.temp.pointKi, round.temp.ki, rejectionSample)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

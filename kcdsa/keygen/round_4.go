@@ -34,6 +34,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
 	wg := sync.WaitGroup{}
 	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -49,7 +50,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			XD := round.temp.r3msgRXD[j]
 			XF := round.temp.r3msgRXF[j]
 			proofAffgDelta := round.temp.r3msgRXProof[j]
-			ok := proofAffgDelta.Verify(ctx, ContextJ, round.EC(), &round.save.PaillierSK.PublicKey, round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, round.temp.R, XD, XF, XSharej)
+			ok := proofAffgDelta.Verify(ctx, ContextJ, round.EC(), &round.save.PaillierSK.PublicKey, round.save.PaillierPKs[j], round.save.PaillierSK.N, round.save.H1i, round.save.H2i, round.temp.R, XD, XF, XSharej, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify affg delta"), Pj)
 				return
@@ -63,7 +64,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 
 			proofLogstar := round.temp.r3msgProofLogstar[j]
 			Xj := round.temp.r1msg1X[j]
-			ok = proofLogstar.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], Xj, XSharej, g, round.save.PaillierSK.N, round.save.H1i, round.save.H2i)
+			ok = proofLogstar.Verify(ctx, ContextJ, round.EC(), round.save.PaillierPKs[j], Xj, XSharej, g, round.save.PaillierSK.N, round.save.H1i, round.save.H2i, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("failed to verify logstar"), Pj)
 				return
@@ -117,7 +118,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 		go func(j int, Pj *tss.PartyID) {
 			defer wg.Done()
 
-			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.R, BigRXShare, BigX, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.RShare, round.temp.RNonce)
+			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.save.PaillierSK.PublicKey, round.temp.R, BigRXShare, BigX, round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], round.temp.RShare, round.temp.RNonce, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proofLogStar generation failed"), Pi)
 				return

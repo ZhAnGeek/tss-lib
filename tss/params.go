@@ -10,11 +10,16 @@ import (
 	"crypto/elliptic"
 	"crypto/sha512"
 	"errors"
+	"fmt"
 	"hash"
 	"time"
 )
 
 type (
+	VersionInfo struct {
+		RejectionSampleVersion RejectionSampleVersion
+	}
+
 	Parameters struct {
 		ec                  elliptic.Curve
 		partyID             *PartyID
@@ -26,6 +31,8 @@ type (
 		nonce               int
 		hashFunc            func() hash.Hash
 		network             string
+		version             *VersionInfo
+		schnorr             bool
 	}
 
 	ReSharingParameters struct {
@@ -42,16 +49,15 @@ const (
 )
 
 // Exported, used in `tss` client
-func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int, needsIdentification bool, nonce int, optionalSafePrimeGenTimeout ...time.Duration) *Parameters {
-	var safePrimeGenTimeout time.Duration
-	if 0 < len(optionalSafePrimeGenTimeout) {
-		if 1 < len(optionalSafePrimeGenTimeout) {
-			panic(errors.New("GeneratePreParams: expected 0 or 1 item in `optionalSafePrimeGenTimeout`"))
+func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyCount, threshold int, needsIdentification bool, nonce int, opts ...ConfigOpt) *Parameters {
+	config := NewConfig()
+	for _, opt := range opts {
+		err := opt(config)
+		if err != nil {
+			panic(errors.New(fmt.Sprintf("Error happened when initial config %s", err.Error())))
 		}
-		safePrimeGenTimeout = optionalSafePrimeGenTimeout[0]
-	} else {
-		safePrimeGenTimeout = defaultSafePrimeGenTimeout
 	}
+
 	return &Parameters{
 		ec:                  ec,
 		parties:             ctx,
@@ -59,8 +65,9 @@ func NewParameters(ec elliptic.Curve, ctx *PeerContext, partyID *PartyID, partyC
 		partyCount:          partyCount,
 		threshold:           threshold,
 		needsIdentifaction:  needsIdentification,
-		safePrimeGenTimeout: safePrimeGenTimeout,
+		safePrimeGenTimeout: config.SafePrimeTimeout,
 		nonce:               nonce,
+		version:             config.VersionInfo,
 	}
 }
 
@@ -92,12 +99,24 @@ func (params *Parameters) NeedsIdentifaction() bool {
 	return params.needsIdentifaction
 }
 
+func (params *Parameters) Version() *VersionInfo {
+	return params.version
+}
+
 func (params *Parameters) Nonce() int {
 	return params.nonce
 }
 
 func (params *Parameters) SetHashFunc(hashFunc func() hash.Hash) {
 	params.hashFunc = hashFunc
+}
+
+func (params *Parameters) SetIsSchnorr() {
+	params.schnorr = true
+}
+
+func (params *Parameters) IsSchnorr() bool {
+	return params.schnorr
 }
 
 func (params *Parameters) HashFunc() hash.Hash {
@@ -118,8 +137,8 @@ func (params *Parameters) Network() string {
 // ----- //
 
 // Exported, used in `tss` client
-func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold, nonce int) *ReSharingParameters {
-	params := NewParameters(ec, ctx, partyID, partyCount, threshold, false, nonce) // No identification in resharing
+func NewReSharingParameters(ec elliptic.Curve, ctx, newCtx *PeerContext, partyID *PartyID, partyCount, threshold, newPartyCount, newThreshold, nonce int, opts ...ConfigOpt) *ReSharingParameters {
+	params := NewParameters(ec, ctx, partyID, partyCount, threshold, false, nonce, opts...) // No identification in resharing
 	return &ReSharingParameters{
 		Parameters:    params,
 		newParties:    newCtx,

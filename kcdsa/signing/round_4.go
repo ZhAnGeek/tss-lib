@@ -40,6 +40,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 	g := crypto.NewECPointNoCurveCheck(round.EC(), round.EC().Params().Gx, round.EC().Params().Gy)
 	BigXShare := crypto.ScalarBaseMult(round.Params().EC(), round.temp.XShare)
 	round.temp.BigXShare = BigXShare
+	rejectionSample := tss.GetRejectionSampleFunc(round.Version())
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
@@ -60,19 +61,19 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 				return
 			}
 			ContextJ := common.AppendBigIntToBytesSlice(round.temp.ssid, big.NewInt(int64(j)))
-			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.PaillierSK.N, round.key.H1i, round.key.H2i, Kj)
+			ok := proof.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], round.key.PaillierSK.N, round.key.H1i, round.key.H2i, Kj, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("proofEnc verify failed"), Pj)
 				return
 			}
 
-			kxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.XShare, BigXShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j])
+			kxMta, err := mta.NewMtA(ctx, ContextI, round.EC(), Kj, round.temp.XShare, BigXShare, round.key.PaillierPKs[j], &round.key.PaillierSK.PublicKey, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("kxMtA failed"), Pi)
 				return
 			}
 
-			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.X, BigXShare, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.XShare, round.temp.XNonce)
+			ProofLogstar, err := zkplogstar.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.X, BigXShare, g, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], round.temp.XShare, round.temp.XNonce, rejectionSample)
 			if err != nil {
 				errChs <- round.WrapError(errors.New("proofLogStar failed"), Pi)
 				return
