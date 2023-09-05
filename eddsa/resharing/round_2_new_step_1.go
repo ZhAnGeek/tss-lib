@@ -7,6 +7,7 @@
 package resharing
 
 import (
+	"bytes"
 	"context"
 	"errors"
 
@@ -30,7 +31,23 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	Pi := round.PartyID()
 	i := Pi.Index
 
-	// 1. "broadcast" "ACK" members of the OLD committee
+	// check consistency of SSID
+	r1msg := round.temp.dgRound1Messages[0].Content().(*DGRound1Message)
+	SSID := r1msg.UnmarshalSSID()
+	for j, Pj := range round.OldParties().IDs() {
+		if j == 0 {
+			continue
+		}
+		r1msg := round.temp.dgRound1Messages[j].Content().(*DGRound1Message)
+		SSIDj := r1msg.UnmarshalSSID()
+		if !bytes.Equal(SSID, SSIDj) {
+			return round.WrapError(errors.New("ssid mismatch"), Pj)
+		}
+	}
+
+	round.temp.SSID = SSID
+
+	// 2. "broadcast" "ACK" members of the OLD committee
 	r2msg := NewDGRound2Message(round.OldParties().IDs(), Pi)
 	round.temp.dgRound2Messages[i] = r2msg
 	round.out <- r2msg
