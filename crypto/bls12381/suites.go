@@ -50,7 +50,7 @@ func getHashID(ExpTag, HashName []byte) []byte {
 
 func GetBLSSignatureSuiteG1() []byte {
 	HashID := getHashID([]byte("XMD"), []byte("SHA-256"))
-	H2cSuiteID := getHashTOCurveSuiteID([]byte("G2Curve"), HashID, []byte("SSWU"), []byte("RO"))
+	H2cSuiteID := getHashTOCurveSuiteID([]byte("BLS12381G1"), HashID, []byte("SSWU"), []byte("RO"))
 	ScTag := []byte("POP")
 	return getBLSSignatureCipherSuiteID(H2cSuiteID, ScTag)
 }
