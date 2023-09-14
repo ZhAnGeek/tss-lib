@@ -1,4 +1,4 @@
-// Copyright © 2019 Binance
+// Copyright © 2023 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -17,13 +17,24 @@ import (
 	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
 	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 func (round *round2) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
+
+	var span trace.Span
+	ctx, span = tracer.StartWithFuncSpan(ctx)
+	defer span.End()
+
+	common.TryEmitTSSRoundStartEvent(ctx, TaskName, "round2")
+	defer common.TryEmitTSSRoundEndEvent(ctx, TaskName, "round2")
+
 	round.number = 2
 	round.started = true
 	round.resetOK()

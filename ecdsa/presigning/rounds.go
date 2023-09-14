@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	TaskName = "presigning"
+	TaskName = "ecdsa-presigning"
 )
 
 type (

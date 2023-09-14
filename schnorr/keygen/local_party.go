@@ -1,4 +1,4 @@
-// Copyright © 2019 Binance
+// Copyright © 2023 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -10,7 +10,10 @@ import (
 	"context"
 
 	"github.com/Safulet/tss-lib-private/frost/keygen"
+	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -47,5 +50,10 @@ func (p *LocalParty) Start(ctx context.Context) *tss.Error {
 			}
 		}
 	}()
+
+	var span trace.Span
+	ctx, span = tracer.StartWithFuncSpan(ctx)
+	defer span.End()
+
 	return p.LocalParty.Start(ctx)
 }

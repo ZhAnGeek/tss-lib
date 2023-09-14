@@ -1,4 +1,4 @@
-// Copyright © 2019 Binance
+// Copyright © 2023 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -24,8 +24,7 @@ func MustGetRandomInt(bits int) *big.Int {
 		panic(fmt.Errorf("MustGetRandomInt: bits should be positive, non-zero and less than %d", mustGetRandomIntMaxBits))
 	}
 	// Max random value e.g. 2^256 - 1
-	max := new(big.Int)
-	max = max.Exp(two, big.NewInt(int64(bits)), nil)
+	max := IntCalc().Exp(two, big.NewInt(int64(bits)), nil)
 
 	// Generate cryptographically strong pseudo-random int between 0 - max
 	n, err := rand.Int(rand.Reader, max)

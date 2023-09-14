@@ -109,9 +109,9 @@ func (publicKey *PublicKey) EncryptAndReturnRandomness(m *big.Int) (c *big.Int, 
 	x = common.GetRandomPositiveRelativelyPrimeInt(publicKey.N)
 	N2 := publicKey.NSquare()
 	// 1. gamma^m mod N2
-	Gm := new(big.Int).Exp(publicKey.Gamma(), m, N2)
+	Gm := common.IntCalc().Exp(publicKey.Gamma(), m, N2)
 	// 2. x^N mod N2
-	xN := new(big.Int).Exp(x, publicKey.N, N2)
+	xN := common.IntCalc().Exp(x, publicKey.N, N2)
 	// 3. (1) * (2) mod N2
 	c = common.ModInt(N2).Mul(Gm, xN)
 	return
@@ -135,9 +135,9 @@ func (publicKey *PublicKey) EncryptWithRandomness(m, x *big.Int) (c *big.Int, er
 
 	N2 := publicKey.NSquare()
 	// 1. gamma^m mod N2
-	Gm := new(big.Int).Exp(publicKey.Gamma(), m, N2)
+	Gm := common.IntCalc().Exp(publicKey.Gamma(), m, N2)
 	// 2. x^N mod N2
-	xN := new(big.Int).Exp(x, publicKey.N, N2)
+	xN := common.IntCalc().Exp(x, publicKey.N, N2)
 	// 3. (1) * (2) mod N2
 	c = common.ModInt(N2).Mul(Gm, xN)
 	return
@@ -166,7 +166,7 @@ func (publicKey *PublicKey) HomoMultObfuscate(m, c1 *big.Int) (*big.Int, *big.In
 	// cipher^m mod N2
 	c2 := common.ModInt(N2).Exp(c1, m)
 	x := common.GetRandomPositiveRelativelyPrimeInt(publicKey.N)
-	xN := new(big.Int).Exp(x, publicKey.N, N2)
+	xN := common.IntCalc().Exp(x, publicKey.N, N2)
 	c2 = common.ModInt(N2).Mul(c2, xN)
 	return c2, x, nil
 }
@@ -215,10 +215,10 @@ func (privateKey *PrivateKey) Decrypt(c *big.Int) (m *big.Int, err error) {
 		return nil, ErrMessageMalFormed
 	}
 	// 1. L(u) = (c^LambdaN-1 mod N2) / N
-	Lc := L(new(big.Int).Exp(c, privateKey.LambdaN, N2), privateKey.N)
+	Lc := L(common.IntCalc().Exp(c, privateKey.LambdaN, N2), privateKey.N)
 	if privateKey.LgInv == nil {
 		// 2. L(u) = (Gamma^LambdaN-1 mod N2) / N
-		Lg := L(new(big.Int).Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
+		Lg := L(common.IntCalc().Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
 		// 3. (1) * modInv(2) mod N
 		inv := new(big.Int).ModInverse(Lg, privateKey.N)
 		m = common.ModInt(privateKey.N).Mul(Lc, inv)
@@ -232,7 +232,7 @@ func (privateKey *PrivateKey) CacheLgInv() bool {
 	N2 := privateKey.NSquare()
 	if privateKey.LgInv == nil {
 		// 2. L(u) = (Gamma^LambdaN-1 mod N2) / N
-		Lg := L(new(big.Int).Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
+		Lg := L(common.IntCalc().Exp(privateKey.Gamma(), privateKey.LambdaN, N2), privateKey.N)
 		// 3. (1) * modInv(2) mod N
 		inv := new(big.Int).ModInverse(Lg, privateKey.N)
 		privateKey.LgInv = inv // TODO

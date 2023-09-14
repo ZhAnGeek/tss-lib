@@ -10,11 +10,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
-	"math/big"
-
+	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -26,6 +27,10 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
+
+	_, span := tracer.StartWithFuncSpan(ctx)
+	defer span.End()
+
 	round.number = 4
 	round.started = true
 	round.resetOK()

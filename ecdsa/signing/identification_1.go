@@ -17,7 +17,9 @@ import (
 	zkpmulstar "github.com/Safulet/tss-lib-private/crypto/zkp/mulstar"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
+	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {
@@ -29,6 +31,14 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
+
+	var span trace.Span
+	ctx, span = tracer.StartWithFuncSpan(ctx)
+	defer span.End()
+
+	common.TryEmitTSSRoundStartEvent(ctx, TaskName, "round3")
+	defer common.TryEmitTSSRoundEndEvent(ctx, TaskName, "round3")
+
 	round.number = 3
 	round.started = true
 	round.resetOK()

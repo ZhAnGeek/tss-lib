@@ -1,4 +1,4 @@
-// Copyright © 2019 Binance
+// Copyright © 2023 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -18,7 +18,10 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
+	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 func VerifySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK *crypto.ECPoint) bool {
@@ -44,10 +47,18 @@ func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *
 		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 2}}}
 }
 
-func (round *signout) Start(_ context.Context) *tss.Error {
+func (round *signout) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
+
+	var span trace.Span
+	ctx, span = tracer.StartWithFuncSpan(ctx)
+	defer span.End()
+
+	common.TryEmitTSSRoundStartEvent(ctx, TaskName, "round2")
+	defer common.TryEmitTSSRoundEndEvent(ctx, TaskName, "round2")
+
 	round.number = 2
 	round.started = true
 	round.resetOK()

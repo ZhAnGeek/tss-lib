@@ -1,4 +1,4 @@
-// Copyright © 2019 Binance
+// Copyright © 2023 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -13,9 +13,13 @@ import (
 	"errors"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
+
+	"go.opentelemetry.io/otel/trace"
 )
 
 // round 1 represents round 1 of the signing part of the pairing-based threshold signature spec on BLS12381G2
@@ -24,10 +28,17 @@ func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *loc
 		&base{params, key, temp, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
-func (round *round1) Start(_ context.Context) *tss.Error {
+func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
+
+	var span trace.Span
+	ctx, span = tracer.StartWithFuncSpan(ctx)
+	defer span.End()
+
+	common.TryEmitTSSRoundStartEvent(ctx, TaskName, "round1")
+	defer common.TryEmitTSSRoundEndEvent(ctx, TaskName, "round1")
 
 	var suite []byte
 	if tss.SameCurve(round.EC(), tss.Bls12381G2()) {

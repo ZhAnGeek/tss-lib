@@ -1,4 +1,4 @@
-// Copyright © 2019 Binance
+// Copyright © 2023 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -54,7 +54,7 @@ func (mi *modInt) Mul(x, y *big.Int) *big.Int {
 }
 
 func (mi *modInt) Exp(x, y *big.Int) *big.Int {
-	return new(big.Int).Exp(x, y, mi.i())
+	return IntCalc().Exp(x, y, mi.i())
 }
 
 func (mi *modInt) ModInverse(g *big.Int) *big.Int {

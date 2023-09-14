@@ -2,10 +2,6 @@ package log
 
 import "context"
 
-const (
-	TSSLib string = "tss-lib-private"
-)
-
 var logger ILogger
 
 func init() {

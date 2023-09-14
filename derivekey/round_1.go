@@ -1,4 +1,4 @@
-// Copyright © 2019 Binance
+// Copyright © 2023 Binance
 //
 // This file is part of Binance. The full Binance copyright notice, including
 // terms governing use, modification, and redistribution, is contained in the
@@ -14,11 +14,13 @@ import (
 	"math/big"
 
 	"github.com/coinbase/kryptology/pkg/core/curves"
+	"go.opentelemetry.io/otel/trace"
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/hash2curve"
-	"github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
+	zkpeqlog "github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
+	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -123,6 +125,13 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
+
+	var span trace.Span
+	ctx, span = tracer.StartWithFuncSpan(ctx)
+	defer span.End()
+
+	common.TryEmitTSSRoundStartEvent(ctx, TaskName, "round1")
+	defer common.TryEmitTSSRoundEndEvent(ctx, TaskName, "round1")
 
 	round.number = 1
 	round.started = true

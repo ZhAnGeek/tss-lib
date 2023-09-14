@@ -12,11 +12,12 @@ import (
 	"sync"
 	"time"
 
+	_const "github.com/Safulet/tss-lib-private/const"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-var mpcLogTag = zap.String("library", TSSLib)
+var mpcLogTag = zap.String("library", _const.TSSLib)
 
 type defaultLogger struct {
 	zapLogger *zap.Logger

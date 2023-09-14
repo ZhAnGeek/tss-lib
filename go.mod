@@ -11,7 +11,9 @@ require (
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.2
 	github.com/ethereum/go-ethereum v1.10.16
 	github.com/pkg/errors v0.9.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.8.4
+	go.opentelemetry.io/otel v1.17.0
+	go.opentelemetry.io/otel/trace v1.17.0
 	go.uber.org/zap v1.19.1
 	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
