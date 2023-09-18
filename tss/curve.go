@@ -15,7 +15,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/crypto/curve25519"
 	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
-	s256k1 "github.com/btcsuite/btcd/btcec"
+	"github.com/Safulet/tss-lib-private/crypto/secp256k1"
 	"github.com/coinbase/kryptology/pkg/core/curves"
 )
 
@@ -38,10 +38,10 @@ var (
 
 // Init default curve (secp256k1)
 func init() {
-	ec = s256k1.S256()
+	ec = secp256k1.S256()
 
 	registry = make(map[CurveName]elliptic.Curve)
-	registry[Secp256k1] = s256k1.S256()
+	registry[Secp256k1] = secp256k1.S256()
 	registry[Nist256p1] = elliptic.P256()
 	registry[Ed25519] = edwards25519.Edwards25519()
 	registry[BLS12381G2] = bls12381.G2Curve()
@@ -101,7 +101,7 @@ func SetCurve(curve elliptic.Curve) {
 
 // secp256k1
 func S256() elliptic.Curve {
-	return s256k1.S256()
+	return secp256k1.S256()
 }
 
 func P256() elliptic.Curve {

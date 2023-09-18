@@ -115,7 +115,7 @@ func TestPublicDerivation(t *testing.T) {
 
 tests:
 	for i, test := range tests {
-		extKey, err := NewExtendedKeyFromString(test.master, btcec.S256())
+		extKey, err := NewExtendedKeyFromString(test.master, tss.S256())
 		if err != nil {
 			t.Errorf("NewKeyFromString #%d (%s): unexpected error "+
 				"creating extended key: %v", i, test.name,
