@@ -64,7 +64,6 @@ func NewLocalParty(
 	end chan<- LocalPartySaveData,
 ) tss.Party {
 	partyCount := params.PartyCount()
-	params.SetIsSchnorr()
 	data := NewLocalPartySaveData(partyCount)
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
