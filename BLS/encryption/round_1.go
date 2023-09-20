@@ -14,7 +14,6 @@ import (
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
 	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
@@ -40,11 +39,17 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	common.TryEmitTSSRoundStartEvent(ctx, TaskName, "round1")
 	defer common.TryEmitTSSRoundEndEvent(ctx, TaskName, "round1")
 
-	var suite []byte
+	var totalPK, suite []byte
 	if tss.SameCurve(round.EC(), tss.Bls12381G2()) {
 		suite = bls12381.GetBLSSignatureSuiteG1()
+		totalPK = make([]byte, 192)
+		round.key.PubKey.X().FillBytes(totalPK[:96])
+		round.key.PubKey.Y().FillBytes(totalPK[96:])
 	} else if tss.SameCurve(round.EC(), tss.Bls12381G1()) {
 		suite = bls12381.GetBLSSignatureSuiteG2()
+		totalPK = make([]byte, 96)
+		round.key.PubKey.X().FillBytes(totalPK[:48])
+		round.key.PubKey.Y().FillBytes(totalPK[48:])
 	}
 	round.number = 1
 	round.started = true
@@ -53,7 +58,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
-	encryptedResult, err := crypto.EncryptByECPoint(suite, round.key.PubKey, round.temp.m.Bytes())
+	encryptedResult, err := bls12381.Encrypt(suite, totalPK, round.temp.m.Bytes())
 
 	if err != nil {
 		return round.WrapError(err)

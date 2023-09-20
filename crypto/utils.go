@@ -8,7 +8,6 @@ package crypto
 
 import (
 	"bytes"
-	"crypto/aes"
 	"fmt"
 	"math/big"
 
@@ -35,20 +34,17 @@ func GenerateNTildei(safePrimes [2]*big.Int) (NTildei, h1i, h2i *big.Int, err er
 	return NTildei, h1, h2, nil
 }
 
-func EncryptByECPoint(suite []byte, pubKey *ECPoint, message []byte) ([]byte, error) {
+func BLSEncryptByECPoint(suite []byte, pubKey *ECPoint, message []byte) ([]byte, error) {
 	var totalPK = make([]byte, 0)
-	if bytes.Compare(suite, bls12381.GetBLSSignatureSuiteG1()) == 0 {
+	if bytes.Equal(suite, bls12381.GetBLSSignatureSuiteG1()) {
 		totalPK = make([]byte, 192)
 		pubKey.X().FillBytes(totalPK[:96])
 		pubKey.Y().FillBytes(totalPK[96:])
 	}
-	if bytes.Compare(suite, bls12381.GetBLSSignatureSuiteG2()) == 0 {
+	if bytes.Equal(suite, bls12381.GetBLSSignatureSuiteG2()) {
 		totalPK = make([]byte, 96)
 		pubKey.X().FillBytes(totalPK[:48])
 		pubKey.Y().FillBytes(totalPK[48:])
 	}
-	message = bls12381.PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
-	encryptedMessage := make([]byte, aes.BlockSize+bls12381.PointG2Size+bls12381.PointG1Size+bls12381.Sha256SumSize+len(message)+HmacSize)
-	err := bls12381.EncryptByGeneratedAes(suite, encryptedMessage, totalPK, message)
-	return encryptedMessage, err
+	return bls12381.Encrypt(suite, totalPK, message)
 }

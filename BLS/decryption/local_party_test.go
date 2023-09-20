@@ -8,10 +8,11 @@ package decryption
 
 import (
 	"context"
-	"github.com/Safulet/tss-lib-private/log"
 	"math/big"
 	"sync/atomic"
 	"testing"
+
+	"github.com/Safulet/tss-lib-private/log"
 
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
@@ -64,7 +65,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	textOri := "Hello world 1, 2, 3, 4, 5, 6, 7"
 	text := new(big.Int).SetBytes([]byte(textOri))
-	msg, err := crypto.EncryptByECPoint(suite, keys[0].PubKey, text.Bytes())
+	msg, err := crypto.BLSEncryptByECPoint(suite, keys[0].PubKey, text.Bytes())
 	if err != nil {
 		t.FailNow()
 	}

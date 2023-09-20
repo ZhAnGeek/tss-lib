@@ -23,7 +23,10 @@ import (
 type fe [6]uint64
 
 // modulus = p
-var modulus = fe{0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a}
+var (
+	HmacSize = 32
+	modulus  = fe{0xb9feffffffffaaab, 0x1eabfffeb153ffff, 0x6730d2a0f6b0f624, 0x64774b84f38512bf, 0x4b1ba7b6434bacd7, 0x1a0111ea397fe69a}
+)
 
 func (fe *fe) big() *big.Int {
 	return new(big.Int).SetBytes(fe.bytes())
@@ -67,13 +70,13 @@ type PublicKey []byte
 type PrivateKey []byte
 
 func Sign(suite []byte, privateKey PrivateKey, message []byte) []byte {
-	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG1()) {
 		size := SignatureSizeG1 * 2
 		signature := make([]byte, size)
 		signG1(signature, privateKey, message)
 		return signature
 	}
-	if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG2()) {
 		size := SignatureSizeG2 * 2
 		signature := make([]byte, size)
 		signG2(signature, privateKey, message)
@@ -121,10 +124,10 @@ func signG2(signature, privateKey, message []byte) {
 }
 
 func Verify(suite []byte, publicKey PublicKey, message, sig []byte) bool {
-	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG1()) {
 		return verifyG1(publicKey, message, sig)
 	}
-	if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG2()) {
 		return verifyG2(publicKey, message, sig)
 	}
 	return false
@@ -286,7 +289,7 @@ func VerifyDecryptShareSignatureSuiteG2(share []byte, Yi *bls.PointG1, U *bls.Po
 }
 
 func Decrypt(suite []byte, shares [][]byte, cipherText []byte, yig2 []*bls.PointG2, yig1 []*bls.PointG1) ([]byte, error) {
-	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG1()) {
 		iv := cipherText[:aes.BlockSize]
 		cipherText = cipherText[aes.BlockSize:]
 		U, V, W, err := getUVWFromCipherTextSignatureSuiteG1(cipherText)
@@ -337,7 +340,7 @@ func Decrypt(suite []byte, shares [][]byte, cipherText []byte, yig2 []*bls.Point
 		return RemovePadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
 	}
 
-	if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG2()) {
 		iv := cipherText[:aes.BlockSize]
 		cipherText = cipherText[aes.BlockSize:]
 		U, V, W, err := getUVWFromCipherTextSignatureSuiteG2(cipherText)
@@ -470,7 +473,7 @@ func VerifyCipherTextSignatureSuiteG2(U *bls.PointG1, V []byte, W *bls.PointG2) 
 }
 
 func DecryptShare(suite []byte, privateKey PrivateKey, cipherText []byte) ([]byte, error) {
-	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG1()) {
 		cipherText = cipherText[aes.BlockSize:]
 		U, V, W, err := getUVWFromCipherTextSignatureSuiteG1(cipherText)
 		if err != nil {
@@ -492,7 +495,7 @@ func DecryptShare(suite []byte, privateKey PrivateKey, cipherText []byte) ([]byt
 		bts = append(bts, g2.ToBytes(share)...)
 		bts = append(bts, g1.ToBytes(wi)...)
 		return bts, nil
-	} else if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+	} else if bytes.Equal(suite, GetBLSSignatureSuiteG2()) {
 		cipherText = cipherText[aes.BlockSize:]
 		U, V, W, err := getUVWFromCipherTextSignatureSuiteG2(cipherText)
 		if err != nil {
@@ -521,7 +524,7 @@ func DecryptShare(suite []byte, privateKey PrivateKey, cipherText []byte) ([]byt
 
 func Encrypt(suite []byte, publicKey PublicKey, message []byte) ([]byte, error) {
 	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
-	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+32)
+	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+HmacSize)
 	err := encrypt(suite, encryptedMessage, publicKey, message)
 	return encryptedMessage, err
 }
@@ -641,7 +644,7 @@ func hashToGroupG2(point *bls.PointG2, message []byte) (*bls.PointG1, error) {
 }
 
 func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, error) {
-	if bytes.Compare(suite, GetBLSSignatureSuiteG1()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG1()) {
 		pk, err := bls.NewG2().FromBytes(publicKey)
 		if err != nil {
 			return nil, err
@@ -699,7 +702,7 @@ func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, e
 		return cipherBytes, nil
 	}
 
-	if bytes.Compare(suite, GetBLSSignatureSuiteG2()) == 0 {
+	if bytes.Equal(suite, GetBLSSignatureSuiteG2()) {
 		pk, err := bls.NewG1().FromBytes(publicKey)
 		if err != nil {
 			return nil, err
@@ -761,19 +764,6 @@ func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, e
 }
 
 func encrypt(suite []byte, cipherText, publicKey, message []byte) error {
-	aesKey, hmacBytes, iv := encryptWithAes(message)
-	encryptedAes, err := encryptAesKey(suite, publicKey, aesKey)
-	if err != nil {
-		return err
-	}
-
-	copy(cipherText, iv)
-	copy(cipherText[aes.BlockSize:], encryptedAes)
-	copy(cipherText[aes.BlockSize+PointG2Size+Sha256SumSize+PointG1Size:], hmacBytes)
-	return nil
-}
-
-func EncryptByGeneratedAes(suite []byte, cipherText, publicKey, message []byte) error {
 	aesKey, hmacBytes, iv := encryptWithAes(message)
 	encryptedAes, err := encryptAesKey(suite, publicKey, aesKey)
 	if err != nil {
