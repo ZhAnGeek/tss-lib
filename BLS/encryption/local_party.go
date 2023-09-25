@@ -9,7 +9,6 @@ package encryption
 import (
 	"context"
 	"fmt"
-	"math/big"
 
 	"github.com/Safulet/tss-lib-private/BLS/keygen"
 	"github.com/Safulet/tss-lib-private/tracer"
@@ -38,13 +37,13 @@ type (
 
 	localTempData struct {
 		// localMessageStore
-		m *big.Int
+		m []byte
 	}
 )
 
 func NewLocalParty(
 	ctx context.Context,
-	msg *big.Int,
+	msg []byte,
 	params *tss.Parameters,
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
@@ -74,15 +73,11 @@ func (p *LocalParty) Start(ctx context.Context) *tss.Error {
 }
 
 func (p *LocalParty) Update(ctx context.Context, msg tss.ParsedMessage) (ok bool, err *tss.Error) {
-	return tss.BaseUpdate(ctx, p, msg, TaskName)
+	return true, nil
 }
 
 func (p *LocalParty) UpdateFromBytes(ctx context.Context, wireBytes []byte, from *tss.PartyID, isBroadcast bool) (bool, *tss.Error) {
-	msg, err := tss.ParseWireMessage(wireBytes, from, isBroadcast)
-	if err != nil {
-		return false, p.WrapError(err)
-	}
-	return p.Update(ctx, msg)
+	return true, nil
 }
 
 func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (bool, *tss.Error) {

@@ -58,7 +58,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	i := round.PartyID().Index
 	round.ok[i] = true
 
-	encryptedResult, err := bls12381.Encrypt(suite, totalPK, round.temp.m.Bytes())
+	encryptedResult, err := bls12381.Encrypt(suite, totalPK, round.temp.m)
 
 	if err != nil {
 		return round.WrapError(err)
