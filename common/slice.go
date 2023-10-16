@@ -69,3 +69,39 @@ func ReverseBytes(s []byte) []byte {
 	}
 	return s
 }
+
+// BatchInvert inverts all elements of a
+func BatchInvert(a []*big.Int, N *big.Int) ([]*big.Int, bool) {
+	n := len(a)
+	if n == 0 {
+		return a, false
+	}
+	ret := make([]*big.Int, n)
+	hasZero := false
+	modQ := ModInt(N)
+
+	accumulator := big.NewInt(1)
+	zeroes := make([]bool, n)
+
+	for i := 0; i < n; i++ {
+		if a[i] == nil || a[i].Sign() == 0 {
+			zeroes[i] = true
+			hasZero = true
+			continue
+		}
+		ret[i] = accumulator
+		accumulator = modQ.Mul(accumulator, a[i])
+	}
+
+	invertAcc := modQ.ModInverse(accumulator)
+
+	for i := len(a) - 1; i >= 0; i-- {
+		if zeroes[i] {
+			continue
+		}
+		ret[i] = modQ.Mul(ret[i], invertAcc)
+		invertAcc = modQ.Mul(invertAcc, a[i])
+	}
+
+	return ret, hasZero
+}

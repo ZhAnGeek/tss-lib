@@ -18,7 +18,6 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto/vss"
 	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
 	"github.com/Safulet/tss-lib-private/schnorr/keygen"
-	"github.com/Safulet/tss-lib-private/schnorr/signing"
 	"github.com/Safulet/tss-lib-private/tracer"
 	"github.com/Safulet/tss-lib-private/tss"
 
@@ -62,7 +61,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks)), round.PartyID())
 	}
 	newKs := round.NewParties().IDs().Keys()
-	wi, _ := signing.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks, round.input.BigXj)
+	wi, _ := crypto.PrepareForSigning(round.Params().EC(), i, len(round.OldParties().IDs()), xi, ks, round.input.BigXj)
 
 	// 2.
 	vi, shares, err := vss.Create(round.Params().EC(), round.NewThreshold(), wi, newKs)

@@ -8,6 +8,7 @@ package crypto
 
 import (
 	"bytes"
+	"crypto/elliptic"
 	"fmt"
 	"math/big"
 
@@ -47,4 +48,61 @@ func BLSEncryptByECPoint(suite []byte, pubKey *ECPoint, message []byte) ([]byte,
 		pubKey.Y().FillBytes(totalPK[48:])
 	}
 	return bls12381.Encrypt(suite, totalPK, message)
+}
+
+func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int, bigXs []*ECPoint) (wi *big.Int, bigWs []*ECPoint) {
+	modQ := common.ModInt(ec.Params().N)
+	if len(ks) != len(bigXs) {
+		panic(fmt.Errorf("PrepareForSigning: len(ks) != len(bigXs) (%d != %d)", len(ks), len(bigXs)))
+	}
+	if len(ks) != pax {
+		panic(fmt.Errorf("PrepareForSigning: len(ks) != pax (%d != %d)", len(ks), pax))
+	}
+	if len(ks) <= i {
+		panic(fmt.Errorf("PrepareForSigning: len(ks) <= i (%d <= %d)", len(ks), i))
+	}
+
+	// batch inverse ks[j] - ks[i]
+	Ksji := make([]*big.Int, pax*pax)
+	for j := 0; j < pax; j++ {
+		for i := 0; i < pax; i++ {
+			if j == i {
+				continue
+			}
+			Ksji[i+j*pax] = new(big.Int).Sub(ks[j], ks[i])
+		}
+	}
+	invKsji, _ := common.BatchInvert(Ksji, ec.Params().N)
+	// 2-4.
+	wi = xi
+	for j := 0; j < pax; j++ {
+		if j == i {
+			continue
+		}
+		err := common.CheckBigIntNotNil(invKsji[i+j*pax])
+		if err != nil {
+			panic(err.Error())
+		}
+		coef := modQ.Mul(ks[j], invKsji[i+j*pax])
+		wi = modQ.Mul(wi, coef)
+	}
+
+	// 5-10.
+	bigWs = make([]*ECPoint, len(ks))
+	for j := 0; j < pax; j++ {
+		bigWj := bigXs[j]
+		for c := 0; c < pax; c++ {
+			if j == c {
+				continue
+			}
+			err := common.CheckBigIntNotNil(invKsji[j+c*pax])
+			if err != nil {
+				panic(err.Error())
+			}
+			Q := modQ.Mul(ks[c], invKsji[j+c*pax])
+			bigWj = bigWj.ScalarMult(Q)
+		}
+		bigWs[j] = bigWj
+	}
+	return
 }

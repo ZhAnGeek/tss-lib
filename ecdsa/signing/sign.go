@@ -14,6 +14,7 @@ import (
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
 	"github.com/Safulet/tss-lib-private/tracer"
@@ -122,7 +123,7 @@ func (round *sign1) prepare() error {
 	if round.Threshold()+1 > len(ks) {
 		return fmt.Errorf("t+1=%d is not satisfied by the key count of %d", round.Threshold()+1, len(ks))
 	}
-	wi, BigWs := presigning.PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, BigXs)
+	wi, BigWs := crypto.PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, BigXs)
 
 	round.temp.w = wi
 	round.temp.BigWs = BigWs
