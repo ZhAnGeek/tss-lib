@@ -23,12 +23,11 @@ const (
 type (
 	base struct {
 		*tss.Parameters
-		key  *LocalPartySaveData
-		data *common.SignatureData
-		temp *localTempData
-		out  chan<- tss.Message
-		// end     chan<- common.SignatureData
-		end     chan<- tss.Message
+		key     *LocalPartySaveData
+		data    *common.SignatureData
+		temp    *localTempData
+		out     chan<- tss.Message
+		end     chan<- *DeriveKeyResultMessage
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int

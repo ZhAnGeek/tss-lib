@@ -11,11 +11,12 @@ package derivekey
 
 import (
 	"crypto/elliptic"
+	"math/big"
+
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	zkpeqlog "github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
 	"github.com/Safulet/tss-lib-private/tss"
-	"math/big"
 )
 
 var (
@@ -77,34 +78,11 @@ func (m *DeriveKeyRound1Message) UnmarshalProof() (*zkpeqlog.ProofEqLog, error) 
 	return zkpeqlog.NewProofFromBytes(pfBzs)
 }
 
-func NewDeriveKeyResultMessage(
-	from *tss.PartyID,
-	bssid *big.Int,
-	parentChainCode []byte,
-	path []byte,
-	delta *big.Int,
-	childChainCode []byte,
-) tss.ParsedMessage {
-	meta := tss.MessageRouting{
-		From:        from,
-		IsBroadcast: true,
-	}
-	content := &DeriveKeyResultMessage{
-		Bssid:           bssid.Bytes(),
-		ParentChainCode: parentChainCode,
-		Path:            path,
-		Delta:           delta.Bytes(),
-		ChildChainCode:  childChainCode,
-	}
-	msg := tss.NewMessageWrapper(meta, content)
-	return tss.NewMessage(meta, content, msg)
-}
-
 func (m *DeriveKeyResultMessage) ValidateBasic() bool {
 	return m != nil &&
 		common.NonEmptyBytes(m.GetBssid()) &&
 		common.NonEmptyBytes(m.GetParentChainCode()) &&
-		common.NonEmptyBytes(m.GetPath()) &&
+		common.NonEmptyBytes(m.GetIndex()) &&
 		common.NonEmptyBytes(m.GetDelta()) &&
 		common.NonEmptyBytes(m.GetChildChainCode())
 }

@@ -21,7 +21,7 @@ message DeriveKeyRound1Message {
 message DeriveKeyResultMessage {
     bytes bssid = 1;
     bytes parent_chain_code = 2;
-    bytes path = 3;
+    bytes index = 3;
     bytes delta = 4;
     bytes child_chain_code = 5;
 }

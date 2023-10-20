@@ -28,7 +28,7 @@ const (
 	PathFormat = "TSS-LIB#DeriveKey#EC#%s#SCHEME#%s#CHAINCODE#%s#PATH#%s"
 )
 
-func newRound1(params *tss.Parameters, key *LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- tss.Message) tss.Round {
+func newRound1(params *tss.Parameters, key *LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *DeriveKeyResultMessage) tss.Round {
 	return &round1{
 		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
@@ -150,7 +150,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}
-	wPath, err := getPathString(round.EC(), "TBD", round.temp.pChainCode, round.temp.path)
+	wPath, err := getPathString(round.EC(), "TBD", round.temp.pChainCode, round.temp.index)
 	if err != nil {
 		return round.WrapError(err, round.PartyID())
 	}

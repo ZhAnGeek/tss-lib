@@ -124,7 +124,7 @@ func E2EConcurrent(ec elliptic.Curve, fixtureDir string, t *testing.T) {
 
 	errCh := make(chan *tss.Error, len(derivekeyPIDs))
 	outCh := make(chan tss.Message, len(derivekeyPIDs))
-	endCh := make(chan tss.Message, len(derivekeyPIDs))
+	endCh := make(chan *DeriveKeyResultMessage, len(derivekeyPIDs))
 
 	updater := test.SharedPartyUpdater
 
@@ -148,6 +148,7 @@ func E2EConcurrent(ec elliptic.Curve, fixtureDir string, t *testing.T) {
 	wg.Wait()
 
 	var ended int32
+	deltas := [][]byte{}
 deriveChildKey:
 	for {
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
@@ -172,16 +173,11 @@ deriveChildKey:
 				}
 				go updater(ctx, parties[dest[0].Index], msg, errCh)
 			}
-
-		case msg := <-endCh:
+		case res := <-endCh:
 			atomic.AddInt32(&ended, 1)
-			bz, _, err := msg.WireBytes()
-			assert.NoError(t, err)
-			pMsg, err := tss.ParseWireMessage(bz, msg.GetFrom(), msg.IsBroadcast())
-			assert.NoError(t, err)
-			res := pMsg.Content().(*DeriveKeyResultMessage)
-			ilNum := res.GetDelta()
-			t.Log(msg.GetFrom(), "ilNum:", new(big.Int).SetBytes(ilNum).String())
+			delta := res.GetDelta()
+			t.Log("delta:", new(big.Int).SetBytes(delta).String())
+			deltas = append(deltas, delta)
 			if atomic.LoadInt32(&ended) == int32(len(derivekeyPIDs)) {
 				t.Logf("Done. Received derive result from %d participants", ended)
 
@@ -189,6 +185,8 @@ deriveChildKey:
 			}
 		}
 	}
+	assert.Equal(t, len(derivekeyPIDs), len(deltas))
+	assert.Equal(t, deltas[0], deltas[1])
 }
 
 func TestE2EConcurrent(t *testing.T) {

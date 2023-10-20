@@ -66,8 +66,13 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	log.Debug(ctx, "%s Derived ilNum: 0x%x\nChildChaincode: 0x%x\n",
 		round.PartyID(), ilNum, new(big.Int).SetBytes(round.temp.cChainCode))
 
-	result := NewDeriveKeyResultMessage(round.PartyID(), round.temp.bssid,
-		round.temp.pChainCode, round.temp.path, ilNum, round.temp.cChainCode)
+	result := &DeriveKeyResultMessage{
+		Bssid:           round.temp.bssid.Bytes(),
+		ParentChainCode: round.temp.pChainCode,
+		Index:           round.temp.index,
+		Delta:           ilNum.Bytes(),
+		ChildChainCode:  round.temp.cChainCode,
+	}
 	round.end <- result
 
 	return nil

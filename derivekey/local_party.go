@@ -45,6 +45,10 @@ type (
 
 		// used for test assertions (maybe discarded)
 		PubKey *crypto.ECPoint // y
+
+		// used for ecdsa and eddsa backward compatibility
+		ECDSAPub *crypto.ECPoint
+		EDDSAPub *crypto.ECPoint
 	}
 
 	LocalParty struct {
@@ -57,8 +61,7 @@ type (
 
 		// outbound messaging
 		out chan<- tss.Message
-		// end chan<- common.SignatureData
-		end chan<- tss.Message
+		end chan<- *DeriveKeyResultMessage
 	}
 
 	localMessageStore struct {
@@ -68,8 +71,8 @@ type (
 	localTempData struct {
 		localMessageStore
 
-		// child key path
-		path []byte
+		// child key index
+		index []byte
 		// parent chain code
 		pChainCode []byte
 		cChainCode []byte
@@ -85,12 +88,12 @@ type (
 )
 
 func NewLocalParty(
-	path []byte,
+	index []byte,
 	chainCode []byte,
 	params *tss.Parameters,
 	key LocalPartySaveData,
 	out chan<- tss.Message,
-	end chan<- tss.Message,
+	end chan<- *DeriveKeyResultMessage,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
 	p := &LocalParty{
@@ -105,7 +108,7 @@ func NewLocalParty(
 	p.temp.derivekeyRound1Messages = make([]tss.ParsedMessage, partyCount)
 
 	// temp data init
-	p.temp.path = path
+	p.temp.index = index
 	p.temp.pChainCode = chainCode
 	return p
 }
@@ -124,7 +127,16 @@ func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.Sorte
 	}
 	newData := NewLocalPartySaveData(sortedIDs.Len())
 	newData.LocalSecrets = sourceData.LocalSecrets
+
 	newData.PubKey = sourceData.PubKey
+	if sourceData.ECDSAPub != nil {
+		newData.PubKey = sourceData.ECDSAPub
+	}
+
+	if sourceData.EDDSAPub != nil {
+		newData.PubKey = sourceData.EDDSAPub
+	}
+
 	for j, id := range sortedIDs {
 		savedIdx, ok := keysToIndices[hex.EncodeToString(id.Key)]
 		if !ok {
