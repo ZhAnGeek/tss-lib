@@ -137,7 +137,8 @@ signing:
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
-		keyDerivationDelta := big.NewInt(10)
+		keyDerivationDelta, ok := new(big.Int).SetString("26584850041541184611210048611703299842106441087558008034516645976981837299974", 10)
+		assert.True(t, ok)
 		P := NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*LocalParty)
 		signParties = append(signParties, P)
 	}

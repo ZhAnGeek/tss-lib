@@ -128,14 +128,15 @@ func E2EConcurrent(ec elliptic.Curve, fixtureDir string, t *testing.T) {
 
 	updater := test.SharedPartyUpdater
 
-	path := []byte("/6667'/")
+	n, _ := new(big.Int).SetString("2147483648", 10)
+	index := n.Bytes()
 	chainCode := []byte("testChainCodeABC")
 	// init the parties
 	wg := sync.WaitGroup{}
 	for i := 0; i < len(derivekeyPIDs); i++ {
 		params := tss.NewParameters(ec, p2pCtx, derivekeyPIDs[i], len(derivekeyPIDs), testThreshold, false, 0)
 
-		P := NewLocalParty(path, chainCode, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(index, chainCode, params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		wg.Add(1)
 		go func(P *LocalParty) {

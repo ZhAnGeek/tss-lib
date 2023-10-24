@@ -9,11 +9,12 @@ package signing
 import (
 	"context"
 	"fmt"
-	"github.com/Safulet/tss-lib-private/crypto"
 	"hash"
 	"math/big"
 	"sync/atomic"
 	"testing"
+
+	"github.com/Safulet/tss-lib-private/crypto"
 
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
@@ -60,7 +61,8 @@ func TestE2EConcurrent(t *testing.T) {
 	updater := test.SharedPartyUpdater
 
 	msg := big.NewInt(200).Bytes()
-	keyDerivationDelta := big.NewInt(666777)
+	keyDerivationDelta, ok := new(big.Int).SetString("999797428896018067204024566940022162647215160545998861444590892633251233502", 10)
+	assert.True(t, ok)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(ec, p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
@@ -143,7 +145,7 @@ signing:
 	}
 }
 
-func TestE2EConcurrentBlake2b(t *testing.T) {
+func TestEE2EConcurrentBlake2b(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
 	ec := tss.Edwards()
