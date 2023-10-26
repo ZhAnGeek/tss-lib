@@ -62,7 +62,13 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	hmac512.Write(sumZ.X().Bytes())
 	ilr := hmac512.Sum(nil)
 	ilNum := new(big.Int).SetBytes(ilr[:32])
-	ilNum = new(big.Int).Mod(ilNum, round.EC().Params().N)
+	N := round.EC().Params().N
+	qBytesLen := (N.BitLen() >> 3) + 1
+	for ilNum.Cmp(N) != -1 {
+		ilNumAdd := new(big.Int).Add(ilNum, big.NewInt(1))
+		reSampleBytes := sha512.Sum512(append([]byte("ResampleIlNumInDeriveKey"), ilNumAdd.Bytes()...))
+		ilNum = new(big.Int).SetBytes(reSampleBytes[:qBytesLen])
+	}
 	round.temp.cChainCode = ilr[32:]
 	log.Debug(ctx, "%s Derived ilNum: 0x%x\nChildChaincode: 0x%x\n",
 		round.PartyID(), ilNum, new(big.Int).SetBytes(round.temp.cChainCode))
