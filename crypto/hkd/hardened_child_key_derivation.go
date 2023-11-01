@@ -20,11 +20,6 @@ func DeriveHardenedChildPublicKey(curve elliptic.Curve, pubKey *crypto.ECPoint, 
 		childPkX, childPkY = curve.Add(pubKey.X(), pubKey.Y(), DeltaX, DeltaY)
 	} else {
 
-		if tss.SameCurve(curve, tss.Pallas()) {
-			ilNum = new(big.Int).SetBit(ilNum, 255, 0)
-			ilNum = new(big.Int).SetBit(ilNum, 254, 0)
-		}
-
 		if ilNum.Cmp(curve.Params().N) >= 0 || ilNum.Sign() == 0 {
 			// falling outside the valid range for curve private keys
 			return nil, fmt.Errorf("invalid derived key")
