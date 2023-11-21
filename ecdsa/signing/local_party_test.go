@@ -128,7 +128,7 @@ signing:
 
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
-	sigCh := make(chan common.SignatureData, len(signPIDs))
+	sigCh := make(chan *common.SignatureData, len(signPIDs))
 	sdumpCh := make(chan *LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
@@ -281,7 +281,7 @@ signing:
 
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
-	sigCh := make(chan common.SignatureData, len(signPIDs))
+	sigCh := make(chan *common.SignatureData, len(signPIDs))
 	sdumpCh := make(chan *LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater

@@ -45,7 +45,7 @@ type (
 
 		// outbound messaging
 		out chan<- tss.Message
-		end chan<- keygen.LocalPartySaveData
+		end chan<- *keygen.LocalPartySaveData
 	}
 
 	localMessageStore struct {
@@ -82,7 +82,7 @@ func NewLocalParty(
 	params *tss.ReSharingParameters,
 	key keygen.LocalPartySaveData,
 	out chan<- tss.Message,
-	end chan<- keygen.LocalPartySaveData,
+	end chan<- *keygen.LocalPartySaveData,
 ) tss.Party {
 	oldPartyCount := len(params.OldParties().IDs())
 	subset := key

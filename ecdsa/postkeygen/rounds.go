@@ -25,7 +25,7 @@ type (
 		save    *keygen.LocalPartySaveData
 		temp    *localTempData
 		out     chan<- tss.Message
-		end     chan<- keygen.LocalPartySaveData
+		end     chan<- *keygen.LocalPartySaveData
 		ok      []bool // `ok` tracks parties which have been verified by Update()
 		started bool
 		number  int

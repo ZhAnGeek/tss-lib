@@ -123,7 +123,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}
 
-	round.end <- *round.data
+	round.end <- round.data
 	return nil
 }
 

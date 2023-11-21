@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func newRoundStart(params *tss.Parameters, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- keygen.LocalPartySaveData) tss.Round {
+func newRoundStart(params *tss.Parameters, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *keygen.LocalPartySaveData) tss.Round {
 	return &round1{&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
 }
 
@@ -38,7 +38,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	// Paillier key already generate
 	if round.save.ValidatePreparamsSaved() {
 		log.Info(ctx, "you have trusted setup for this keygen")
-		round.end <- *round.save
+		round.end <- round.save
 		return nil
 	}
 	round.number = 1

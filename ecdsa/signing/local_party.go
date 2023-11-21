@@ -44,7 +44,7 @@ type (
 
 		// outbound messaging
 		out         chan<- tss.Message
-		end         chan<- common.SignatureData
+		end         chan<- *common.SignatureData
 		dump        chan<- *LocalDumpPB
 		startRndNum int
 	}
@@ -103,7 +103,7 @@ func NewLocalParty(
 	key keygen.LocalPartySaveData,
 	keyDerivationDelta *big.Int,
 	out chan<- tss.Message,
-	end chan<- common.SignatureData,
+	end chan<- *common.SignatureData,
 	dump chan<- *LocalDumpPB,
 ) tss.Party {
 	partyCount := len(params.Parties().IDs())
@@ -165,7 +165,7 @@ func RestoreLocalParty(
 	key keygen.LocalPartySaveData,
 	du *LocalDumpPB,
 	out chan<- tss.Message,
-	end chan<- common.SignatureData,
+	end chan<- *common.SignatureData,
 	dump chan<- *LocalDumpPB,
 ) (tss.Party, *tss.Error) {
 	p := &LocalParty{
@@ -209,7 +209,7 @@ func RestoreLocalParty(
 
 func (p *LocalParty) FirstRound() tss.Round {
 	newRound := []interface{}{newRound1, newRound2, newRound3, newRound4}
-	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *presigning.PreSignatureData, *common.SignatureData, *localTempData, chan<- tss.Message, chan<- common.SignatureData, chan<- *LocalDumpPB) tss.Round)(p.params, &p.keys, p.preData, &p.data, &p.temp, p.out, p.end, p.dump)
+	return newRound[p.startRndNum-1].(func(*tss.Parameters, *keygen.LocalPartySaveData, *presigning.PreSignatureData, *common.SignatureData, *localTempData, chan<- tss.Message, chan<- *common.SignatureData, chan<- *LocalDumpPB) tss.Round)(p.params, &p.keys, p.preData, &p.data, &p.temp, p.out, p.end, p.dump)
 }
 
 func (p *LocalParty) Start(ctx context.Context) *tss.Error {

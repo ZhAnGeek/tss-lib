@@ -42,7 +42,7 @@ type (
 
 		// outbound messaging
 		out chan<- tss.Message
-		end chan<- keygen.LocalPartySaveData
+		end chan<- *keygen.LocalPartySaveData
 	}
 
 	localTempData struct {
@@ -62,7 +62,7 @@ type (
 func NewLocalParty(
 	params *tss.Parameters,
 	out chan<- tss.Message,
-	end chan<- keygen.LocalPartySaveData,
+	end chan<- *keygen.LocalPartySaveData,
 	optionalPreParams ...keygen.LocalPreParams,
 ) tss.Party {
 	partyCount := params.PartyCount()

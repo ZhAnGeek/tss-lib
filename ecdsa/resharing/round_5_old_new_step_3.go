@@ -91,7 +91,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 		round.input.Xi.SetInt64(0)
 	}
 
-	round.end <- *round.save
+	round.end <- round.save
 	return nil
 }
 

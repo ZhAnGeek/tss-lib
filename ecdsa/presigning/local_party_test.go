@@ -72,7 +72,7 @@ func fetchingMessages(
 	msgs *[]tss.Message,
 	preSigCh chan *PreSignatureData,
 	preSigs []*PreSignatureData,
-	sigCh chan common.SignatureData,
+	sigCh chan *common.SignatureData,
 	signOutCh chan tss.Message,
 	signParties []*sign.LocalParty,
 	updater func(ctx context.Context, party tss.Party, msg tss.Message, errCh chan<- *tss.Error),
@@ -235,7 +235,7 @@ signing:
 
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
-	sigCh := make(chan common.SignatureData, len(signPIDs))
+	sigCh := make(chan *common.SignatureData, len(signPIDs))
 	sdumpCh := make(chan *sign.LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
@@ -379,7 +379,7 @@ signing:
 
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
-	sigCh := make(chan common.SignatureData, len(signPIDs))
+	sigCh := make(chan *common.SignatureData, len(signPIDs))
 	sdumpCh := make(chan *sign.LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater
@@ -467,7 +467,7 @@ func TestR2RConcurrent(t *testing.T) {
 	preDumpCh := make(chan *LocalDumpPB, N*10)
 
 	// Sign Channels
-	sigCh := make(chan common.SignatureData, N)
+	sigCh := make(chan *common.SignatureData, N)
 	signDumpCh := make(chan *sign.LocalDumpPB, N*10)
 
 	// Updater
@@ -925,7 +925,7 @@ signing:
 
 	errCh = make(chan *tss.Error, len(signPIDs))
 	outCh = make(chan tss.Message, len(signPIDs))
-	sigCh := make(chan common.SignatureData, len(signPIDs))
+	sigCh := make(chan *common.SignatureData, len(signPIDs))
 	sdumpCh := make(chan *sign.LocalDumpPB, len(signPIDs))
 
 	updater = test.SharedPartyUpdater

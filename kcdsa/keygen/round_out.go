@@ -96,7 +96,7 @@ func (round *round_out) Start(ctx context.Context) *tss.Error {
 		}
 	}
 
-	round.end <- *round.save
+	round.end <- round.save
 	return nil
 }
 

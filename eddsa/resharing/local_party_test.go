@@ -9,10 +9,11 @@ package resharing_test
 import (
 	"context"
 	"crypto/sha512"
-	"github.com/Safulet/tss-lib-private/crypto"
 	"math/big"
 	"sync/atomic"
 	"testing"
+
+	"github.com/Safulet/tss-lib-private/crypto"
 
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
@@ -62,7 +63,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	errCh := make(chan *tss.Error, bothCommitteesPax)
 	outCh := make(chan tss.Message, bothCommitteesPax)
-	endCh := make(chan keygen.LocalPartySaveData, bothCommitteesPax)
+	endCh := make(chan *keygen.LocalPartySaveData, bothCommitteesPax)
 
 	updater := test.SharedPartyUpdater
 
@@ -129,7 +130,7 @@ func TestE2EConcurrent(t *testing.T) {
 			if save.Xi != nil {
 				index, err := save.OriginalIndex()
 				assert.NoErrorf(t, err, "should not be an error getting a party's index from save data")
-				newKeys[index] = save
+				newKeys[index] = *save
 			} else {
 				endedOldCommittee++
 			}
@@ -161,7 +162,7 @@ signing:
 
 	signErrCh := make(chan *tss.Error, len(signPIDs))
 	signOutCh := make(chan tss.Message, len(signPIDs))
-	signEndCh := make(chan common.SignatureData, len(signPIDs))
+	signEndCh := make(chan *common.SignatureData, len(signPIDs))
 
 	for j, signPID := range signPIDs {
 		params := tss.NewParameters(ec, signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)

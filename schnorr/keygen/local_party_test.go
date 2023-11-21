@@ -53,7 +53,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 
 	errCh := make(chan *tss.Error, len(pIDs))
 	outCh := make(chan tss.Message, len(pIDs))
-	endCh := make(chan LocalPartySaveData, len(pIDs))
+	endCh := make(chan *LocalPartySaveData, len(pIDs))
 
 	updater := test.SharedPartyUpdaterWithWg
 
@@ -109,7 +109,7 @@ keygen:
 			// .. here comes a workaround to recover this party's index (it was removed from save data)
 			index, err := save.OriginalIndex()
 			assert.NoErrorf(t, err, "should not be an error getting a party's index from save data")
-			tryWriteTestFixtureFile(t, index, save)
+			tryWriteTestFixtureFile(t, index, *save)
 
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(pIDs)) {
@@ -146,7 +146,7 @@ func TestE2EConcurrentAndSaveFixturesWithPallas(t *testing.T) {
 
 	errCh := make(chan *tss.Error, len(pIDs))
 	outCh := make(chan tss.Message, len(pIDs))
-	endCh := make(chan LocalPartySaveData, len(pIDs))
+	endCh := make(chan *LocalPartySaveData, len(pIDs))
 
 	updater := test.SharedPartyUpdaterWithWg
 
@@ -202,7 +202,7 @@ keygen:
 			// .. here comes a workaround to recover this party's index (it was removed from save data)
 			index, err := save.OriginalIndex()
 			assert.NoErrorf(t, err, "should not be an error getting a party's index from save data")
-			tryWriteTestFixtureFileWithCurve(t, index, save, curve)
+			tryWriteTestFixtureFileWithCurve(t, index, *save, curve)
 
 			atomic.AddInt32(&ended, 1)
 			if atomic.LoadInt32(&ended) == int32(len(pIDs)) {

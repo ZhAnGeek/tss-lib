@@ -22,17 +22,17 @@ const (
 
 type LocalParty struct {
 	*keygen.LocalParty
-	frostEnd chan keygen.LocalPartySaveData
-	end      chan<- LocalPartySaveData
+	frostEnd chan *keygen.LocalPartySaveData
+	end      chan<- *LocalPartySaveData
 }
 
 // Exported, used in `tss` client
 func NewLocalParty(
 	params *tss.Parameters,
 	out chan<- tss.Message,
-	end chan<- LocalPartySaveData,
+	end chan<- *LocalPartySaveData,
 ) tss.Party {
-	frostEnd := make(chan keygen.LocalPartySaveData, params.PartyCount())
+	frostEnd := make(chan *keygen.LocalPartySaveData, params.PartyCount())
 	params.SetIsSchnorr()
 	return &LocalParty{
 		keygen.NewLocalParty(params, out, frostEnd).(*keygen.LocalParty),
@@ -45,8 +45,8 @@ func (p *LocalParty) Start(ctx context.Context) *tss.Error {
 	go func() {
 		select {
 		case save := <-p.frostEnd:
-			p.end <- LocalPartySaveData{
-				save,
+			p.end <- &LocalPartySaveData{
+				*save,
 			}
 		}
 	}()
