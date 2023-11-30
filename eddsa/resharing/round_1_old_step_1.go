@@ -124,17 +124,19 @@ func (round *round1) Update() (bool, *tss.Error) {
 		return true, nil
 	}
 	// accept messages from old -> new committee
+	ret := true
 	for j, msg := range round.temp.dgRound1Messages {
 		if round.oldOK[j] {
 			continue
 		}
 		if msg == nil || !round.CanAccept(msg) {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.oldOK[j] = true
 
 		// save the eddsa pub received from the old committee
-		r1msg := round.temp.dgRound1Messages[0].Content().(*DGRound1Message)
+		r1msg := msg.Content().(*DGRound1Message)
 		candidate, err := r1msg.UnmarshalEDDSAPub(round.Params().EC())
 		if err != nil {
 			return false, round.WrapError(errors.New("unable to unmarshal the eddsa pub key"), msg.GetFrom())
@@ -146,7 +148,7 @@ func (round *round1) Update() (bool, *tss.Error) {
 		}
 		round.save.EDDSAPub = candidate
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round1) NextRound() tss.Round {

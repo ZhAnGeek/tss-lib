@@ -89,16 +89,18 @@ func (round *sign1) Start(ctx context.Context) *tss.Error {
 }
 
 func (round *sign1) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.R4msgSigmaShare {
 		if round.ok[j] {
 			continue
 		}
 		if msg == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *sign1) CanAccept(msg tss.ParsedMessage) bool {

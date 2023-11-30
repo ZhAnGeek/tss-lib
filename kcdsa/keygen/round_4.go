@@ -154,16 +154,18 @@ func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round4) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.r4msgRXShare {
 		if round.ok[j] {
 			continue
 		}
 		if msg == nil || round.temp.r4msgBigRXShare[j] == nil || round.temp.r4msgProofLogstars[j] == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round4) NextRound() tss.Round {

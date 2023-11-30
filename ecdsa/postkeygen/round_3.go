@@ -101,17 +101,18 @@ func (round *round3) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round3) Update() (bool, *tss.Error) {
+	ret := true
 	for j := range round.temp.ProofFacs {
 		if round.ok[j] {
 			continue
 		}
 		if round.temp.ProofFacs[j] == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	fmt.Println("all received", round.PartyID().Index)
-	return true, nil
+	return ret, nil
 }
 
 func (round *round3) NextRound() tss.Round {

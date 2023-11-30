@@ -71,19 +71,21 @@ func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round2) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.r2msg1Shares {
 		if round.ok[j] {
 			continue
 		}
 		if msg == nil {
-			return false, nil
+			ret = false
 		}
 		if round.temp.r2msg2Decommit[j] == nil || round.temp.r2msg2Proof[j] == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round2) NextRound() tss.Round {

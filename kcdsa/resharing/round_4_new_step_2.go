@@ -206,22 +206,25 @@ func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *round4) Update() (bool, *tss.Error) {
 	// accept messages from new -> old&new committees
+	ret := true
 	for j, msg2 := range round.temp.dgRound4Message2s {
 		if round.newOK[j] {
 			continue
 		}
 		if msg2 == nil || !round.CanAccept(msg2) {
-			return false, nil
+			ret = false
+			continue
 		}
 		if round.IsNewCommittee() {
 			msg1 := round.temp.dgRound4Message1s[j]
 			if msg1 == nil || !round.CanAccept(msg1) {
-				return false, nil
+				ret = false
+				continue
 			}
 		}
 		round.newOK[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round4) NextRound() tss.Round {

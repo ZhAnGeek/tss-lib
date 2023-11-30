@@ -63,16 +63,18 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 }
 
 func (round *round1) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.decryptionRound1Messages {
 		if round.ok[j] {
 			continue
 		}
 		if msg == nil || !round.CanAccept(msg) {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round1) CanAccept(msg tss.ParsedMessage) bool {

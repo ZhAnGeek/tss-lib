@@ -120,16 +120,18 @@ func (round *presign1) Start(ctx context.Context) *tss.Error {
 }
 
 func (round *presign1) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.R1msgK {
 		if round.ok[j] {
 			continue
 		}
 		if msg == nil || round.temp.R1msgG[j] == nil || round.temp.R1msgProof[j] == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *presign1) CanAccept(msg tss.ParsedMessage) bool {

@@ -180,17 +180,19 @@ func (round *round4) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round4) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.r4msgpfsch {
 		if round.ok[j] {
 			continue
 		}
 		if msg == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		// proof check is in round 4
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round4) NextRound() tss.Round {

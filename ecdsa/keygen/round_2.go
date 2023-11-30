@@ -53,6 +53,7 @@ func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round2) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.r2msgVss {
 		if round.ok[j] {
 			continue
@@ -62,11 +63,12 @@ func (round *round2) Update() (bool, *tss.Error) {
 			round.save.H2j[j] == nil || round.temp.r2msgAs[j] == nil ||
 			round.temp.r2msgCmtRandomness[j] == nil ||
 			round.temp.r2msgRids[j] == nil || round.temp.r2msgpfprm[j] == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round2) NextRound() tss.Round {

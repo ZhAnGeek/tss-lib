@@ -156,6 +156,7 @@ func (round *presign2) Start(ctx context.Context) *tss.Error {
 }
 
 func (round *presign2) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.R2msgDeltaD {
 		if round.ok[j] {
 			continue
@@ -164,12 +165,12 @@ func (round *presign2) Update() (bool, *tss.Error) {
 			round.temp.R2msgChiD[j] == nil || round.temp.R2msgChiF[j] == nil ||
 			round.temp.R2msgChiProof[j] == nil || round.temp.R2msgDeltaF[j] == nil ||
 			round.temp.R2msgDeltaProof[j] == nil || round.temp.R2msgProofLogstar[j] == nil {
-
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *presign2) CanAccept(msg tss.ParsedMessage) bool {

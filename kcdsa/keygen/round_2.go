@@ -123,15 +123,18 @@ func (round *round2) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round2) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.r2msg1SharesX {
 		if round.ok[j] {
 			continue
 		}
 		if msg == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		if round.temp.r2msg2DecommitX[j] == nil || round.temp.r2msg2ProofX[j] == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
@@ -140,14 +143,16 @@ func (round *round2) Update() (bool, *tss.Error) {
 			continue
 		}
 		if msg == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		if round.temp.r2msg2DecommitR[j] == nil || round.temp.r2msg2ProofR[j] == nil {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round2) NextRound() tss.Round {

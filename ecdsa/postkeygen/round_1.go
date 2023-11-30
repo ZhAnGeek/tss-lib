@@ -67,16 +67,18 @@ func (round *round1) CanAccept(msg tss.ParsedMessage) bool {
 }
 
 func (round *round1) Update() (bool, *tss.Error) {
+	ret := true
 	for j, msg := range round.temp.Acks {
 		if round.ok[j] {
 			continue
 		}
 		if !msg {
-			return false, nil
+			ret = false
+			continue
 		}
 		round.ok[j] = true
 	}
-	return true, nil
+	return ret, nil
 }
 
 func (round *round1) NextRound() tss.Round {
