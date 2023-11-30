@@ -78,6 +78,7 @@ func (round *round2) Update() (bool, *tss.Error) {
 		}
 		if msg == nil {
 			ret = false
+			continue
 		}
 		if round.temp.r2msg2Decommit[j] == nil || round.temp.r2msg2Proof[j] == nil {
 			ret = false
