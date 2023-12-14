@@ -45,7 +45,7 @@ func TestE2EConcurrent(t *testing.T) {
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
-	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
+	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(ec, testThreshold+1, testParticipants)
 	assert.NoError(t, err, "should load keygen fixtures")
 	assert.Equal(t, testThreshold+1, len(keys))
 	assert.Equal(t, testThreshold+1, len(signPIDs))
@@ -125,7 +125,7 @@ func E2ESigning(b *testing.B) {
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
-	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+5, testParticipants)
+	keys, signPIDs, err := keygen.LoadKeygenTestFixturesRandomSet(ec, testThreshold+5, testParticipants)
 	assert.NoError(b, err, "should load keygen fixtures")
 	assert.Equal(b, testThreshold+5, len(keys))
 	assert.Equal(b, testThreshold+5, len(signPIDs))

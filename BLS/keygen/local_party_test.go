@@ -25,12 +25,12 @@ import (
 )
 
 const (
-	testParticipants = TestParticipants
-	testThreshold    = TestThreshold
+	testParticipants = test.TestParticipants
+	testThreshold    = test.TestThreshold
 )
 
 var (
-	suite = bls12381.GetBLSSignatureSuiteG1()
+	suite = bls12381.GetBLSSignatureSuiteG2()
 	ec    = tss.GetBLSCurveBySuite(suite)
 )
 
@@ -52,7 +52,7 @@ func E2EKeyGen(b *testing.B) {
 	setUp(log.ErrorLevel)
 	b.StopTimer()
 	threshold := testThreshold
-	_, pIDs, err := LoadKeygenTestFixtures(testParticipants)
+	_, pIDs, err := LoadKeygenTestFixtures(ec, testParticipants)
 	if err != nil {
 		log.Info(ctx, "No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
@@ -194,7 +194,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	setUp(log.InfoLevel)
 
 	threshold := testThreshold
-	_, pIDs, err := LoadKeygenTestFixtures(testParticipants)
+	_, pIDs, err := LoadKeygenTestFixtures(ec, testParticipants)
 	if err != nil {
 		log.Info(ctx, "No test fixtures were found, so the safe primes will be generated from scratch. This may take a while...")
 		pIDs = tss.GenerateTestPartyIDs(testParticipants)
@@ -329,7 +329,7 @@ keygen:
 }
 
 func tryWriteTestFixtureFile(t *testing.T, index int, data LocalPartySaveData) {
-	fixtureFileName := makeTestFixtureFilePath(index)
+	fixtureFileName := makeTestFixtureFilePath(ec, index)
 
 	// fixture file does not already exist?
 	// if it does, we won't re-create it here
@@ -354,7 +354,7 @@ func tryWriteTestFixtureFile(t *testing.T, index int, data LocalPartySaveData) {
 }
 
 func tryWriteTestFixtureFileForBenchmark(b *testing.B, index int, data LocalPartySaveData) {
-	fixtureFileName := makeTestFixtureFilePath(index)
+	fixtureFileName := makeTestFixtureFilePath(ec, index)
 
 	// fixture file does not already exist?
 	// if it does, we won't re-create it here

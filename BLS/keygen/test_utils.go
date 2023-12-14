@@ -7,6 +7,7 @@
 package keygen
 
 import (
+	"crypto/elliptic"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -28,18 +29,18 @@ const (
 	TestThreshold    = test.TestParticipants / 2
 )
 const (
-	testFixtureDirFormat  = "%s/../../test/_bls_fixtures_1_3"
+	testFixtureDirFormat  = "%s/../../test/_bls_%s_fixtures_1_3"
 	testFixtureFileFormat = "keygen_data_%d.json"
 )
 
-func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
+func LoadKeygenTestFixtures(ec elliptic.Curve, qty int, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
 	keys := make([]LocalPartySaveData, 0, qty)
 	start := 0
 	if 0 < len(optionalStart) {
 		start = optionalStart[0]
 	}
 	for i := start; i < qty; i++ {
-		fixtureFilePath := makeTestFixtureFilePath(i)
+		fixtureFilePath := makeTestFixtureFilePath(ec, i)
 		bz, err := ioutil.ReadFile(fixtureFilePath)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err,
@@ -67,7 +68,7 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 	return keys, sortedPIDs, nil
 }
 
-func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
+func LoadKeygenTestFixturesRandomSet(ec elliptic.Curve, qty, fixtureCount int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {
 	keys := make([]LocalPartySaveData, 0, qty)
 	plucked := make(map[int]interface{}, qty)
 	for i := 0; len(plucked) < qty; i = (i + 1) % fixtureCount {
@@ -77,7 +78,7 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 		}
 	}
 	for i := range plucked {
-		fixtureFilePath := makeTestFixtureFilePath(i)
+		fixtureFilePath := makeTestFixtureFilePath(ec, i)
 		bz, err := ioutil.ReadFile(fixtureFilePath)
 		if err != nil {
 			return nil, nil, errors.Wrapf(err,
@@ -91,9 +92,9 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.Bls12381G2())
+			kbxj.SetCurve(ec)
 		}
-		key.PubKey.SetCurve(tss.Bls12381G2())
+		key.PubKey.SetCurve(ec)
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -109,9 +110,12 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 	return keys, sortedPIDs, nil
 }
 
-func makeTestFixtureFilePath(partyIndex int) string {
+func makeTestFixtureFilePath(ec elliptic.Curve, partyIndex int) string {
 	_, callerFileName, _, _ := runtime.Caller(0)
 	srcDirName := filepath.Dir(callerFileName)
-	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName)
+	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, "g2")
+	if tss.SameCurve(ec, tss.Bls12381G1()) {
+		fixtureDirName = fmt.Sprintf(testFixtureDirFormat, srcDirName, "g1")
+	}
 	return fmt.Sprintf("%s/"+testFixtureFileFormat, fixtureDirName, partyIndex)
 }

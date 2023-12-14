@@ -49,7 +49,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// PHASE: load keygen fixtures
 	firstPartyIdx, extraParties := 0, 1 // // extra can be 0 to N-first
-	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
+	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(ec, testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
 	assert.NoError(t, err, "should load keygen fixtures")
 
 	// PHASE: resharing
@@ -220,7 +220,7 @@ func TestE2EConcurrentThresholdChange(t *testing.T) {
 
 	// PHASE: load keygen fixtures
 	firstPartyIdx, extraParties := 0, 1 // // extra can be 0 to N-first
-	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
+	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(ec, testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
 	assert.NoError(t, err, "should load keygen fixtures")
 
 	// PHASE: resharing
@@ -391,7 +391,7 @@ func TestE2EConcurrentPartyChange(t *testing.T) {
 
 	// PHASE: load keygen fixtures
 	firstPartyIdx, extraParties := 0, 1 // // extra can be 0 to N-first
-	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
+	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(ec, testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
 	assert.NoError(t, err, "should load keygen fixtures")
 
 	// PHASE: resharing
@@ -562,7 +562,7 @@ func TestE2EConcurrentPartyThresholdChange(t *testing.T) {
 
 	// PHASE: load keygen fixtures
 	firstPartyIdx, extraParties := 0, 1 // // extra can be 0 to N-first
-	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
+	oldKeys, oldPIDs, err := keygen.LoadKeygenTestFixtures(ec, testThreshold+1+extraParties+firstPartyIdx, firstPartyIdx)
 	assert.NoError(t, err, "should load keygen fixtures")
 
 	// PHASE: resharing

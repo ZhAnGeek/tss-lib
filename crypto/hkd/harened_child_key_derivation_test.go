@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	testBLSG1FixtureDirFormat            = "/test/_bls_fixtures_g1"
-	testBLSG2FixtureDirFormat            = "/test/_bls_fixtures_g2"
+	testBLSG1FixtureDirFormat            = "/test/_bls_g1_fixtures_1_3"
+	testBLSG2FixtureDirFormat            = "/test/_bls_g2_fixtures_1_3"
 	testECDSASecp256k1FixtureDirFormat   = "/test/_ecdsa_fixtures_1_3"
 	testEDDSAFixtureDirFormat            = "/test/_eddsa_fixtures_1_3"
 	testSchnorrSecp256k1FixtureDirFormat = "/test/_schnorr_fixtures_1_3"

@@ -525,7 +525,21 @@ func DecryptShare(suite []byte, privateKey PrivateKey, cipherText []byte) ([]byt
 func Encrypt(suite []byte, publicKey PublicKey, message []byte) ([]byte, error) {
 	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
 	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+HmacSize)
-	err := encrypt(suite, encryptedMessage, publicKey, message)
+	_, _, _, err := encrypt(suite, encryptedMessage, publicKey, message, nil, nil, nil)
+	return encryptedMessage, err
+}
+
+func EncryptAndReturnRandomness(suite []byte, publicKey PublicKey, message []byte) ([]byte, []byte, []byte, *big.Int, error) {
+	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
+	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+HmacSize)
+	aseKey, iv, r, err := encrypt(suite, encryptedMessage, publicKey, message, nil, nil, nil)
+	return encryptedMessage, aseKey, iv, r, err
+}
+
+func EncryptWithRandomness(suite []byte, publicKey PublicKey, message, aesKey, iv []byte, r *big.Int) ([]byte, error) {
+	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
+	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+HmacSize)
+	_, _, _, err := encrypt(suite, encryptedMessage, publicKey, message, aesKey, iv, r)
 	return encryptedMessage, err
 }
 
@@ -571,13 +585,18 @@ func getUVWFromCipherTextSignatureSuiteG2(cipherText []byte) (*bls.PointG1, []by
 	return UPoint, VBytes, WPoint, nil
 }
 
-func encryptWithAes(message []byte) ([]byte, []byte, []byte) {
-	aesKey, err := common.GetRandomBytes(AesKeySize)
+func encryptWithAes(message, aesKey, iv []byte) ([]byte, []byte, []byte) {
+	var err error
+	if aesKey == nil {
+		aesKey, err = common.GetRandomBytes(AesKeySize)
+	}
 	if err != nil {
 		panic("aes key gen failed")
 	}
 	aesCipher, err := aes.NewCipher(aesKey)
-	iv, err := common.GetRandomBytes(aes.BlockSize)
+	if iv == nil {
+		iv, err = common.GetRandomBytes(aes.BlockSize)
+	}
 	if err != nil {
 		panic("aes key gen failed")
 	}
@@ -643,18 +662,20 @@ func hashToGroupG2(point *bls.PointG2, message []byte) (*bls.PointG1, error) {
 	return g1Point, nil
 }
 
-func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, error) {
+func encryptAesKey(suite []byte, publicKey PublicKey, message []byte, r *big.Int) ([]byte, *big.Int, error) {
 	if bytes.Equal(suite, GetBLSSignatureSuiteG1()) {
 		pk, err := bls.NewG2().FromBytes(publicKey)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		var r *big.Int = zero
-		for {
-			r = common.GetRandomPositiveInt(modulus.big())
-			if r.Cmp(zero) != 0 {
-				break
+		if r == nil {
+			r = zero
+			for {
+				r = common.GetRandomPositiveInt(modulus.big())
+				if r.Cmp(zero) != 0 {
+					break
+				}
 			}
 		}
 
@@ -675,7 +696,7 @@ func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, e
 		AesBytes := message
 
 		if len(AesBytes) != len(rPksBytes) || len(rPksBytes) != Sha256SumSize {
-			return nil, errors.New("aes bytes size not equal to pks bytes size")
+			return nil, nil, errors.New("aes bytes size not equal to pks bytes size")
 		}
 
 		for i := 0; i < len(AesBytes); i++ {
@@ -685,7 +706,7 @@ func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, e
 		g1 := bls.NewG1()
 		H, err = hashToGroupG2(U, V)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		W = G1MulScalarMont(W, H, r)
 
@@ -699,20 +720,22 @@ func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, e
 		cipherBytes := g2.ToBytes(U)
 		cipherBytes = append(cipherBytes, V...)
 		cipherBytes = append(cipherBytes, g1.ToBytes(W)...)
-		return cipherBytes, nil
+		return cipherBytes, r, nil
 	}
 
 	if bytes.Equal(suite, GetBLSSignatureSuiteG2()) {
 		pk, err := bls.NewG1().FromBytes(publicKey)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
-		var r *big.Int = zero
-		for {
-			r = common.GetRandomPositiveInt(modulus.big())
-			if r.Cmp(zero) != 0 {
-				break
+		if r == nil {
+			r = zero
+			for {
+				r = common.GetRandomPositiveInt(modulus.big())
+				if r.Cmp(zero) != 0 {
+					break
+				}
 			}
 		}
 
@@ -733,7 +756,7 @@ func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, e
 		AesBytes := message
 
 		if len(AesBytes) != len(rPksBytes) || len(rPksBytes) != Sha256SumSize {
-			return nil, errors.New("aes bytes size not equal to pks bytes size")
+			return nil, nil, errors.New("aes bytes size not equal to pks bytes size")
 		}
 
 		for i := 0; i < len(AesBytes); i++ {
@@ -743,7 +766,7 @@ func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, e
 		g2 := bls.NewG2()
 		H, err = hashToGroupG1(U, V)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		W = G2MulScalarMont(W, H, r)
 
@@ -757,23 +780,24 @@ func encryptAesKey(suite []byte, publicKey PublicKey, message []byte) ([]byte, e
 		cipherBytes := g1.ToBytes(U)
 		cipherBytes = append(cipherBytes, V...)
 		cipherBytes = append(cipherBytes, g2.ToBytes(W)...)
-		return cipherBytes, nil
+		return cipherBytes, r, nil
 	}
 
-	return nil, fmt.Errorf("no suite")
+	return nil, nil, fmt.Errorf("no suite")
 }
 
-func encrypt(suite []byte, cipherText, publicKey, message []byte) error {
-	aesKey, hmacBytes, iv := encryptWithAes(message)
-	encryptedAes, err := encryptAesKey(suite, publicKey, aesKey)
+func encrypt(suite []byte, cipherText, publicKey, message, aesKey, iv []byte, r *big.Int) ([]byte, []byte, *big.Int, error) {
+	var hmacBytes []byte
+	aesKey, hmacBytes, iv = encryptWithAes(message, aesKey, iv)
+	encryptedAes, r, err := encryptAesKey(suite, publicKey, aesKey, r)
 	if err != nil {
-		return err
+		return nil, nil, nil, err
 	}
 
 	copy(cipherText, iv)
 	copy(cipherText[aes.BlockSize:], encryptedAes)
 	copy(cipherText[aes.BlockSize+PointG2Size+Sha256SumSize+PointG1Size:], hmacBytes)
-	return nil
+	return aesKey, iv, r, nil
 }
 
 func PadToLengthBytesInPlace(src []byte, length int) ([]byte, error) {

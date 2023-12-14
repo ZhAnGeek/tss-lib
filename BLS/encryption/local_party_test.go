@@ -23,7 +23,7 @@ import (
 )
 
 var (
-	suite = bls12381.GetBLSSignatureSuiteG1()
+	suite = bls12381.GetBLSSignatureSuiteG2()
 	ec    = tss.GetBLSCurveBySuite(suite)
 )
 
@@ -45,7 +45,7 @@ func TestE2EConcurrent(t *testing.T) {
 	threshold := testThreshold
 
 	// PHASE: load keygen fixtures
-	keys, ePIDs, err := keygen.LoadKeygenTestFixturesRandomSet(testThreshold+1, testParticipants)
+	keys, ePIDs, err := keygen.LoadKeygenTestFixturesRandomSet(ec, testThreshold+1, testParticipants)
 	assert.NoError(t, err, "should load keygen fixtures")
 	assert.Equal(t, testThreshold+1, len(keys))
 	assert.Equal(t, testThreshold+1, len(ePIDs))

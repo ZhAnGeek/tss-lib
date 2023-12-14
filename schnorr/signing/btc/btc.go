@@ -10,9 +10,10 @@ import (
 	"crypto/elliptic"
 	"errors"
 	"fmt"
+	"math/big"
+
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/tss"
-	"math/big"
 
 	"github.com/Safulet/tss-lib-private/crypto"
 )
