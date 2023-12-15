@@ -13,11 +13,11 @@ import (
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/crypto"
+	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fp"
+	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/crypto/signatures/mina"
 	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/coinbase/kryptology/pkg/core/curves"
-	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fp"
-	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fq"
-	"github.com/coinbase/kryptology/pkg/signatures/schnorr/mina"
 )
 
 func SchnorrVerify(ec elliptic.Curve, pubkey *crypto.ECPoint, msg []byte, signature []byte) error {

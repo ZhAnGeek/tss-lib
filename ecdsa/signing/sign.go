@@ -15,6 +15,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/starkcurve"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
 	"github.com/Safulet/tss-lib-private/tracer"
@@ -50,6 +51,14 @@ func (round *sign1) Start(ctx context.Context) *tss.Error {
 	i := round.PartyID().Index
 	Pi := round.PartyID()
 	round.ok[i] = true
+
+	if round.temp.m.BitLen() > round.EC().Params().N.BitLen() {
+		return round.WrapError(errors.New("e=Hash(m) is mal formatted"))
+	}
+
+	if tss.SameCurve(round.EC(), tss.StarkCurve()) && round.temp.m.Cmp(starkcurve.Stark().EcdsaMax) >= 0 {
+		return round.WrapError(errors.New("e=Hash(m) is mal formatted for the stark curve, you only could sign less than order msg"))
+	}
 
 	round.temp.SsidNonce = round.predata.UnmarshalSsidNonce()
 	ssid, err := round.getSSID(ctx)

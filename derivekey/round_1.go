@@ -13,7 +13,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/coinbase/kryptology/pkg/core/curves"
+	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	starkcurve "github.com/consensys/gnark-crypto/ecc/stark-curve"
 	"go.opentelemetry.io/otel/trace"
 
 	"github.com/Safulet/tss-lib-private/common"
@@ -34,41 +35,41 @@ func newRound1(params *tss.Parameters, key *LocalPartySaveData, data *common.Sig
 }
 
 func getHashToCurveInstance(ec elliptic.Curve) (hash2curve.HashToPoint, error) {
-	dst := "QUUX-V01-CS02-with-secp256k1_XMD:SHA-256_SSWU_RO_"
+	dst := SECP256K1_HTG_DST
 	hashToCurve, err := hash2curve.Secp256k1_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 	if err != nil {
 		return nil, err
 	}
 	if tss.SameCurve(ec, tss.Edwards()) {
-		dst = "QUUX-V01-CS02-with-edwards25519_XMD:SHA-512_ELL2_RO_"
+		dst := EDWARDS_HTG_DST
 		hashToCurve, err = hash2curve.Edwards25519_XMDSHA512_ELL2_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}
 	}
 	if tss.SameCurve(ec, tss.Bls12381G2()) {
-		dst := "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_"
+		dst := BLSG2_HTG_DST
 		hashToCurve, err = hash2curve.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}
 	}
 	if tss.SameCurve(ec, tss.Bls12381G1()) {
-		dst := "QUUX-V01-CS02-with-BLS12381G1_XMD:SHA-256_SSWU_RO_"
+		dst := BLSG1_HTG_DST
 		hashToCurve, err = hash2curve.BLS12381G1_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}
 	}
 	if tss.SameCurve(ec, tss.P256()) {
-		dst := "QUUX-V01-CS02-with-P256_XMD:SHA-256_SSWU_RO_"
+		dst := P256_HTG_DST
 		hashToCurve, err = hash2curve.P256_XMDSHA256_SSWU_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}
 	}
 	if tss.SameCurve(ec, tss.Curve25519()) {
-		dst := "QUUX-V01-CS02-with-curve25519_XMD:SHA-512_ELL2_RO_"
+		dst := CURVE25519_HTG_DST
 		hashToCurve, err = hash2curve.Curve25519_XMDSHA512_ELL2_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
@@ -96,6 +97,19 @@ func getH2CPoint(ec elliptic.Curve, hashToCurve hash2curve.HashToPoint, wPath st
 			return nil, err
 		}
 		return pointHi, nil
+	}
+	if tss.SameCurve(tss.StarkCurve(), ec) {
+		dst := STARKCURVE_HTG_DST
+		g1Point, err := starkcurve.HashToG1([]byte(wPath), []byte(dst))
+		if err != nil {
+			return nil, err
+		}
+		pointHi, err := crypto.NewECPoint(ec, g1Point.X.BigInt(new(big.Int)), g1Point.Y.BigInt(new(big.Int)))
+		if err != nil {
+			return nil, err
+		}
+		return pointHi, nil
+
 	}
 	h2cPoint := hashToCurve.Hash([]byte(wPath))
 	h2cPx := h2cPoint.X().Polynomial()[0]

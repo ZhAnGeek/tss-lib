@@ -36,10 +36,14 @@ func setUp(level log.Level) {
 	}
 }
 
+func TestE2EConcurrentAndSaveFixturesStarkCurve(t *testing.T) {
+	tss.SetCurve(tss.StarkCurve())
+	TestE2EConcurrentAndSaveFixtures(t)
+}
+
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
-	ec := tss.S256()
 
 	threshold := testThreshold
 	fixtures, pIDs, err := LoadKeygenTestFixtures(testParticipants)
@@ -60,7 +64,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(ec, p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
 		} else {

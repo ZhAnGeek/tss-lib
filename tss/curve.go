@@ -16,7 +16,9 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto/curve25519"
 	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"github.com/Safulet/tss-lib-private/crypto/secp256k1"
-	"github.com/coinbase/kryptology/pkg/core/curves"
+	"github.com/Safulet/tss-lib-private/crypto/starkcurve"
+
+	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
 )
 
 type CurveName string
@@ -29,6 +31,7 @@ const (
 	BLS12381G1 CurveName = "bls12381g1"
 	C25519     CurveName = "curve25519"
 	PAllas     CurveName = "pallas"
+	Starkcurve CurveName = "starkcurve"
 )
 
 var (
@@ -48,6 +51,7 @@ func init() {
 	registry[BLS12381G1] = bls12381.G1Curve()
 	registry[C25519] = curve25519.C25519()
 	registry[PAllas] = curves.Pallas()
+	registry[Starkcurve] = starkcurve.Stark()
 }
 
 func RegisterCurve(name CurveName, curve elliptic.Curve) {
@@ -104,6 +108,11 @@ func S256() elliptic.Curve {
 	return secp256k1.S256()
 }
 
+// starkCurve
+func StarkCurve() elliptic.Curve {
+	return starkcurve.Stark()
+}
+
 func P256() elliptic.Curve {
 	return elliptic.P256()
 }
@@ -143,6 +152,7 @@ func GetAllCurvesList() []elliptic.Curve {
 		Bls12381G1(),
 		Bls12381G2(),
 		Edwards(),
-		Curve25519()}
+		Curve25519(),
+		StarkCurve()}
 	return curvesList
 }

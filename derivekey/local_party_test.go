@@ -19,29 +19,31 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/coinbase/kryptology/pkg/core/curves"
-
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/crypto/hash2curve"
+	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
+	starkcurve "github.com/consensys/gnark-crypto/ecc/stark-curve"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
 const (
-	testParticipants            = test.TestParticipants
-	testThreshold               = test.TestThreshold
-	testFixtureDirFormatECDSA   = "%s/../test/_ecdsa_fixtures_%d_%d"
-	testFixtureDirFormatEDDSA   = "%s/../test/_eddsa_fixtures_%d_%d"
-	testFixtureDirFormatSCHNORR = "%s/../test/_schnorr_fixtures_%d_%d"
-	testFixtureDirFormatPALLAS  = "%s/../test/_pallas_fixtures_%d_%d"
-	testFixtureDirFormatBLS     = "%s/../test/_bls_fixtures_%d_%d"
-	testFixtureDirFormatKCDSA   = "%s/../test/_kcdsa_fixtures_%d_%d"
-	testFixtureFileFormat       = "keygen_data_%d.json"
+	testParticipants             = test.TestParticipants
+	testThreshold                = test.TestThreshold
+	testFixtureDirFormatECDSA    = "%s/../test/_ecdsa_fixtures_%d_%d"
+	testFixtureDirFormatEDDSA    = "%s/../test/_eddsa_fixtures_%d_%d"
+	testFixtureDirFormatSCHNORR  = "%s/../test/_schnorr_fixtures_%d_%d"
+	testFixtureDirFormatPALLAS   = "%s/../test/_pallas_fixtures_%d_%d"
+	testFixtureDirFormatBLSG2    = "%s/../test/_bls_fixtures_g2_%d_%d"
+	testFixtureDirFormatBLSG1    = "%s/../test/_bls_fixtures_g1_%d_%d"
+	testFixtureDirFormatKCDSA    = "%s/../test/_kcdsa_fixtures_%d_%d"
+	testFixtureFileFormat        = "keygen_data_%d.json"
+	testFixtureDirFormatStarkNet = "%s/../test/_ecdsa_fixtures_%d_%d/starkcurve"
 )
 
 func setUp(level log.Level) {
@@ -105,6 +107,15 @@ func TestH2CPallas(t *testing.T) {
 	fmt.Println("y:", P.Y().BigInt().String())
 
 	_, err := crypto.NewECPoint(tss.Pallas(), P.X().BigInt(), P.Y().BigInt())
+	assert.NoError(t, err, "should hash to curve")
+}
+
+func TestStarkCurve(t *testing.T) {
+	ec := tss.StarkCurve()
+	msg := []byte{1, 2, 3}
+	dst := []byte("separator")
+	g1p, _ := starkcurve.HashToG1(msg, dst)
+	_, err := crypto.NewECPoint(ec, g1p.X.BigInt(new(big.Int)), g1p.Y.BigInt(new(big.Int)))
 	assert.NoError(t, err, "should hash to curve")
 }
 
@@ -194,9 +205,11 @@ func TestE2EConcurrent(t *testing.T) {
 	E2EConcurrent(tss.S256(), testFixtureDirFormatECDSA, t)
 	E2EConcurrent(tss.Edwards(), testFixtureDirFormatEDDSA, t)
 	E2EConcurrent(tss.S256(), testFixtureDirFormatSCHNORR, t)
-	E2EConcurrent(tss.Bls12381G2(), testFixtureDirFormatBLS, t)
+	E2EConcurrent(tss.Bls12381G2(), testFixtureDirFormatBLSG2, t)
+	E2EConcurrent(tss.Bls12381G1(), testFixtureDirFormatBLSG1, t)
 	E2EConcurrent(tss.Pallas(), testFixtureDirFormatPALLAS, t)
 	E2EConcurrent(tss.Curve25519(), testFixtureDirFormatKCDSA, t)
+	E2EConcurrent(tss.StarkCurve(), testFixtureDirFormatStarkNet, t)
 }
 
 func LoadKeygenTestFixtures(qty int, ec elliptic.Curve, fixtureBase string, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {

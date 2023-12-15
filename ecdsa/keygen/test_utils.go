@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	testFixtureDirFormat  = "%s/../../test/_ecdsa_fixtures_%d_%d"
+	testFixtureDirFormat  = "%s/../../test/_ecdsa_fixtures_%d_%d/%s"
 	testFixtureFileFormat = "keygen_data_%d.json"
 )
 
@@ -48,9 +48,9 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.S256())
+			kbxj.SetCurve(tss.EC())
 		}
-		key.ECDSAPub.SetCurve(tss.S256())
+		key.ECDSAPub.SetCurve(tss.EC())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -86,9 +86,9 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.S256())
+			kbxj.SetCurve(tss.EC())
 		}
-		key.ECDSAPub.SetCurve(tss.S256())
+		key.ECDSAPub.SetCurve(tss.EC())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -117,6 +117,7 @@ func LoadNTildeH1H2FromTestFixture(idx int) (NTildei, h1i, h2i *big.Int, err err
 func makeTestFixtureFilePath(partyIndex int) string {
 	_, callerFileName, _, _ := runtime.Caller(0)
 	srcDirName := filepath.Dir(callerFileName)
-	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, test.TestThreshold, test.TestParticipants)
+	name, _ := tss.GetCurveName(tss.EC())
+	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, test.TestThreshold, test.TestParticipants, name)
 	return fmt.Sprintf("%s/"+testFixtureFileFormat, fixtureDirName, partyIndex)
 }

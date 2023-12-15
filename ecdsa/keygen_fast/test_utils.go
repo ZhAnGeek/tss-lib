@@ -29,8 +29,8 @@ const (
 	TestThreshold    = test.TestThreshold
 )
 const (
-	testFixtureDirFormat      = "%s/../../test/_ecdsa_fixtures_%d_%d"
-	testFixtureDirFormatECDSA = "%s/../../test/_ecdsa_fixtures_%d_%d"
+	testFixtureDirFormat      = "%s/../../test/_ecdsa_fixtures_%d_%d/%s/"
+	testFixtureDirFormatECDSA = "%s/../../test/_ecdsa_fixtures_%d_%d/%s/"
 	testFixtureCurveDirFormat = "%s/../../test/_%s_fixtures_%d_%d"
 	testFixtureFileFormat     = "keygen_data_%d.json"
 )
@@ -56,9 +56,9 @@ func LoadKeygenTestFixtures(qty int, optionalStart ...int) ([]LocalPartySaveData
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.S256())
+			kbxj.SetCurve(tss.EC())
 		}
-		key.ECDSAPub.SetCurve(tss.S256())
+		key.ECDSAPub.SetCurve(tss.EC())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -129,9 +129,9 @@ func LoadKeygenTestFixturesRandomSet(qty, fixtureCount int) ([]LocalPartySaveDat
 				i, fixtureFilePath)
 		}
 		for _, kbxj := range key.BigXj {
-			kbxj.SetCurve(tss.S256())
+			kbxj.SetCurve(tss.EC())
 		}
-		key.ECDSAPub.SetCurve(tss.S256())
+		key.ECDSAPub.SetCurve(tss.EC())
 		keys = append(keys, key)
 	}
 	partyIDs := make(tss.UnSortedPartyIDs, len(keys))
@@ -192,14 +192,16 @@ func LoadKeygenTestFixturesRandomSetWithCurve(qty int, curve elliptic.Curve, fix
 func makeTestFixtureFilePathFromECDSA(partyIndex int) string {
 	_, callerFileName, _, _ := runtime.Caller(0)
 	srcDirName := filepath.Dir(callerFileName)
-	fixtureDirName := fmt.Sprintf(testFixtureDirFormatECDSA, srcDirName, test.TestThreshold, test.TestParticipants)
+	name, _ := tss.GetCurveName(tss.EC())
+	fixtureDirName := fmt.Sprintf(testFixtureDirFormatECDSA, srcDirName, test.TestThreshold, test.TestParticipants, name)
 	return fmt.Sprintf("%s/"+testFixtureFileFormat, fixtureDirName, partyIndex)
 }
 
 func makeTestFixtureFilePath(partyIndex int) string {
 	_, callerFileName, _, _ := runtime.Caller(0)
 	srcDirName := filepath.Dir(callerFileName)
-	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, test.TestThreshold, test.TestParticipants)
+	name, _ := tss.GetCurveName(tss.EC())
+	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, test.TestThreshold, test.TestParticipants, name)
 	return fmt.Sprintf("%s/"+testFixtureFileFormat, fixtureDirName, partyIndex)
 }
 

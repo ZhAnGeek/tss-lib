@@ -41,6 +41,11 @@ func setUp(level log.Level) {
 	}
 }
 
+func TestE2EConcurrentStarkCurve(t *testing.T) {
+	tss.SetCurve(tss.StarkCurve())
+	TestE2EConcurrent(t)
+}
+
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.DebugLevel)
@@ -77,13 +82,13 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the old parties first
 	for j, pID := range oldPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
+		params := tss.NewReSharingParameters(tss.EC(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		P := NewLocalParty(params, oldKeys[j], outCh, endCh).(*LocalParty) // discard old key data
 		oldCommittee = append(oldCommittee, P)
 	}
 	// init the new parties
 	for j, pID := range newPIDs {
-		params := tss.NewReSharingParameters(tss.S256(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
+		params := tss.NewReSharingParameters(tss.EC(), oldP2PCtx, newP2PCtx, pID, testParticipants, threshold, newPCount, newThreshold, 0)
 		save := keygen.NewLocalPartySaveData(newPCount)
 		if j < len(fixtures) && len(newPIDs) <= len(fixtures) {
 			save.LocalPreParams = fixtures[j].LocalPreParams
@@ -161,7 +166,7 @@ func TestE2EConcurrent(t *testing.T) {
 				for j, key := range newKeys {
 					// xj test: BigXj == xj*G
 					xj := key.Xi
-					gXj := crypto.ScalarBaseMult(tss.S256(), xj)
+					gXj := crypto.ScalarBaseMult(tss.EC(), xj)
 					BigXj := key.BigXj[j]
 					assert.True(t, BigXj.Equals(gXj), "ensure BigX_j == g^x_j")
 				}
@@ -184,7 +189,7 @@ presigning:
 
 	// PHASE: presigning
 	for j, signPID := range presignPIDs {
-		params := tss.NewParameters(tss.S256(), presignP2pCtx, signPID, len(presignPIDs), newThreshold, false, 0)
+		params := tss.NewParameters(tss.EC(), presignP2pCtx, signPID, len(presignPIDs), newThreshold, false, 0)
 		P := presigning.NewLocalParty(params, presignKeys[j], presignOutCh, presignEndCh, presignDumpCh).(*presigning.LocalParty)
 		presignParties = append(presignParties, P)
 	}
@@ -248,7 +253,7 @@ signing:
 	signDumpCh := make(chan *signing.LocalDumpPB, len(signPIDs))
 
 	for j, signPID := range signPIDs {
-		params := tss.NewParameters(tss.S256(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
+		params := tss.NewParameters(tss.EC(), signP2pCtx, signPID, len(signPIDs), newThreshold, false, 0)
 		P := signing.NewLocalParty(preSigDatas[j], big.NewInt(42), params, signKeys[j], big.NewInt(0), signOutCh, signEndCh, signDumpCh).(*signing.LocalParty)
 		signParties = append(signParties, P)
 	}
@@ -297,7 +302,7 @@ signing:
 				// BEGIN ECDSA verify
 				pkX, pkY := signKeys[0].ECDSAPub.X(), signKeys[0].ECDSAPub.Y()
 				pk := ecdsa.PublicKey{
-					Curve: tss.S256(),
+					Curve: tss.EC(),
 					X:     pkX,
 					Y:     pkY,
 				}

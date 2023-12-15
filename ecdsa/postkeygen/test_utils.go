@@ -12,16 +12,18 @@ import (
 	"runtime"
 
 	"github.com/Safulet/tss-lib-private/test"
+	"github.com/Safulet/tss-lib-private/tss"
 )
 
 const (
-	testFixtureDirFormat  = "%s/../../test/_ecdsa_fixtures_%d_%d"
+	testFixtureDirFormat  = "%s/../../test/_ecdsa_fixtures_%d_%d/%s/"
 	testFixtureFileFormat = "keygen_data_%d.json"
 )
 
 func makeTestFixtureFilePath(partyIndex int) string {
 	_, callerFileName, _, _ := runtime.Caller(0)
 	srcDirName := filepath.Dir(callerFileName)
-	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, test.TestThreshold, test.TestParticipants)
+	name, _ := tss.GetCurveName(tss.EC())
+	fixtureDirName := fmt.Sprintf(testFixtureDirFormat, srcDirName, test.TestThreshold, test.TestParticipants, name)
 	return fmt.Sprintf("%s/"+testFixtureFileFormat, fixtureDirName, partyIndex)
 }

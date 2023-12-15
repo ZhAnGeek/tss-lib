@@ -11,8 +11,9 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fq"
-	"github.com/coinbase/kryptology/pkg/signatures/schnorr/mina"
+	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/crypto/signatures/mina"
+
 	"github.com/stretchr/testify/assert"
 
 	"github.com/Safulet/tss-lib-private/crypto"

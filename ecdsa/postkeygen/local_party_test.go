@@ -37,6 +37,11 @@ func setUp(level log.Level) {
 	}
 }
 
+func TestE2EConcurrentAndSaveFixturesStarkCurve(t *testing.T) {
+	tss.SetCurve(tss.StarkCurve())
+	TestE2EConcurrentAndSaveFixtures(t)
+}
+
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
@@ -62,7 +67,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) && fixtures[i].ValidatePreparamsSaved() {
 			P = NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams).(*LocalParty)
 		} else {
@@ -162,11 +167,11 @@ func tryWriteTestFixtureFile(t *testing.T, index int, data keygen.LocalPartySave
 		}
 		for _, kbxj := range inObj.BigXj {
 			if kbxj != nil {
-				kbxj.SetCurve(tss.S256())
+				kbxj.SetCurve(tss.EC())
 			}
 		}
 		if inObj.ECDSAPub != nil {
-			inObj.ECDSAPub.SetCurve(tss.S256())
+			inObj.ECDSAPub.SetCurve(tss.EC())
 		}
 		// if no paillier keys
 		if inObj.NTildej == nil || inObj.NTildej[0] == nil {

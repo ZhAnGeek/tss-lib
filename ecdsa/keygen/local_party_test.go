@@ -131,6 +131,11 @@ func TestFinishAndSaveH1H2(t *testing.T) {
 	assert.NotZero(t, lp.data.NTildei, "n-tilde should be non-zero")
 }
 
+func TestE2EConcurrentAndSaveFixturesStarkCurve(t *testing.T) {
+	tss.SetCurve(tss.StarkCurve())
+	TestE2EConcurrentAndSaveFixtures(t)
+}
+
 func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
@@ -158,7 +163,7 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
 		var P *LocalParty
-		params := tss.NewParameters(tss.S256(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.EC(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) {
 			P = NewLocalParty(params, outCh, endCh, fixtures[i].LocalPreParams).(*LocalParty)
 		} else {
@@ -257,7 +262,7 @@ keygen:
 					{
 						badShares := pShares[:threshold]
 						badShares[len(badShares)-1].Share.Set(big.NewInt(0))
-						uj, err := pShares[:threshold].ReConstruct(tss.S256())
+						uj, err := pShares[:threshold].ReConstruct(tss.EC())
 						assert.NoError(t, err)
 						assert.NotEqual(t, parties[j].temp.ui, uj)
 						BigXjX, BigXjY := tss.EC().ScalarBaseMult(uj.Bytes())

@@ -252,6 +252,11 @@ func DeriveChildKeyOfEcdsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 		ilNum = new(big.Int).SetBit(ilNum, 254, 0)
 	}
 
+	// refering to https://www.zkdocs.com/docs/zkdocs/protocol-primitives/random-sampling/#rejection-sampling
+	if tss.SameCurve(curve, tss.StarkCurve()) {
+		ilNum = common.RejectionSampleFixedBitLen(tss.StarkCurve().Params().N, ilNum)
+	}
+
 	if ilNum.Cmp(curve.Params().N) >= 0 || ilNum.Sign() == 0 {
 		// falling outside the valid range for curve private keys
 		err := errors.New("invalid derived key")

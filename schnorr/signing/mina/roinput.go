@@ -10,9 +10,9 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fp"
-	"github.com/coinbase/kryptology/pkg/core/curves/native/pasta/fq"
-	"github.com/coinbase/kryptology/pkg/signatures/schnorr/mina"
+	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fp"
+	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/crypto/signatures/mina"
 )
 
 // Handles the packing of bits and fields according to Mina spec

@@ -16,6 +16,7 @@ import (
 
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/crypto/starkcurve"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/ecdsa/presigning"
 	"github.com/Safulet/tss-lib-private/tracer"
@@ -25,6 +26,12 @@ import (
 )
 
 func VerifySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK *crypto.ECPoint) bool {
+	// stark curve will drop r, sinv exceed 2**251
+	if tss.SameCurve(ec, tss.StarkCurve()) {
+		valid, _ := starkcurve.Stark().Verify(m, R.X(), S, PK.X(), PK.Y())
+		return valid
+	}
+
 	modN := common.ModInt(ec.Params().N)
 	SInv := modN.ModInverse(S)
 	err := common.CheckBigIntNotNil(SInv)
@@ -93,7 +100,7 @@ func (round *signout) Start(ctx context.Context) *tss.Error {
 	}
 
 	// save the signature for final output
-	bitSizeInBytes := round.Params().EC().Params().BitSize / 8
+	bitSizeInBytes := (round.Params().EC().Params().BitSize + 7) / 8
 	round.data.R = common.PadToLengthBytesInPlace(round.temp.BigR.X().Bytes(), bitSizeInBytes)
 	round.data.S = common.PadToLengthBytesInPlace(Sigma.Bytes(), bitSizeInBytes)
 	round.data.Signature = append(round.data.R, round.data.S...)
@@ -115,7 +122,7 @@ func (round *signout) Start(ctx context.Context) *tss.Error {
 		X:     PKDelta.X(), // round.key.ECDSAPub.X(),
 		Y:     PKDelta.Y(), // round.key.ECDSAPub.Y(),
 	}
-	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.BigR.X(), Sigma)
+	ok := ecdsa.Verify(&pk, round.temp.m.Bytes(), round.temp.BigR.X(), Sigma) || VerifySig(round.Params().EC(), round.temp.BigR, Sigma, round.temp.m, PKDelta)
 	if !ok {
 		return round.WrapError(fmt.Errorf("signature verification failed"))
 	}

@@ -46,3 +46,23 @@ func RejectionSampleV2(q *big.Int, eHash *big.Int) *big.Int { // e' = eHash
 type RejectionSampleFunc func(q *big.Int, eHash *big.Int) *big.Int
 
 var RejectionSample RejectionSampleFunc = RejectionSampleV2
+
+// RejectionSampleFixedBitLen implements the rejection sampling logic for converting a
+// SHA512/256 hash to a value between 0-q
+func RejectionSampleFixedBitLen(q *big.Int, eHash *big.Int) *big.Int {
+	auxiliary := new(big.Int).Set(eHash)
+	cur := new(big.Int).Set(q)
+	one := new(big.Int).SetInt64(1)
+	for cur.Cmp(q) != -1 || cur.Cmp(big.NewInt(0)) != 1 {
+		eHashAdded := auxiliary.Add(auxiliary, one)
+		eHashReSample := sha256.Sum256(eHashAdded.Bytes())
+		// sample bits
+		cur = new(big.Int).SetBytes(eHashReSample[:])
+
+		// 255 - qBitLen set to 0
+		for i := 255; i >= q.BitLen(); i-- {
+			cur.SetBit(cur, i, 0)
+		}
+	}
+	return cur
+}

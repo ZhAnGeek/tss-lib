@@ -37,6 +37,11 @@ func setUp(level log.Level) {
 	}
 }
 
+func TestE2EConcurrentStarkCurve(t *testing.T) {
+	tss.SetCurve(tss.StarkCurve())
+	TestE2EConcurrent(t)
+}
+
 func TestE2EConcurrent(t *testing.T) {
 	ctx := context.Background()
 	setUp(log.InfoLevel)
@@ -62,7 +67,7 @@ func TestE2EConcurrent(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		P := presigning.NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*presigning.LocalParty)
 		parties = append(parties, P)
@@ -135,7 +140,7 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
 
 		keyDerivationDelta, ok := new(big.Int).SetString("26584850041541184611210048611703299842106441087558008034516645976981837299974", 10)
 		assert.True(t, ok)
@@ -215,7 +220,7 @@ func TestE2EConcurrentWithIdentification(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
+		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P := presigning.NewLocalParty(params, keys[i], outCh, endCh, dumpCh).(*presigning.LocalParty)
 		parties = append(parties, P)
@@ -288,7 +293,7 @@ signing:
 
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
+		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		keyDerivationDelta := big.NewInt(0)
 		P := NewLocalParty(preSigDatas[i], big.NewInt(42), params, keys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*LocalParty)
@@ -352,7 +357,7 @@ identification:
 	identificationParties := make([]*LocalParty, len(signPIDs))
 	for i := 0; i < len(signPIDs); i++ {
 		fmt.Printf("Party%2d sign identification]: restored \n", i)
-		params := tss.NewParameters(tss.S256(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
+		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold, true, 0)
 
 		P, err := RestoreLocalParty(ctx, preSigDatas[i], params, keys[i], signDumps[i], outCh, sigCh, sdumpCh)
 		if err != nil {

@@ -8,6 +8,7 @@ package common
 
 import (
 	"crypto/rand"
+	"crypto/subtle"
 	"fmt"
 	"math/big"
 
@@ -16,6 +17,17 @@ import (
 
 const (
 	mustGetRandomIntMaxBits = 5000
+)
+
+var (
+	// Zero is additive identity in the set of integers
+	Zero = big.NewInt(0)
+
+	// One is the multiplicative identity in the set of integers
+	One = big.NewInt(1)
+
+	// Two is the even prime
+	Two = big.NewInt(2)
 )
 
 // MustGetRandomInt panics if it is unable to gather entropy from `rand.Reader` or when `bits` is <= 0
@@ -129,4 +141,56 @@ func GetRandomBytes(length int) ([]byte, error) {
 	}
 
 	return buf, nil
+}
+
+func Rand(m *big.Int) (*big.Int, error) {
+	if m == nil {
+		return nil, errors.New("nil argument")
+	}
+
+	// Select a random element, but not zero or one
+	for {
+		result, err := rand.Int(rand.Reader, m)
+		if err != nil {
+			return nil, err
+		}
+
+		if result.Cmp(One) == 1 { // result > 1
+			return result, nil
+		}
+	}
+}
+
+// ConstantTimeEqByte determines if a, b have identical byte serialization
+// and signs. It uses the crypto/subtle package to get a constant time comparison
+// over byte representations. Return value is a byte which may be
+// useful in bitwise operations. Returns 0x1 if the two values have the
+// identical sign and byte representation; 0x0 otherwise.
+
+// The constant-time property requires that a and b have the same length
+func ConstantTimeEqByte(a, b *big.Int) byte {
+	if a == nil && a == b {
+		return 1
+	}
+	if a == nil || b == nil {
+		return 0
+	}
+	// Determine if the byte representations are the same
+	var sameBytes byte
+	if subtle.ConstantTimeCompare(a.Bytes(), b.Bytes()) == 1 {
+		sameBytes = 1
+	} else {
+		sameBytes = 0
+	}
+
+	// Determine if the signs are the same
+	var sameSign byte
+	if a.Sign() == b.Sign() {
+		sameSign = 1
+	} else {
+		sameSign = 0
+	}
+
+	// Report the conjunction
+	return sameBytes & sameSign
 }
