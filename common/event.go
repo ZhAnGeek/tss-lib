@@ -13,9 +13,13 @@ import (
 
 type EventAction string
 
+type EventWatcherKey string
+
 const (
 	EventStart EventAction = "start"
 	EventEnd   EventAction = "end"
+
+	eventWatcherKey EventWatcherKey = "tss-event-watcher"
 )
 
 type Event struct {
@@ -33,36 +37,34 @@ type EventObservable interface {
 	EmitEvent(event Event)
 }
 
-type EventObserver struct {
+type EventWatcher struct {
 	listener EventListener
 }
 
-func NewEventObserver(listener EventListener) *EventObserver {
-	return &EventObserver{listener: listener}
+func NewEventWatcher(listener EventListener) *EventWatcher {
+	return &EventWatcher{listener: listener}
 }
 
-func (e *EventObserver) SetEventListener(listener EventListener) {
+func (e *EventWatcher) SetEventListener(listener EventListener) {
 	e.listener = listener
 }
 
-func (e *EventObserver) GetEventListener() EventListener {
+func (e *EventWatcher) GetEventListener() EventListener {
 	return e.listener
 }
 
-func (e *EventObserver) EmitEvent(event Event) {
+func (e *EventWatcher) EmitEvent(event Event) {
 	if e.listener != nil {
 		e.listener.OnEvent(event)
 	}
 }
 
-func (e *EventObserver) ToContext(ctx context.Context) context.Context {
-	return context.WithValue(ctx, eventObserverKey, e)
+func (e *EventWatcher) ToContext(ctx context.Context) context.Context {
+	return context.WithValue(ctx, eventWatcherKey, e)
 }
 
-const eventObserverKey = "tss-event-observer"
-
-func EventObserverFromContext(ctx context.Context) (EventObservable, bool) {
-	ob, ok := ctx.Value(eventObserverKey).(*EventObserver)
+func EventWatcherFromContext(ctx context.Context) (EventObservable, bool) {
+	ob, ok := ctx.Value(eventWatcherKey).(*EventWatcher)
 	if !ok {
 		return nil, false
 	}
@@ -79,7 +81,7 @@ func TryEmitTSSRoundEndEvent(ctx context.Context, taskName string, roundName str
 }
 
 func TryEmitEvent(ctx context.Context, eventName string, eventAction EventAction) {
-	ob, ok := EventObserverFromContext(ctx)
+	ob, ok := EventWatcherFromContext(ctx)
 	if !ok {
 		return
 	}
