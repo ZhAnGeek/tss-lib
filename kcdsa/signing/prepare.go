@@ -29,12 +29,13 @@ func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int
 
 	// 2-4.
 	wi = xi
+	ksi := ks[i]
+
 	for j := 0; j < pax; j++ {
 		if j == i {
 			continue
 		}
 		ksj := ks[j]
-		ksi := ks[i]
 		if ksj.Cmp(ksi) == 0 {
 			panic(fmt.Errorf("index of two parties are equal"))
 		}

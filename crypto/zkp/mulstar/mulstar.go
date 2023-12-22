@@ -30,7 +30,7 @@ type (
 
 // NewProof implements proofmulstar
 func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, g, X *crypto.ECPoint, C, D, NCap, s, t, x, rho *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofMulstar, error) {
-	if ec == nil || pk == nil || g == nil || X == nil || C == nil || D == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
+	if ec == nil || pk == nil || g == nil || X == nil || !X.ValidateBasic() || C == nil || D == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
 		return nil, errors.New("ProveMulstar constructor received nil value(s)")
 	}
 	q := ec.Params().N
@@ -97,7 +97,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMulstar, error) {
 }
 
 func (pf *ProofMulstar) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, g, X *crypto.ECPoint, C, D, NCap, s, t *big.Int, rejectionSample common.RejectionSampleFunc) bool {
-	if ec == nil || pk == nil || g == nil || X == nil || C == nil || D == nil || NCap == nil || s == nil || t == nil {
+	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || g == nil || X == nil || !X.ValidateBasic() || C == nil || D == nil || NCap == nil || s == nil || t == nil {
 		return false
 	}
 

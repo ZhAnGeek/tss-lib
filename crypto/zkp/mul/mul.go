@@ -33,7 +33,7 @@ var (
 
 // NewProof implements proofmul
 func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, X, Y, C, x, rho, rhox *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofMul, error) {
-	if pk == nil || X == nil || Y == nil || C == nil || rho == nil || rhox == nil {
+	if pk == nil || X == nil || Y == nil || C == nil || rho == nil || rhox == nil || ec == nil || x == nil {
 		return nil, errors.New("ProveMul constructor received nil value(s)")
 	}
 	q := ec.Params().N
@@ -53,7 +53,7 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *pailli
 	// Fig 28.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), X, Y, C, A, B)...)
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), X, Y, C, A, B, ec.Params().B, ec.Params().N, ec.Params().P)...)
 		e = rejectionSample(q, eHash)
 	}
 
@@ -123,7 +123,7 @@ func (pf *ProofMul) Verify(ctx context.Context, Session []byte, ec elliptic.Curv
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), X, Y, C, pf.A, pf.B)...)
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), X, Y, C, pf.A, pf.B, ec.Params().B, ec.Params().N, ec.Params().P)...)
 		e = rejectionSample(q, eHash)
 	}
 

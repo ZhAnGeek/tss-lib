@@ -8,6 +8,7 @@ package zkpmod
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -39,6 +40,9 @@ func isQuadraticResidue(X, N *big.Int) bool {
 }
 
 func NewProof(ctx context.Context, Session []byte, N, P, Q *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofMod, error) {
+	if N == nil || P == nil || Q == nil {
+		return nil, errors.New("Proof mod input is not valid")
+	}
 	Phi := new(big.Int).Mul(new(big.Int).Sub(P, one), new(big.Int).Sub(Q, one))
 	// Fig 16.1
 	W := common.GetRandomQuadraticNonResidue(N)
@@ -116,7 +120,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofMod, error) {
 }
 
 func (pf *ProofMod) Verify(ctx context.Context, Session []byte, N *big.Int, rejectionSample common.RejectionSampleFunc) bool {
-	if pf == nil || !pf.ValidateBasic() {
+	if pf == nil || !pf.ValidateBasic() || N == nil {
 		return false
 	}
 	// TODO: add basic properties checker

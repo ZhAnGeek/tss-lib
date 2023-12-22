@@ -8,6 +8,7 @@ package zkpfac_test
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -66,4 +67,31 @@ func TestFac(test *testing.T) {
 
 	ok = proof.Verify(ctx, Session, ec, N0, NCap, s, t, common.RejectionSample)
 	assert.False(test, ok, "proof must not verify")
+}
+
+func TestFac2(test *testing.T) {
+	ctx := context.Background()
+	ec := tss.EC()
+	primes := [2]*big.Int{common.GetRandomPrimeInt(testSafePrimeBits),
+		common.GetRandomPrimeInt(testSafePrimeBits)}
+	NCap, s, t, err := crypto.GenerateNTildei(primes)
+	assert.NoError(test, err)
+	failCnt := 0
+	for i := 0; i < 100; i++ {
+		// factor should have bits [1024-16, 1024+16], so this proof should be valid
+		smallFactor := 1024 - 16
+		N0p := common.GetRandomPrimeInt(smallFactor)
+		N0q := common.GetRandomPrimeInt(2048 - smallFactor)
+		N0 := new(big.Int).Mul(N0p, N0q)
+		proof, err := NewProof(ctx, Session, ec, N0, NCap, s, t, N0p, N0q,
+			common.RejectionSample)
+		assert.NoError(test, err)
+		ok := proof.Verify(ctx, Session, ec, N0, NCap, s, t,
+			common.RejectionSample)
+		if !ok {
+			failCnt++
+		}
+	}
+	fmt.Println(failCnt)
+	assert.True(test, failCnt == 0, "the proof does not hold the expected completeness")
 }

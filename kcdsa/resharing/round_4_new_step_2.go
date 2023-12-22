@@ -69,10 +69,10 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 
 		proofPrm, err := r2Message.UnmarshalProofPrm()
 		if err != nil {
-			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
+			return round.WrapError(fmt.Errorf("ProofPrm failed"), message.GetFrom())
 		}
 		if ok := proofPrm.Verify(ctx, contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
-			return round.WrapError(fmt.Errorf("ProofMod failed"), message.GetFrom())
+			return round.WrapError(fmt.Errorf("ProofPrm failed"), message.GetFrom())
 		}
 		proofMod, err := r2Message.UnmarshalProofMod()
 		if err != nil {

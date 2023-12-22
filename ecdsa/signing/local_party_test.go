@@ -245,7 +245,7 @@ presigning:
 		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
 		select {
 		case du := <-dumpCh:
-			fmt.Println("Dumped: ", du.Index, du.RoundNum)
+			fmt.Printf("Dumped: Party %d at Round %d\n", du.Index, du.RoundNum)
 		case err := <-errCh:
 			log.Error(ctx, "Error: %s", err)
 			assert.FailNow(t, err.Error())
@@ -285,7 +285,7 @@ signing:
 	signParties := make([]*LocalParty, 0, len(signPIDs))
 
 	errCh = make(chan *tss.Error, len(signPIDs))
-	outCh = make(chan tss.Message, len(signPIDs))
+	outCh = make(chan tss.Message, len(signPIDs)*10)
 	sigCh := make(chan *common.SignatureData, len(signPIDs))
 	sdumpCh := make(chan *LocalDumpPB, len(signPIDs))
 

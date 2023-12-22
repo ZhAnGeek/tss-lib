@@ -52,7 +52,7 @@ type (
 	localTempData struct {
 		// temp data (thrown away after sign)
 		// prepare
-		w                  *big.Int
+		W                  *big.Int
 		BigWs              []*crypto.ECPoint
 		m                  *big.Int
 		KeyDerivationDelta *big.Int
@@ -78,15 +78,19 @@ type (
 		ChiMtAFs      []*big.Int
 		ChiMtADs      []*big.Int
 		ChiMtADProofs []*zkpaffg.ProofAffg
+		ChiMtABetaNeg []*big.Int
+		ChiMtASij     []*big.Int
+		ChiMtARij     []*big.Int
 
 		// message store
 		R4msgSigmaShare []*big.Int
 
 		R5msgH            []*big.Int
 		R5msgProofMulstar []*zkpmulstar.ProofMulstar
-		R5msgProofDec     []*zkpdec.ProofDec
 		R5msgDjis         [][]*big.Int
 		R5msgFjis         [][]*big.Int
+		R5msgProofAffgs   [][]*zkpaffg.ProofAffg
+		R5msgProofDec     []*zkpdec.ProofDec
 	}
 
 	LocalDump struct {
@@ -130,6 +134,9 @@ func NewLocalParty(
 	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
 	p.temp.ChiMtADs = make([]*big.Int, partyCount)
 	p.temp.ChiMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
+	p.temp.ChiMtABetaNeg = make([]*big.Int, partyCount)
+	p.temp.ChiMtASij = make([]*big.Int, partyCount)
+	p.temp.ChiMtARij = make([]*big.Int, partyCount)
 
 	p.temp.R4msgSigmaShare = make([]*big.Int, partyCount)
 
@@ -153,6 +160,9 @@ func NewLocalParty(
 		p.temp.ChiMtAFs = trans.ChiMtAFs
 		p.temp.ChiMtADs = trans.ChiMtADs
 		p.temp.ChiMtADProofs = trans.ChiMtADProofs
+		p.temp.ChiMtABetaNeg = trans.ChiMtABetaNeg
+		p.temp.ChiMtASij = trans.ChiMtASij
+		p.temp.ChiMtARij = trans.ChiMtARij
 	}
 
 	return p
@@ -198,6 +208,9 @@ func RestoreLocalParty(
 		p.temp.ChiMtAFs = trans.ChiMtAFs
 		p.temp.ChiMtADs = trans.ChiMtADs
 		p.temp.ChiMtADProofs = trans.ChiMtADProofs
+		p.temp.ChiMtABetaNeg = trans.ChiMtABetaNeg
+		p.temp.ChiMtASij = trans.ChiMtASij
+		p.temp.ChiMtARij = trans.ChiMtARij
 	}
 
 	errB := tss.BaseRestore(ctx, p, TaskName)
@@ -250,7 +263,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	}
 	// check that the message's "from index" will fit into the array
 	if maxFromIdx := len(p.params.Parties().IDs()) - 1; maxFromIdx < msg.GetFrom().Index {
-		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d <= %d)",
+		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d < %d)",
 			maxFromIdx, msg.GetFrom().Index), msg.GetFrom())
 	}
 	return true, nil
@@ -269,22 +282,28 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 	case *SignRound1Message:
 		r4msg := msg.Content().(*SignRound1Message)
 		p.temp.R4msgSigmaShare[fromPIdx] = r4msg.UnmarshalSigmaShare()
-	case *IdentificationRound1Message:
-		r5msg := msg.Content().(*IdentificationRound1Message)
-		p.temp.R5msgH[fromPIdx] = r5msg.UnmarshalH()
-		// p.temp.r5msgSigmaShareEnc[fromPIdx] = r5msg.UnmarshalSigmaShareEnc()
-		proofMulstar, err := r5msg.UnmarshalProofMul()
+	case *IdentificationRound1Message1:
+		r5msg1 := msg.Content().(*IdentificationRound1Message1)
+		p.temp.R5msgH[fromPIdx] = r5msg1.UnmarshalH()
+		proofMulstar, err := r5msg1.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.R5msgProofMulstar[fromPIdx] = proofMulstar
-		proofDec, err := r5msg.UnmarshalProofDec()
+		p.temp.R5msgDjis[fromPIdx] = r5msg1.UnmarshalDjis()
+		p.temp.R5msgFjis[fromPIdx] = r5msg1.UnmarshalFjis()
+	case *IdentificationRound1Message2:
+		r5msg2 := msg.Content().(*IdentificationRound1Message2)
+		proofAffgs, err := r5msg2.UnmarshalAffgProofs(p.params.EC(), fromPIdx)
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.R5msgProofAffgs[fromPIdx] = proofAffgs
+		proofDec, err := r5msg2.UnmarshalDecProof()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.R5msgProofDec[fromPIdx] = proofDec
-		p.temp.R5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
-		p.temp.R5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
 	default: // unrecognised message, just ignore!
 		log.Warn(ctx, "unrecognised message ignored: %v", msg)
 		return false, nil

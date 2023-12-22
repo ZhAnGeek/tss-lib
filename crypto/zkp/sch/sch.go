@@ -71,7 +71,7 @@ func NewAlpha(ec elliptic.Curve) (*big.Int, *crypto.ECPoint) {
 
 // NewProof implements proofsch
 func NewProofWithAlpha(ctx context.Context, Session []byte, X, A *crypto.ECPoint, alpha, x *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofSch, error) {
-	if x == nil || X == nil || !X.ValidateBasic() {
+	if x == nil || X == nil || !X.ValidateBasic() || A == nil || !A.ValidateBasic() || alpha == nil {
 		return nil, errors.New("zkpsch constructor received nil or invalid value(s)")
 	}
 	ec := X.Curve()
@@ -125,7 +125,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofSch, error) {
 }
 
 func (pf *ProofSch) Verify(ctx context.Context, Session []byte, X *crypto.ECPoint, rejectionSample common.RejectionSampleFunc) bool {
-	if pf == nil || !pf.ValidateBasic() || X == nil {
+	if pf == nil || !pf.ValidateBasic() || X == nil || !X.ValidateBasic() {
 		return false
 	}
 	ec := X.Curve()

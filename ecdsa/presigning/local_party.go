@@ -95,12 +95,19 @@ type (
 		DeltaMtAFs      []*big.Int
 		DeltaMtADs      []*big.Int
 		DeltaMtADProofs []*zkpaffg.ProofAffg
+		DeltaMtABetaNeg []*big.Int
+		DeltaMtASij     []*big.Int
+		DeltaMtARij     []*big.Int
 		ChiMtAFs        []*big.Int
 		ChiMtADs        []*big.Int
 		ChiMtADProofs   []*zkpaffg.ProofAffg
+		ChiMtABetaNeg   []*big.Int
+		ChiMtASij       []*big.Int
+		ChiMtARij       []*big.Int
 		R5msgH          []*big.Int
 		R5msgProofMul   []*zkpmul.ProofMul
 		R5msgProofDec   []*zkpdec.ProofDec
+		R5msgProofAffg  [][]*zkpaffg.ProofAffg
 		R5msgDjis       [][]*big.Int
 		R5msgFjis       [][]*big.Int
 	}
@@ -121,6 +128,9 @@ type (
 		ChiMtAFs      []*big.Int
 		ChiMtADs      []*big.Int
 		ChiMtADProofs []*zkpaffg.ProofAffg
+		ChiMtABetaNeg []*big.Int
+		ChiMtASij     []*big.Int
+		ChiMtARij     []*big.Int
 	}
 )
 
@@ -167,14 +177,24 @@ func NewLocalParty(
 	p.temp.DeltaMtAFs = make([]*big.Int, partyCount)
 	p.temp.DeltaMtADs = make([]*big.Int, partyCount)
 	p.temp.DeltaMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
+	p.temp.DeltaMtABetaNeg = make([]*big.Int, partyCount)
+	p.temp.DeltaMtASij = make([]*big.Int, partyCount)
+	p.temp.DeltaMtARij = make([]*big.Int, partyCount)
 	p.temp.ChiMtAFs = make([]*big.Int, partyCount)
 	p.temp.ChiMtADs = make([]*big.Int, partyCount)
 	p.temp.ChiMtADProofs = make([]*zkpaffg.ProofAffg, partyCount)
+	p.temp.ChiMtABetaNeg = make([]*big.Int, partyCount)
+	p.temp.ChiMtASij = make([]*big.Int, partyCount)
+	p.temp.ChiMtARij = make([]*big.Int, partyCount)
 	p.temp.R5msgH = make([]*big.Int, partyCount)
 	p.temp.R5msgProofMul = make([]*zkpmul.ProofMul, partyCount)
-	p.temp.R5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
 	p.temp.R5msgDjis = make([][]*big.Int, partyCount)
 	p.temp.R5msgFjis = make([][]*big.Int, partyCount)
+	p.temp.R5msgProofAffg = make([][]*zkpaffg.ProofAffg, partyCount)
+	for i := range p.temp.R5msgProofAffg {
+		p.temp.R5msgProofAffg[i] = make([]*zkpaffg.ProofAffg, partyCount)
+	}
+	p.temp.R5msgProofDec = make([]*zkpdec.ProofDec, partyCount)
 
 	return p
 }
@@ -254,7 +274,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 	}
 	// check that the message's "from index" will fit into the array
 	if maxFromIdx := len(p.params.Parties().IDs()) - 1; maxFromIdx < msg.GetFrom().Index {
-		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d <= %d)",
+		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d < %d)",
 			maxFromIdx, msg.GetFrom().Index), msg.GetFrom())
 	}
 	return true, nil
@@ -320,17 +340,24 @@ func (p *LocalParty) StoreMessage(ctx context.Context, msg tss.ParsedMessage) (b
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.R3msgProofLogstar[fromPIdx] = proofLogStar
-	case *IdentificationRound1Message:
-		r5msg := msg.Content().(*IdentificationRound1Message)
-		p.temp.R5msgH[fromPIdx] = r5msg.UnmarshalH()
-		proofMul, err := r5msg.UnmarshalProofMul()
+	case *IdentificationRound1Message1:
+		r5msg1 := msg.Content().(*IdentificationRound1Message1)
+		p.temp.R5msgH[fromPIdx] = r5msg1.UnmarshalH()
+		proofMul, err := r5msg1.UnmarshalProofMul()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}
 		p.temp.R5msgProofMul[fromPIdx] = proofMul
-		p.temp.R5msgDjis[fromPIdx] = r5msg.UnmarshalDjis()
-		p.temp.R5msgFjis[fromPIdx] = r5msg.UnmarshalFjis()
-		proofDec, err := r5msg.UnmarshalProofDec()
+		p.temp.R5msgDjis[fromPIdx] = r5msg1.UnmarshalDjis()
+		p.temp.R5msgFjis[fromPIdx] = r5msg1.UnmarshalFjis()
+	case *IdentificationRound1Message2:
+		r5msg2 := msg.Content().(*IdentificationRound1Message2)
+		proofAffgs, err := r5msg2.UnmarshalAffgProofs(p.params.EC(), fromPIdx)
+		if err != nil {
+			return false, p.WrapError(err, msg.GetFrom())
+		}
+		p.temp.R5msgProofAffg[fromPIdx] = proofAffgs
+		proofDec, err := r5msg2.UnmarshalDecProof()
 		if err != nil {
 			return false, p.WrapError(err, msg.GetFrom())
 		}

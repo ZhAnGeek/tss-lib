@@ -136,7 +136,7 @@ func (round *sign1) prepare() error {
 	}
 	wi, BigWs := crypto.PrepareForSigning(round.Params().EC(), i, len(ks), xi, ks, BigXs)
 
-	round.temp.w = wi
+	round.temp.W = wi
 	round.temp.BigWs = BigWs
 	return nil
 }

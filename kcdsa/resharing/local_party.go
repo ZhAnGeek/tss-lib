@@ -150,7 +150,7 @@ func (p *LocalParty) ValidateMessage(msg tss.ParsedMessage) (bool, *tss.Error) {
 		maxFromIdx = len(p.params.OldParties().IDs()) - 1
 	}
 	if maxFromIdx < msg.GetFrom().Index {
-		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d <= %d)",
+		return false, p.WrapError(fmt.Errorf("received msg with a sender index too great (%d < %d)",
 			maxFromIdx, msg.GetFrom().Index), msg.GetFrom())
 	}
 	return true, nil

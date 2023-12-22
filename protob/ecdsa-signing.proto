@@ -18,14 +18,22 @@ message SignRound1Message {
     bytes Ry = 3;
 }
 
-message IdentificationRound1Message {
+/*
+ * Represents a BROADCAST message sent to all parties during Identification Round 1 of the ECDSA TSS signing protocol.
+ */
+message IdentificationRound1Message1 {
     bytes H = 1;
     repeated bytes MulProof = 2;
     repeated bytes Djis = 3;
     repeated bytes Fjis = 4;
-    // repeated bytes DjiProofs = 5;
-    repeated bytes DecProof = 6;
-    bytes Q3Enc = 7;
+}
+
+/*
+ * Represents a P2P message sent to all parties during Identification Round 1 of the ECDSA TSS signing protocol.
+ */
+message IdentificationRound1Message2 {
+    repeated bytes AffgProofs = 1;
+    repeated bytes DecProof = 2;
 }
 
 /*
@@ -39,31 +47,36 @@ message LocalDumpPB {
     repeated bytes LTBigWs = 5;
     bytes LTm = 6;
     bytes LTKeyDerivationDelta = 7;
+    bytes LTssidNonce = 8;
 
-    bytes LTssid = 8;
-    bytes LTKShare = 9;
-    bytes LTChiShare = 10;
-    repeated bytes LTBigR = 11;
+    bytes LTssid = 9;
+    bytes LTKShare = 10;
+    bytes LTChiShare = 11;
+    repeated bytes LTBigR = 12;
 
-    bytes LTSigmaShare = 12;
+    bytes LTSigmaShare = 13;
 
     // identification
-    bytes LTK = 13;
-    repeated bytes LTr1msgK = 14;
-    repeated bytes LTChiShareAlphas = 15;
-    repeated bytes LTChiShareBetas = 16;
-    repeated bytes LTr2msgChiD = 17;
+    bytes LTK = 14;
+    repeated bytes LTr1msgK = 15;
+    repeated bytes LTChiShareAlphas = 16;
+    repeated bytes LTChiShareBetas = 17;
+    repeated bytes LTr2msgChiD = 18;
 
-    repeated bytes LTChiMtAFs = 18;
-    repeated bytes LTChiMtADs = 19;
-    repeated bytes LTChiMtADProofs = 20;
+    repeated bytes LTChiMtAFs = 19;
+    repeated bytes LTChiMtADs = 20;
+    repeated bytes LTChiMtADProofs = 21;
+    repeated bytes LTChiMtABetaNeg = 22;
+    repeated bytes LTChiMtASij = 23;
+    repeated bytes LTChiMtARij = 24;
 
-    repeated bytes LTr4msgSigmaShare = 21;
+    repeated bytes LTr4msgSigmaShare = 25;
 
-    repeated bytes LTr5msgH = 22;
-    repeated bytes LTr5msgProofMulstar = 23;
-    repeated bytes LTr5msgProofDec = 25;
-    repeated bytes LTr5msgDjis = 26;
-    repeated bytes LTr5msgFjis = 27;
-    bytes LTssidNonce = 28;
+    repeated bytes LTr5msgH = 26;
+    repeated bytes LTr5msgProofMulstar = 27;
+    repeated bytes LTr5msgDjis = 28;
+    repeated bytes LTr5msgFjis = 29;
+
+    repeated bytes LTr5msgProofAffgs = 31;
+    repeated bytes LTr5msgProofDec = 32;
 }

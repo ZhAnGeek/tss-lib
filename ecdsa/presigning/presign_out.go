@@ -120,6 +120,9 @@ func (round *presignout) Start(ctx context.Context) *tss.Error {
 			ChiMtAFs:      round.temp.ChiMtAFs,
 			ChiMtADs:      round.temp.ChiMtADs,
 			ChiMtADProofs: round.temp.ChiMtADProofs,
+			ChiMtABetaNeg: round.temp.ChiMtABetaNeg,
+			ChiMtASij:     round.temp.ChiMtASij,
+			ChiMtARij:     round.temp.ChiMtARij,
 		}
 	}
 

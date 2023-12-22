@@ -36,7 +36,7 @@ var (
 
 // NewProof implements prooflogstar
 func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t, x, rho *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofLogstar, error) {
-	if ec == nil || pk == nil || C == nil || X == nil || g == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
+	if ec == nil || pk == nil || C == nil || X == nil || !X.ValidateBasic() || g == nil || NCap == nil || s == nil || t == nil || x == nil || rho == nil {
 		return nil, errors.New("ProveLogstar constructor received nil value(s)")
 	}
 
@@ -74,7 +74,7 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk *pailli
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
-			C, X.X(), X.Y(), g.X(), g.Y(), S, A, Y.X(), Y.Y(), D)...)
+			C, X.X(), X.Y(), g.X(), g.Y(), S, A, Y.X(), Y.Y(), D, NCap, s, t)...)
 		e = rejectionSample(q, eHash)
 	}
 
@@ -114,20 +114,35 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofLogstar, error) {
 }
 
 func (pf *ProofLogstar) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk *paillier.PublicKey, C *big.Int, X *crypto.ECPoint, g *crypto.ECPoint, NCap, s, t *big.Int, rejectionSample common.RejectionSampleFunc) bool {
-	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || C == nil || X == nil || NCap == nil || s == nil || t == nil {
+	if pf == nil || !pf.ValidateBasic() || ec == nil || pk == nil || C == nil || X == nil || !X.ValidateBasic() || NCap == nil || s == nil || t == nil || g == nil || !g.ValidateBasic() {
 		return false
 	}
 
 	q := ec.Params().N
-	q3 := new(big.Int).Mul(q, q)
-	q3 = new(big.Int).Mul(q, q3)
+	q2 := new(big.Int).Mul(q, q)
+	q3 := new(big.Int).Mul(q, q2)
 
 	// Fig 25. range check
 	if !common.IsInInterval(pf.Z1, q3) {
 		return false
 	}
 
-	err := common.CheckInvertibleAndValidityModuloN(ec.Params().N, pf.S, pf.A, pf.D, pf.Z2)
+	err := common.CheckInvertibleAndValidityModuloN(NCap, pf.S)
+	if err != nil {
+		return false
+	}
+
+	err = common.CheckInvertibleAndValidityModuloN(pk.NSquare(), pf.A)
+	if err != nil {
+		return false
+	}
+
+	err = common.CheckInvertibleAndValidityModuloN(NCap, pf.D)
+	if err != nil {
+		return false
+	}
+
+	err = common.CheckInvertibleAndValidityModuloN(pk.N, pf.Z2)
 	if err != nil {
 		return false
 	}
@@ -143,7 +158,7 @@ func (pf *ProofLogstar) Verify(ctx context.Context, Session []byte, ec elliptic.
 	var e *big.Int
 	{
 		eHash := common.SHA512_256i_TAGGED(ctx, Session, append(pk.AsInts(), ec.Params().B, ec.Params().N, ec.Params().P,
-			C, X.X(), X.Y(), g.X(), g.Y(), pf.S, pf.A, pf.Y.X(), pf.Y.Y(), pf.D)...)
+			C, X.X(), X.Y(), g.X(), g.Y(), pf.S, pf.A, pf.Y.X(), pf.Y.Y(), pf.D, NCap, s, t)...)
 		e = rejectionSample(q, eHash)
 	}
 

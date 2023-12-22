@@ -28,7 +28,7 @@ type (
 
 var (
 	// rangeParameter l limits the bits of p or q to be in [1024-l, 1024+l]
-	rangeParameter = new(big.Int).Lsh(big.NewInt(1), 15)
+	rangeParameter = new(big.Int).Lsh(big.NewInt(1), 32)
 	one            = big.NewInt(1)
 )
 
@@ -78,7 +78,7 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, N0, NCap, 
 	// Fig 28.2 e
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(ctx, Session, N0, NCap, s, t, P, Q, A, B, T, sigma)
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, N0, NCap, s, t, P, Q, A, B, T, sigma, ec.Params().B, ec.Params().N, ec.Params().P)
 		e = rejectionSample(q, eHash)
 	}
 
@@ -197,7 +197,7 @@ func (pf *ProofFac) Verify(ctx context.Context, Session []byte, ec elliptic.Curv
 
 	var e *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(ctx, Session, N0, NCap, s, t, pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma)
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, N0, NCap, s, t, pf.P, pf.Q, pf.A, pf.B, pf.T, pf.Sigma, ec.Params().B, ec.Params().N, ec.Params().P)
 		e = rejectionSample(q, eHash)
 	}
 

@@ -8,6 +8,7 @@ package zkpprm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -31,6 +32,10 @@ var (
 )
 
 func NewProof(ctx context.Context, Session []byte, s, t, N, Phi, lambda *big.Int) (*ProofPrm, error) {
+	if s == nil || t == nil || N == nil || Phi == nil || lambda == nil {
+		return nil, errors.New("Prm proof input not valid")
+	}
+
 	modN, modPhi := common.ModInt(N), common.ModInt(Phi)
 
 	// Fig 17.1
@@ -74,7 +79,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofPrm, error) {
 }
 
 func (pf *ProofPrm) Verify(ctx context.Context, Session []byte, s, t, N *big.Int) bool {
-	if pf == nil || !pf.ValidateBasic() {
+	if pf == nil || !pf.ValidateBasic() || s == nil || t == nil || N == nil {
 		return false
 	}
 	if N.Sign() != 1 {

@@ -12,6 +12,7 @@ import (
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/common"
+	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
 	zkpdec "github.com/Safulet/tss-lib-private/crypto/zkp/dec"
 	zkpmul "github.com/Safulet/tss-lib-private/crypto/zkp/mul"
 	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
@@ -42,18 +43,70 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 	Pi := round.PartyID()
 	round.ok[i] = true
 	ContextI := append(round.temp.Ssid, big.NewInt(int64(i)).Bytes()...)
+	rejectionSample := tss.GetRejectionSampleFunc(round.Params().Version())
 
 	// Fig 7. Output.2
+	// Broadcast part
 	H, rho, err := round.key.PaillierSK.HomoMultObfuscate(round.temp.KShare, round.temp.G)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
-	rejectionSample := tss.GetRejectionSampleFunc(round.Params().Version())
-	proofH, err := zkpmul.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K, round.temp.G, H, round.temp.KShare, rho, round.temp.KNonce, rejectionSample)
+	proofMul, err := zkpmul.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, round.temp.K,
+		round.temp.G, H, round.temp.KShare, rho, round.temp.KNonce, rejectionSample)
 	if err != nil {
 		return round.WrapError(err, Pi)
 	}
 
+	// Fill to prevent nil
+	round.temp.DeltaMtADs[i] = big.NewInt(1)
+	round.temp.DeltaMtAFs[i] = big.NewInt(1)
+
+	msg1 := NewIdentificationRound1Message1(Pi, H, proofMul, round.temp.DeltaMtADs, round.temp.DeltaMtAFs)
+	round.out <- msg1
+
+	// P2P part
+	proofAffgs := make([][]*zkpaffg.ProofAffg, round.PartyCount())
+	for i := range proofAffgs {
+		proofAffgs[i] = make([]*zkpaffg.ProofAffg, round.PartyCount())
+	}
+	// send to k
+	for k := range round.Parties().IDs() {
+		if k == i {
+			continue
+		}
+		// process Dji
+		for j := range round.Parties().IDs() {
+			if j == i {
+				continue
+			}
+			if k == j {
+				// already computed
+				proofAffgs[k][j] = round.temp.DeltaMtADProofs[j]
+				continue
+			}
+			pkj := round.key.PaillierPKs[j]
+			pki := &round.key.PaillierSK.PublicKey
+			NCap := round.key.NTildej[k]
+			s := round.key.H1j[k]
+			t := round.key.H2j[k]
+			Kj := round.temp.R1msgK[j]
+			Dji := round.temp.DeltaMtADs[j]
+			Fji := round.temp.DeltaMtAFs[j]
+			BigGammai := round.temp.BigGammaShare
+			gammai := round.temp.GammaShare
+			betaNeg := round.temp.DeltaMtABetaNeg[j]
+			sij := round.temp.DeltaMtASij[j]
+			rij := round.temp.DeltaMtARij[j]
+
+			proof, err := zkpaffg.NewProof(ctx, ContextI, round.EC(), pkj, pki, NCap, s, t,
+				Kj, Dji, Fji, BigGammai, gammai, betaNeg, sij, rij, rejectionSample)
+			if err != nil {
+				return round.WrapError(err, Pi)
+			}
+			proofAffgs[k][j] = proof
+
+		}
+	}
 	// Calc DeltaShare2 s.t. Enc(DeltaShare2) = DeltaShareEnc
 	DeltaShare2 := new(big.Int).Mul(round.temp.KShare, round.temp.GammaShare)
 	for j := range round.Parties().IDs() {
@@ -100,22 +153,28 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(err, Pi)
 	}
 
-	// Fill to prevent nil
-	round.temp.DeltaMtADs[i] = round.temp.DeltaMtADs[1-i]
-	round.temp.DeltaMtAFs[i] = round.temp.DeltaMtAFs[1-i]
+	proofDecs := make([]*zkpdec.ProofDec, round.PartyCount())
+	for j := range round.Parties().IDs() {
+		if j == i {
+			continue
+		}
+
+		ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
+		proof, err := zkpdec.NewProof(ctx, ContextJ, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], DeltaShare2, nonce, rejectionSample)
+		if err != nil {
+			return round.WrapError(err, Pi)
+		}
+		proofDecs[j] = proof
+
+	}
+
 	for j, Pj := range round.Parties().IDs() {
 		if j == i {
 			continue
 		}
 
-		rejectionSample := tss.GetRejectionSampleFunc(round.Params().Version())
-		proofDec, err := zkpdec.NewProof(ctx, ContextI, round.EC(), &round.key.PaillierSK.PublicKey, DeltaShareEnc, round.temp.DeltaShare, round.key.NTildej[j], round.key.H1j[j], round.key.H2j[j], DeltaShare2, nonce, rejectionSample)
-		if err != nil {
-			return round.WrapError(err, Pi)
-		}
-
-		r6msg := NewIdentificationRound1Message(Pj, round.PartyID(), H, proofH, round.temp.DeltaMtADs, round.temp.DeltaMtAFs, proofDec)
-		round.out <- r6msg
+		msg2 := NewIdentificationRound1Message2(Pj, Pi, proofAffgs[j], proofDecs[j])
+		round.out <- msg2
 	}
 
 	return nil
@@ -126,8 +185,9 @@ func (round *identification1) Update() (bool, *tss.Error) {
 		if round.ok[j] {
 			continue
 		}
-		if msg == nil || round.temp.R5msgDjis[j] == nil || round.temp.R5msgFjis[j] == nil ||
-			round.temp.R5msgProofDec[j] == nil || round.temp.R5msgProofMul[j] == nil {
+		if msg == nil || round.temp.R5msgH[j] == nil || round.temp.R5msgProofMul[j] == nil ||
+			round.temp.R5msgDjis[j] == nil || round.temp.R5msgFjis[j] == nil ||
+			round.temp.R5msgProofAffg[j] == nil || round.temp.R5msgProofDec[j] == nil {
 			return false, nil
 		}
 		round.ok[j] = true
@@ -136,8 +196,11 @@ func (round *identification1) Update() (bool, *tss.Error) {
 }
 
 func (round *identification1) CanAccept(msg tss.ParsedMessage) bool {
-	if _, ok := msg.Content().(*IdentificationRound1Message); ok {
+	if _, ok := msg.Content().(*IdentificationRound1Message1); ok {
 		return msg.IsBroadcast()
+	}
+	if _, ok := msg.Content().(*IdentificationRound1Message2); ok {
+		return !msg.IsBroadcast()
 	}
 	return false
 }

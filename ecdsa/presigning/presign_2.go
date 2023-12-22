@@ -127,10 +127,21 @@ func (round *presign2) Start(ctx context.Context) *tss.Error {
 				round.temp.DeltaMtADs[j] = DeltaMtA.Dji
 				round.temp.DeltaMtADProofs[j] = DeltaMtA.Proofji
 
+				q := round.EC().Params().N
+				q3 := new(big.Int).Mul(q, q)
+				q3 = new(big.Int).Mul(q, q3)
+				round.temp.DeltaMtABetaNeg[j] = new(big.Int).Sub(q3, DeltaMtA.Beta)
+				round.temp.DeltaMtASij[j] = DeltaMtA.Sij
+				round.temp.DeltaMtARij[j] = DeltaMtA.Rij
+
 				// record transcript for sign identification 1
 				round.temp.ChiMtAFs[j] = ChiMtA.Fji
 				round.temp.ChiMtADs[j] = ChiMtA.Dji
-				// round.temp.ChiMtADProofs[j] = ChiMtA.Proofji
+				round.temp.ChiMtADProofs[j] = ChiMtA.Proofji
+
+				round.temp.ChiMtABetaNeg[j] = new(big.Int).Sub(q3, ChiMtA.Beta)
+				round.temp.ChiMtASij[j] = ChiMtA.Sij
+				round.temp.ChiMtARij[j] = ChiMtA.Rij
 			}
 		}(j, Pj)
 	}

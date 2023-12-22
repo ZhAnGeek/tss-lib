@@ -85,7 +85,7 @@ func CheckModuloN(N *big.Int, is ...*big.Int) error {
 		return err
 	}
 	for _, i := range is {
-		if i == nil {
+		if i != nil {
 			if !IsInInterval(i, N) {
 				return errors.New(fmt.Sprintf("%s not in bound of %s", i.String(), N.String()))
 			}
@@ -102,8 +102,8 @@ func CheckInvertibleModuloN(N *big.Int, is ...*big.Int) error {
 	}
 	gcd := big.NewInt(0)
 	for _, i := range is {
-		if i == nil {
-			if gcd.GCD(nil, nil, i, N).Cmp(one) == 0 {
+		if i != nil {
+			if gcd.GCD(nil, nil, i, N).Cmp(one) != 0 {
 				return errors.New(fmt.Sprintf("%s is not relatively prime of %s", i.String(), N.String()))
 			}
 		}

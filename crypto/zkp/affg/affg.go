@@ -33,7 +33,7 @@ type (
 
 // NewProof implements proofaff-g
 func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint, x, y, rho, rhoy *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofAffg, error) {
-	if ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil || x == nil || y == nil || rho == nil || rhoy == nil {
+	if ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil || !X.ValidateBasic() || x == nil || y == nil || rho == nil || rhoy == nil {
 		return nil, errors.New("NewProof() received a nil argument")
 	}
 
@@ -140,7 +140,7 @@ func NewProofFromBytes(ec elliptic.Curve, bzs [][]byte) (*ProofAffg, error) {
 
 // ProveAffg.Verify implements verification of aff-g proof
 func (pf *ProofAffg) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, pk0 *paillier.PublicKey, pk1 *paillier.PublicKey, NCap, s, t, C, D, Y *big.Int, X *crypto.ECPoint, rejectionSample common.RejectionSampleFunc) bool {
-	if pf == nil || !pf.ValidateBasic() || ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil {
+	if pf == nil || !pf.ValidateBasic() || ec == nil || pk0 == nil || pk1 == nil || NCap == nil || s == nil || t == nil || C == nil || D == nil || Y == nil || X == nil || !X.ValidateBasic() {
 		return false
 	}
 
@@ -159,7 +159,29 @@ func (pf *ProofAffg) Verify(ctx context.Context, Session []byte, ec elliptic.Cur
 		return false
 	}
 
-	err := common.CheckInvertibleAndValidityModuloN(ec.Params().N, pf.A, pf.By, pf.E, pf.S, pf.T, pf.W, pf.Wy)
+	err := common.CheckInvertibleAndValidityModuloN(pk0.N, pf.W)
+	if err != nil {
+		return false
+	}
+
+	NSquared := pk0.NSquare()
+	err = common.CheckInvertibleAndValidityModuloN(NSquared, pf.A)
+	if err != nil {
+		return false
+	}
+
+	err = common.CheckInvertibleAndValidityModuloN(pk1.N, pf.Wy)
+	if err != nil {
+		return false
+	}
+
+	N1Squared := pk1.NSquare()
+	err = common.CheckInvertibleAndValidityModuloN(N1Squared, pf.By)
+	if err != nil {
+		return false
+	}
+
+	err = common.CheckInvertibleAndValidityModuloN(NCap, pf.E, pf.F, pf.S, pf.T)
 	if err != nil {
 		return false
 	}

@@ -134,6 +134,37 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 			}
 		}(j, Pj)
 	}
+	for j, Pj := range round.Parties().IDs() {
+		if j == i {
+			continue
+		}
+		// verify affg
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+
+			ContextJ := append(round.temp.ssid, big.NewInt(int64(j)).Bytes()...)
+			for k := 0; k < round.PartyCount(); k++ {
+				if j == k {
+					return
+				}
+				pkj := round.key.PaillierPKs[k]
+				pki := round.key.PaillierPKs[j]
+				NCap := round.key.NTildei
+				s := round.key.H1i
+				t := round.key.H2i
+				Kj := round.temp.K
+				Dji := round.temp.R5msgDjis[j][i]
+				Fji := round.temp.R5msgFjis[j][i]
+				BigGammai := round.temp.BigWs[j]
+				ok := round.temp.R5msgProofAffgs[j][k].Verify(ctx, ContextJ, round.EC(),
+					pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, rejectionSample)
+				if !ok {
+					errChs <- round.WrapError(errors.New("round6: proofAffg verify failed"), Pj)
+				}
+			}
+		}(j, Pj)
+	}
 	wg.Wait()
 	close(errChs)
 	culprits := make([]*tss.PartyID, 0)

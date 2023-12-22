@@ -33,12 +33,13 @@ func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int
 
 	// 2-4.
 	wi = xi
+	ksi := ks[i]
+
 	for j := 0; j < pax; j++ {
 		if j == i {
 			continue
 		}
 		ksj := ks[j]
-		ksi := ks[i]
 		if ksj.Cmp(ksi) == 0 {
 			panic(fmt.Errorf("index of two parties are equal"))
 		}
@@ -56,12 +57,13 @@ func PrepareForSigning(ec elliptic.Curve, i, pax int, xi *big.Int, ks []*big.Int
 	bigWs = make([]*crypto.ECPoint, len(ks))
 	for j := 0; j < pax; j++ {
 		bigWj := bigXs[j]
+		ksj := ks[j]
+
 		for c := 0; c < pax; c++ {
 			if j == c {
 				continue
 			}
 			ksc := ks[c]
-			ksj := ks[j]
 			if ksj.Cmp(ksc) == 0 {
 				panic(fmt.Errorf("index of two parties are equal"))
 			}

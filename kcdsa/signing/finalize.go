@@ -48,7 +48,12 @@ func VerifySig(ec elliptic.Curve, _ context.Context, s *big.Int, e *big.Int, m [
 		eG = eG2
 	}
 
-	W, _ := sY.Add(eG)
+	W, err := sY.Add(eG)
+
+	if err != nil {
+		return false
+	}
+
 	mHash := sha256.Sum256(m)
 	mHashPkBytes := append(mHash[:], common.ReverseBytes(W.X().Bytes())...)
 	e2Bytes := sha256.Sum256(mHashPkBytes)

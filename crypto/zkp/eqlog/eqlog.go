@@ -31,7 +31,7 @@ type (
 
 // NewProof implements proofenc
 func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, g, h, x, y *crypto.ECPoint, k *big.Int, rejectionSample common.RejectionSampleFunc) (*ProofEqLog, error) {
-	if ec == nil || g == nil || h == nil || x == nil || y == nil {
+	if ec == nil || g == nil || h == nil || x == nil || y == nil || !x.ValidateBasic() || !y.ValidateBasic() || k == nil {
 		return nil, errors.New("ProfEqLog constructor received nil value(s)")
 	}
 	if !tss.SameCurve(ec, g.Curve()) || !tss.SameCurve(ec, h.Curve()) || !tss.SameCurve(ec, x.Curve()) || !tss.SameCurve(ec, y.Curve()) {
@@ -58,8 +58,8 @@ func NewProof(ctx context.Context, Session []byte, ec elliptic.Curve, g, h, x, y
 
 	var ch *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(ctx, Session, g.X(), g.Y(), h.X(), h.Y(), x.X(), x.Y(),
-			cmt1.X(), cmt1.Y(), cmt2.X(), cmt2.Y())
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, g.X(), g.Y(), h.X(), h.Y(), x.X(), x.Y(), y.X(), y.Y(),
+			cmt1.X(), cmt1.Y(), cmt2.X(), cmt2.Y(), ec.Params().B, ec.Params().N, ec.Params().P)
 		ch = rejectionSample(q, eHash)
 	}
 
@@ -82,7 +82,7 @@ func NewProofFromBytes(bzs [][]byte) (*ProofEqLog, error) {
 }
 
 func (pf *ProofEqLog) Verify(ctx context.Context, Session []byte, ec elliptic.Curve, g, h, x, y *crypto.ECPoint, rejectionSample common.RejectionSampleFunc) bool {
-	if pf == nil || !pf.ValidateBasic() || ec == nil || g == nil || h == nil || x == nil || y == nil {
+	if pf == nil || !pf.ValidateBasic() || ec == nil || g == nil || h == nil || x == nil || y == nil || !x.ValidateBasic() || !y.ValidateBasic() {
 		return false
 	}
 	if !tss.SameCurve(ec, g.Curve()) || !tss.SameCurve(ec, h.Curve()) || !tss.SameCurve(ec, x.Curve()) || !tss.SameCurve(ec, y.Curve()) {
@@ -118,8 +118,8 @@ func (pf *ProofEqLog) Verify(ctx context.Context, Session []byte, ec elliptic.Cu
 	}
 	var ch *big.Int
 	{
-		eHash := common.SHA512_256i_TAGGED(ctx, Session, g.X(), g.Y(), h.X(), h.Y(), x.X(), x.Y(),
-			cmt1.X(), cmt1.Y(), cmt2.X(), cmt2.Y())
+		eHash := common.SHA512_256i_TAGGED(ctx, Session, g.X(), g.Y(), h.X(), h.Y(), x.X(), x.Y(), y.X(), y.Y(),
+			cmt1.X(), cmt1.Y(), cmt2.X(), cmt2.Y(), ec.Params().B, ec.Params().N, ec.Params().P)
 		ch = rejectionSample(q, eHash)
 	}
 	if ch.Cmp(pf.C) != 0 {

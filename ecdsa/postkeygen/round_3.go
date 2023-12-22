@@ -55,7 +55,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			defer wg.Done()
 			proofPrm := round.temp.ProofPrms[j]
 			if ok := proofPrm.Verify(ctx, contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
-				errChs <- round.WrapError(fmt.Errorf("ProofMod failed"), Pj)
+				errChs <- round.WrapError(fmt.Errorf("ProofPrm failed"), Pj)
 			}
 			proofMod := round.temp.ProofMods[j]
 			if ok := proofMod.Verify(ctx, contextJ, round.save.NTildej[j], rejectionSample); !ok {
@@ -73,7 +73,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 				round.save.NTildej[j], round.save.H1j[j], round.save.H2j[j], SP, SQ, rejectionSample)
 
 			if err != nil {
-				errChs <- round.WrapError(errors.New("create proofMod failed"), Pi)
+				errChs <- round.WrapError(errors.New("create proofFac failed"), Pi)
 			}
 			r3msg1 := NewKGRound3Message1(Pj, round.PartyID(), proofFac)
 			round.out <- r3msg1

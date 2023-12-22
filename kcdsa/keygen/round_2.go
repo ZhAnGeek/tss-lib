@@ -59,7 +59,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 			defer wg.Done()
 			proofPrm := round.temp.ProofPrms[j]
 			if ok := proofPrm.Verify(ctx, contextJ, round.save.H1j[j], round.save.H2j[j], round.save.NTildej[j]); !ok {
-				errChs <- round.WrapError(fmt.Errorf("ProofMod failed"), Pj)
+				errChs <- round.WrapError(fmt.Errorf("ProofPrm failed"), Pj)
 			}
 			proofMod := round.temp.ProofMods[j]
 			if ok := proofMod.Verify(ctx, contextJ, round.save.NTildej[j], rejectionSample); !ok {

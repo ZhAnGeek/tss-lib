@@ -44,7 +44,8 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 	q3 = new(big.Int).Mul(q3, q)
 
 	// Fig 7. Output.2
-	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)
+	ContextI := common.AppendBigIntToBytesSlice(round.temp.Ssid, big.NewInt(int64(i)))
+	errChs := make(chan *tss.Error, (1+round.PartyCount())*(round.PartyCount()-1))
 	wg := sync.WaitGroup{}
 	rejectionSample := tss.GetRejectionSampleFunc(round.Params().Version())
 	for j, Pj := range round.Parties().IDs() {
@@ -104,11 +105,43 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 				}
 			}
 			proofDec := round.temp.R5msgProofDec[j]
-			ok = proofDec.Verify(ctx, ContextJ, round.EC(), round.key.PaillierPKs[j], DeltaShareEnc, round.temp.R3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i, rejectionSample)
+			ok = proofDec.Verify(ctx, ContextI, round.EC(), round.key.PaillierPKs[j], DeltaShareEnc, round.temp.R3msgDeltaShare[j], round.key.NTildei, round.key.H1i, round.key.H2i, rejectionSample)
 			if !ok {
 				errChs <- round.WrapError(errors.New("round6: proofdec verify failed"), Pj)
 				return
 			}
+		}(j, Pj)
+	}
+	for j, Pj := range round.Parties().IDs() {
+		if j == i {
+			continue
+		}
+		// verify affg
+		wg.Add(1)
+		go func(j int, Pj *tss.PartyID) {
+			defer wg.Done()
+
+			ContextJ := append(round.temp.Ssid, big.NewInt(int64(j)).Bytes()...)
+			for k := 0; k < round.PartyCount(); k++ {
+				if j == k {
+					return
+				}
+				pkj := round.key.PaillierPKs[k]
+				pki := round.key.PaillierPKs[j]
+				NCap := round.key.NTildei
+				s := round.key.H1i
+				t := round.key.H2i
+				Kj := round.temp.K
+				Dji := round.temp.R5msgDjis[j][i]
+				Fji := round.temp.R5msgFjis[j][i]
+				BigGammai := round.temp.R2msgBigGammaShare[j]
+				ok := round.temp.R5msgProofAffg[j][k].Verify(ctx, ContextJ, round.EC(),
+					pkj, pki, NCap, s, t, Kj, Dji, Fji, BigGammai, rejectionSample)
+				if !ok {
+					errChs <- round.WrapError(errors.New("round6: proofAffg verify failed"), Pj)
+				}
+			}
+
 		}(j, Pj)
 	}
 	wg.Wait()
