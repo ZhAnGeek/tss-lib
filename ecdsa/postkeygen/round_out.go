@@ -59,7 +59,7 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 			}
 		}(j, Pj)
 	}
-
+	round.isFinished = true
 	round.end <- round.save
 
 	return nil

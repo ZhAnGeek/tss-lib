@@ -24,8 +24,9 @@ type (
 		end         chan<- *keygen.LocalPartySaveData
 		oldOK,      // old committee "ok" tracker
 		newOK []bool // `ok` tracks parties which have been verified by Update(); this one is for the new committee
-		started bool
-		number  int
+		started    bool
+		number     int
+		isFinished bool
 	}
 	round1 struct {
 		*base
@@ -156,4 +157,8 @@ func (round *base) allNewOK() {
 	for j := range round.newOK {
 		round.newOK[j] = true
 	}
+}
+
+func (round *base) IsFinished() bool {
+	return round.isFinished
 }

@@ -80,6 +80,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		Delta:           ilNum.Bytes(),
 		ChildChainCode:  round.temp.cChainCode,
 	}
+	round.isFinished = true
 	round.end <- result
 
 	return nil

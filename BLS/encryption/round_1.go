@@ -24,7 +24,7 @@ import (
 // round 1 represents round 1 of the signing part of the pairing-based threshold signature spec on BLS12381G2
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, end chan<- EncryptedData) tss.Round {
 	return &round1{
-		&base{params, key, temp, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, key, temp, end, make([]bool, len(params.Parties().IDs())), false, 1, false}}
 }
 
 func (round *round1) Start(ctx context.Context) *tss.Error {
@@ -63,7 +63,7 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err)
 	}
-
+	round.isFinished = true
 	round.end <- EncryptedData{CipherText: encryptedResult}
 	return nil
 }

@@ -148,7 +148,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	// PRINT public key & private share
 	log.Debug(ctx, "%s public key: %x", round.PartyID(), PubKey)
-
+	round.isFinished = true
 	round.end <- round.save
 	return nil
 }

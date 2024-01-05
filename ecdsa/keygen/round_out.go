@@ -64,7 +64,7 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 	if len(culprits) > 0 {
 		return round.WrapError(errors.New("round_out: proofSch verify failed"), culprits...)
 	}
-
+	round.isFinished = true
 	round.end <- round.save
 
 	return nil

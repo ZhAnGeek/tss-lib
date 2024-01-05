@@ -21,4 +21,5 @@ type Round interface {
 	NextRound() Round
 	WaitingFor() []*PartyID
 	WrapError(err error, culprits ...*PartyID) *Error
+	IsFinished() bool
 }

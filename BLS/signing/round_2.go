@@ -86,6 +86,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 
 	round.data.M = round.temp.m
 	round.data.Signature = totalSign.Bytes()
+	round.isFinished = true
 	round.end <- round.data
 
 	return nil

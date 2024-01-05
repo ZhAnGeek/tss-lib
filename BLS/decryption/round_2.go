@@ -74,7 +74,7 @@ func (round *round2) Start(ctx context.Context) *tss.Error {
 	if err != nil {
 		return round.WrapError(err)
 	}
-
+	round.isFinished = true
 	round.end <- DecryptedData{ClearText: clearTextBytes}
 	return nil
 }

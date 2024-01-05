@@ -21,7 +21,7 @@ import (
 
 func newRound6(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
 	return &identification1{&presignout{&presign3{&presign2{&presign1{
-		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 6}}}}}}
+		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 6, false}}}}}}
 }
 
 func (round *identification2) Start(ctx context.Context) *tss.Error {
@@ -155,6 +155,7 @@ func (round *identification2) Start(ctx context.Context) *tss.Error {
 	}
 
 	// mark finished
+	round.isFinished = true
 	round.dump <- nil
 
 	return nil

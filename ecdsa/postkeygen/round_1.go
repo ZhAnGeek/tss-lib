@@ -20,7 +20,7 @@ import (
 )
 
 func newRoundStart(params *tss.Parameters, save *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *keygen.LocalPartySaveData) tss.Round {
-	return &round1{&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+	return &round1{&base{params, save, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1, false}}
 }
 
 func (round *round1) Start(ctx context.Context) *tss.Error {

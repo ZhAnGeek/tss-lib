@@ -51,7 +51,7 @@ func VerifySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK 
 
 func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {
 	return &signout{&sign1{
-		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 2}}}
+		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 2, false}}}
 }
 
 func (round *signout) Start(ctx context.Context) *tss.Error {
@@ -126,7 +126,7 @@ func (round *signout) Start(ctx context.Context) *tss.Error {
 	if !ok {
 		return round.WrapError(fmt.Errorf("signature verification failed"))
 	}
-
+	round.isFinished = true
 	round.end <- round.data
 
 	if round.NeedsIdentifaction() && round.dump != nil {

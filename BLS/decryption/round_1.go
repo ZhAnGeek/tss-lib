@@ -26,7 +26,7 @@ import (
 // round 1 represents round 1 of the signing part of the pairing-based threshold signature spec on G2Curve
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- DecryptedData) tss.Round {
 	return &round1{
-		&base{params, *temp, *key, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, *temp, *key, out, end, make([]bool, len(params.Parties().IDs())), false, 1, false}}
 }
 
 func (round *round1) Start(ctx context.Context) *tss.Error {

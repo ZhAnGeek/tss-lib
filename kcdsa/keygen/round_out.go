@@ -95,7 +95,7 @@ func (round *round_out) Start(ctx context.Context) *tss.Error {
 			round.save.BigXj[j] = BigXj2
 		}
 	}
-
+	round.isFinished = true
 	round.end <- round.save
 	return nil
 }

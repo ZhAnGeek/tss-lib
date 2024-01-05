@@ -26,7 +26,7 @@ import (
 // round 1 represents round 1 of the signing part of the KCDSA TSS spec
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *common.SignatureData) tss.Round {
 	return &round1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1, false}}
 }
 
 func (round *round1) Start(ctx context.Context) *tss.Error {

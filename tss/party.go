@@ -35,6 +35,7 @@ type Party interface {
 	PushMsgToPool(message ParsedMessage) bool
 	PopMsgFromPool() (bool, *ParsedMessage)
 	TopMsgOfPool() (bool, *ParsedMessage)
+	IsFinished() bool
 
 	// Private lifecycle methods
 	setRound(Round) *Error
@@ -124,6 +125,15 @@ func (p *BaseParty) TopMsgOfPool() (ok bool, pMsg *ParsedMessage) {
 	}
 	hMsg := p.msgPool[0]
 	return true, hMsg
+}
+
+func (p *BaseParty) IsFinished() bool {
+	if !p.Running() && p.rnd == nil {
+		return true
+	} else if p.rnd == nil {
+		return false
+	}
+	return p.rnd.IsFinished()
 }
 
 func (p *BaseParty) String() string {

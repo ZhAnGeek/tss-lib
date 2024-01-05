@@ -24,11 +24,12 @@ type (
 		key keygen.LocalPartySaveData
 
 		// outbound messaging
-		out     chan<- tss.Message
-		end     chan<- DecryptedData
-		ok      []bool // `ok` tracks parties which have been verified by Update()
-		started bool
-		number  int
+		out        chan<- tss.Message
+		end        chan<- DecryptedData
+		ok         []bool // `ok` tracks parties which have been verified by Update()
+		started    bool
+		number     int
+		isFinished bool
 	}
 	round1 struct {
 		*base
@@ -94,4 +95,9 @@ func (round *base) SetStarted(status bool) {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
+	round.isFinished = false
+}
+
+func (round *base) IsFinished() bool {
+	return round.isFinished
 }

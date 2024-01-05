@@ -29,7 +29,7 @@ var (
 )
 
 func newRound1(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {
-	return &sign1{&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1}}
+	return &sign1{&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 1, false}}
 }
 
 func (round *sign1) Start(ctx context.Context) *tss.Error {

@@ -23,7 +23,7 @@ import (
 
 func newRound4(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
 	return &presignout{&presign3{&presign2{&presign1{
-		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 4}}}}}
+		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 4, false}}}}}
 }
 
 func (round *presignout) Start(ctx context.Context) *tss.Error {
@@ -127,6 +127,7 @@ func (round *presignout) Start(ctx context.Context) *tss.Error {
 	}
 
 	preSignData := NewPreSignData(i, round.temp.Ssid, BigR, round.temp.KShare, round.temp.ChiShare, transcript, round.temp.SsidNonce)
+	round.isFinished = true
 	round.end <- preSignData
 
 	if round.NeedsIdentifaction() && round.dump != nil {

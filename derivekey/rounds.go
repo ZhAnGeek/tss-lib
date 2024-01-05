@@ -23,14 +23,15 @@ const (
 type (
 	base struct {
 		*tss.Parameters
-		key     *LocalPartySaveData
-		data    *common.SignatureData
-		temp    *localTempData
-		out     chan<- tss.Message
-		end     chan<- *DeriveKeyResultMessage
-		ok      []bool // `ok` tracks parties which have been verified by Update()
-		started bool
-		number  int
+		key        *LocalPartySaveData
+		data       *common.SignatureData
+		temp       *localTempData
+		out        chan<- tss.Message
+		end        chan<- *DeriveKeyResultMessage
+		ok         []bool // `ok` tracks parties which have been verified by Update()
+		started    bool
+		number     int
+		isFinished bool
 	}
 	round1 struct {
 		*base
@@ -53,6 +54,7 @@ func (round *base) SetStarted(status bool) {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
+	round.isFinished = false
 }
 
 func (round *base) Params() *tss.Parameters {
@@ -115,4 +117,8 @@ func (round *base) getSSID(ctx context.Context) ([]byte, error) {
 	ssid := common.SHA512_256i(ctx, ssidList...).Bytes()
 
 	return ssid, nil
+}
+
+func (round *base) IsFinished() bool {
+	return round.isFinished
 }

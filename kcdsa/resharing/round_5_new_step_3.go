@@ -85,7 +85,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 	} else if round.IsOldCommittee() {
 		round.input.Xi.SetInt64(0)
 	}
-
+	round.isFinished = true
 	round.end <- round.save
 	return nil
 }

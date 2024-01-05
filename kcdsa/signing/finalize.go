@@ -127,7 +127,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	if !ok {
 		return round.WrapError(errors.New("signature verification failed"), round.PartyID())
 	}
-
+	round.isFinished = true
 	round.end <- round.data
 	return nil
 }

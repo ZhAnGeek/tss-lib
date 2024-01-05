@@ -31,7 +31,7 @@ const (
 
 func newRound1(params *tss.Parameters, key *LocalPartySaveData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *DeriveKeyResultMessage) tss.Round {
 	return &round1{
-		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1}}
+		&base{params, key, data, temp, out, end, make([]bool, len(params.Parties().IDs())), false, 1, false}}
 }
 
 func getHashToCurveInstance(ec elliptic.Curve) (hash2curve.HashToPoint, error) {

@@ -19,12 +19,13 @@ type EncryptedData EncryptionRound1Message
 type (
 	base struct {
 		*tss.Parameters
-		key     *keygen.LocalPartySaveData
-		temp    *localTempData
-		end     chan<- EncryptedData
-		ok      []bool // `ok` tracks parties which have been verified by Update()
-		started bool
-		number  int
+		key        *keygen.LocalPartySaveData
+		temp       *localTempData
+		end        chan<- EncryptedData
+		ok         []bool // `ok` tracks parties which have been verified by Update()
+		started    bool
+		number     int
+		isFinished bool
 	}
 	round1 struct {
 		*base
@@ -84,4 +85,9 @@ func (round *base) SetStarted(status bool) {
 
 	i := round.PartyID().Index
 	round.ok[i] = true
+	round.isFinished = false
+}
+
+func (round *base) IsFinished() bool {
+	return round.isFinished
 }
