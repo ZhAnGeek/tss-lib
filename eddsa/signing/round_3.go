@@ -80,7 +80,9 @@ func (round *round3) Start() *tss.Error {
 	h.Reset()
 	h.Write(encodedR[:])
 	h.Write(encodedPubKey[:])
-	h.Write(round.temp.m.Bytes())
+	var mBytes []byte = make([]byte, 32)
+	round.temp.m.FillBytes(mBytes)
+	h.Write(mBytes)
 
 	var lambda [64]byte
 	h.Sum(lambda[:0])

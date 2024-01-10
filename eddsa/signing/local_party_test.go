@@ -7,6 +7,7 @@
 package signing
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"sync/atomic"
@@ -58,13 +59,13 @@ func TestE2EConcurrent(t *testing.T) {
 	endCh := make(chan *common.SignatureData, len(signPIDs))
 
 	updater := test.SharedPartyUpdater
+	msg, _ := hex.DecodeString("00f163ee51bcaeff9cdff5e0e3c1a646abd19885fffbab0b3b4236e0cf95c9f5")
 
-	msg := big.NewInt(200)
 	// init the parties
 	for i := 0; i < len(signPIDs); i++ {
 		params := tss.NewParameters(tss.Edwards(), p2pCtx, signPIDs[i], len(signPIDs), threshold)
 
-		P := NewLocalParty(msg, params, keys[i], outCh, endCh).(*LocalParty)
+		P := NewLocalParty(new(big.Int).SetBytes(msg), params, keys[i], outCh, endCh).(*LocalParty)
 		parties = append(parties, P)
 		go func(P *LocalParty) {
 			if err := P.Start(); err != nil {
@@ -132,7 +133,7 @@ signing:
 					println("new sig error, ", err.Error())
 				}
 
-				ok := edwards.Verify(&pk, msg.Bytes(), newSig.R, newSig.S)
+				ok := edwards.Verify(&pk, msg, newSig.R, newSig.S)
 				assert.True(t, ok, "eddsa verify must pass")
 				t.Log("EDDSA signing test done.")
 				// END EDDSA verify
