@@ -173,7 +173,7 @@ func TestInfinityPoint(t *testing.T) {
 		assert.NoError(t, err, "construct identity point")
 		O, err := G.Sub(G)
 		assert.True(t, O.IsInfinityPoint(), "should be infinity point")
-		assert.NoError(t, err, "point sub should not fail")
+		assert.Error(t, err, "point sub should not fail")
 		O1 := G.ScalarMult(ec.Params().N)
 		assert.True(t, O1.IsInfinityPoint(), "should be infinity point")
 		O1 = O.ScalarMult(big.NewInt(23))

@@ -89,7 +89,7 @@ func (p *ECPoint) Add(p1 *ECPoint) (*ECPoint, error) {
 	}
 	x, y := p.curve.Add(p.X(), p.Y(), p1.X(), p1.Y())
 	if IsInfinityCoords(p.curve, x, y) {
-		return NewInfinityPoint(p.curve), nil
+		return NewInfinityPoint(p.curve), errors.New("got InfinityPoint")
 	}
 	return NewECPoint(p.curve, x, y)
 }
