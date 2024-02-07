@@ -120,6 +120,13 @@ func SchnorrVerify(ec elliptic.Curve, pubKey *crypto.ECPoint, msg, sig []byte) e
 	// Step 6.
 	//
 	// R = s*G - e*P
+
+	// Convert pubKey to even Y Bit(must be)
+	if pubKey.Y().Bit(0) == 1 {
+		NegY := new(big.Int).Sub(ec.Params().P, pubKey.Y())
+		NegYPubKey, _ := crypto.NewECPoint(ec, pubKey.X(), NegY)
+		pubKey = NegYPubKey
+	}
 	sG := crypto.ScalarBaseMult(ec, iS)
 	neP := pubKey.ScalarMult(e)
 	R, err := sG.Add(neP)

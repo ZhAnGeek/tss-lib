@@ -144,10 +144,11 @@ func TestE2EConcurrent(t *testing.T) {
 	pkExt.PublicKey = *pkNew
 	path := []uint32{0, 1, 2, 2}
 	ec := tss.S256()
-	delta, childExtKey, err := ckd.DeriveChildKeyFromHierarchy(ctx, path, pkExt, ec.Params().N, ec)
+	delta, childExtKey, err := ckd.DeriveChildKeyFromHierarchyForSchnorr(ctx, path, pkExt, ec.Params().N, ec)
 	assert.NoError(t, err)
 	assert.False(t, delta.Uint64() == 0, "delta is not zero")
 	assert.True(t, childExtKey.PublicKey.IsOnCurve())
+	assert.True(t, childExtKey.PublicKey.Y().Bit(0) == 0, "Extended Bit Must be EVEN")
 
 	msg := big.NewInt(200).Bytes()
 	// init the parties
