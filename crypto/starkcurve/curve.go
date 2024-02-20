@@ -382,7 +382,7 @@ func (sc *StarkCurve) Sign(privateKey, hash *big.Int) (*big.Int, *big.Int, error
 // getYCoordinate is a function. Given X Coordinate we can get one of the Y Coordinate.
 // tips: The function could return nil if impossible to find a y.
 // tips: consider Neg Y if you need exact match to specific Y.
-func (sc *StarkCurve) getYCoordinate(x *big.Int) *big.Int {
+func (sc *StarkCurve) GetYCoordinate(x *big.Int) *big.Int {
 	x3 := new(big.Int).Mul(x, x)
 	x3 = new(big.Int).Mul(x3, x)
 

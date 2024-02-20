@@ -74,7 +74,7 @@ func TestYCoordinate(t *testing.T) {
 	pubx, puby := stark.ScalarBaseMult(priv.Bytes())
 
 	fmt.Println(pubx, puby)
-	y := stark.getYCoordinate(pubx)
+	y := stark.GetYCoordinate(pubx)
 
 	yNeg := new(big.Int).Neg(y)
 	yNegMod := yNeg.Mod(yNeg, stark.P)
