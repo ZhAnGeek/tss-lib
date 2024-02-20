@@ -192,17 +192,15 @@ func serializeCompressed(publicKeyX *big.Int, publicKeyY *big.Int) []byte {
 }
 
 func DeriveChildKeyFromHierarchyForSchnorr(ctx context.Context, indicesHierarchy []uint32, pk *ExtendedKey, mod *big.Int, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
+	parentPubkey := pk.PublicKey
 	ilNum, extKey, err := DeriveChildKeyFromHierarchy(ctx, indicesHierarchy, pk, mod, curve)
 	if err != nil {
 		return nil, nil, err
 	}
 	if extKey.PublicKey.Y().Bit(0) == 1 {
 		ilNum = new(big.Int).Sub(curve.Params().N, ilNum)
-		NegY := new(big.Int).Sub(curve.Params().P, extKey.PublicKey.Y())
-		NegPk, err := crypto.NewECPoint(extKey.PublicKey.Curve(), extKey.PublicKey.X(), NegY)
-		if err != nil {
-			return nil, nil, err
-		}
+		negDeltaG := crypto.ScalarBaseMult(curve, ilNum)
+		NegPk, err := parentPubkey.Add(negDeltaG)
 		extKey.PublicKey = *NegPk
 		return ilNum, extKey, err
 	}
