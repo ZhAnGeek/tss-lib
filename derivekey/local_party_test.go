@@ -24,6 +24,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto/bls12381"
 	"github.com/Safulet/tss-lib-private/crypto/hash2curve"
 	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	"github.com/Safulet/tss-lib-private/crypto/vss"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
@@ -210,6 +211,36 @@ func TestE2EConcurrent(t *testing.T) {
 	E2EConcurrent(tss.Pallas(), testFixtureDirFormatPALLAS, t)
 	E2EConcurrent(tss.Curve25519(), testFixtureDirFormatKCDSA, t)
 	E2EConcurrent(tss.StarkCurve(), testFixtureDirFormatStarkNet, t)
+}
+
+func TestLocalCalc(t *testing.T) {
+	ec := tss.S256()
+	fixtureDir := testFixtureDirFormatECDSA
+	keys, _, err := LoadKeygenTestFixtures(testThreshold+1, ec, fixtureDir) // 0 -- testParticipants-testThreshold-1)
+	assert.NoError(t, err)
+
+	var shares vss.Shares
+	for _, key := range keys {
+		shares = append(shares, &vss.Share{
+			Threshold: testThreshold,
+			ID:        key.ShareID,
+			Share:     key.Xi,
+		})
+	}
+	sk, err := shares.ReConstruct(ec)
+
+	E2EConcurrent(tss.S256(), testFixtureDirFormatECDSA, t)
+	refDelta, ok := new(big.Int).SetString("26584850041541184611210048611703299842106441087558008034516645976981837299974", 10)
+	assert.True(t, ok)
+	refSk := new(big.Int).Mod(new(big.Int).Add(sk, refDelta), ec.Params().N)
+	n, _ := new(big.Int).SetString("2147483648", 10)
+	index := n.Bytes()
+	chainCode := []byte("testChainCodeABC")
+	cSk, _, err := CalcChildVaultPrivateKey(ec, sk, index, chainCode)
+	assert.NoError(t, err)
+	fmt.Println("refSk:", refSk.String())
+	fmt.Println("  cSk:", cSk.String())
+	assert.Zero(t, cSk.Cmp(refSk))
 }
 
 func LoadKeygenTestFixtures(qty int, ec elliptic.Curve, fixtureBase string, optionalStart ...int) ([]LocalPartySaveData, tss.SortedPartyIDs, error) {

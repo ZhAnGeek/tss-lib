@@ -8,6 +8,9 @@ package derivekey
 
 import (
 	"context"
+	"crypto/elliptic"
+	"crypto/hmac"
+	"crypto/sha512"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -146,6 +149,38 @@ func BuildLocalSaveDataSubset(sourceData LocalPartySaveData, sortedIDs tss.Sorte
 		newData.BigXj[j] = sourceData.BigXj[savedIdx]
 	}
 	return newData
+}
+
+func CalcChildVaultPrivateKey(curve elliptic.Curve, parentPrivateKey *big.Int, index, parentChainCode []byte) (childPrivateKey *big.Int, childChainCode []byte, err error) {
+	hashToCurve, err := getHashToCurveInstance(curve)
+	if err != nil {
+		return nil, nil, err
+	}
+	wPath, err := getPathString(curve, "TBD", parentChainCode, index)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pointHi, err := getH2CPoint(curve, hashToCurve, wPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	pointV := pointHi.ScalarMult(parentPrivateKey)
+
+	hmac512 := hmac.New(sha512.New, parentChainCode)
+	hmac512.Write(pointV.X().Bytes())
+	ilr := hmac512.Sum(nil)
+	ilNum := new(big.Int).SetBytes(ilr[:32])
+	qBytesLen := (curve.Params().N.BitLen() >> 3) + 1
+	for ilNum.Cmp(curve.Params().N) != -1 {
+		ilNumAdd := new(big.Int).Add(ilNum, big.NewInt(1))
+		reSampleBytes := sha512.Sum512(append([]byte("ResampleIlNumInDeriveKey"), ilNumAdd.Bytes()...))
+		ilNum = new(big.Int).SetBytes(reSampleBytes[:qBytesLen])
+	}
+	childPrivateKey = new(big.Int).Mod(new(big.Int).Add(parentPrivateKey, ilNum), curve.Params().N)
+	childChainCode = ilr[32:]
+
+	return childPrivateKey, childChainCode, nil
 }
 
 func (p *LocalParty) FirstRound() tss.Round {
