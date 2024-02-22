@@ -9,6 +9,25 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
+func DeriveChildKeyFromHierarchyForSchnorr(curve elliptic.Curve, pubKey *crypto.ECPoint, delta []byte) (*crypto.ECPoint, error) {
+	pk, err := DeriveHardenedChildPublicKey(curve, pubKey, delta)
+	if err != nil {
+		return nil, err
+	}
+	if pk.Y().Bit(0) == 1 {
+		ilNum := new(big.Int).SetBytes(delta)
+		ilNum = new(big.Int).Sub(curve.Params().N, ilNum)
+		negDeltaG := crypto.ScalarBaseMult(curve, ilNum)
+		NegPk, err := pubKey.Add(negDeltaG)
+		if err != nil {
+			return nil, err
+		}
+		pk = NegPk
+		return pk, fmt.Errorf("should negate ilNum")
+	}
+	return pk, err
+}
+
 func DeriveHardenedChildPublicKey(curve elliptic.Curve, pubKey *crypto.ECPoint, delta []byte) (*crypto.ECPoint, error) {
 
 	ilNum := new(big.Int).SetBytes(delta)
