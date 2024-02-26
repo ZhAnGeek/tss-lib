@@ -120,7 +120,12 @@ func NewLocalParty(
 	}
 
 	// temp data init
+	// The default value for keyDerivationDelta is 1
+	// set to default in case provided wrong 0 value
 	p.temp.KeyDerivationDelta = keyDerivationDelta
+	if keyDerivationDelta == nil || (keyDerivationDelta.Cmp(common.Zero) == 0) {
+		p.temp.KeyDerivationDelta = common.One
+	}
 
 	// msgs init
 	p.temp.signRound1Messages = make([]tss.ParsedMessage, partyCount)

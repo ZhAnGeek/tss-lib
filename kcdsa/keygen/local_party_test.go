@@ -17,6 +17,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
@@ -62,12 +63,15 @@ func TestE2EConcurrentAndSaveFixtures(t *testing.T) {
 
 	// init the parties
 	for i := 0; i < len(pIDs); i++ {
+		var localPreParams, generateErr = GeneratePreParams(ctx, time.Minute*5)
+		assert.NoError(t, generateErr)
+
 		var P *LocalParty
 		params := tss.NewParameters(tss.Curve25519(), p2pCtx, pIDs[i], len(pIDs), threshold, false, 0)
 		if i < len(fixtures) {
-			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
+			P = NewLocalParty(params, outCh, endCh, *localPreParams).(*LocalParty)
 		} else {
-			P = NewLocalParty(params, outCh, endCh).(*LocalParty)
+			P = NewLocalParty(params, outCh, endCh, *localPreParams).(*LocalParty)
 		}
 		parties = append(parties, P)
 		go func(P *LocalParty) {

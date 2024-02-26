@@ -66,10 +66,10 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(errors.New("pre-params generation failed"), Pi)
 		}
 		round.save.LocalPreParams = *preParams
-		round.save.H1j[i] = preParams.H1i
-		round.save.H2j[i] = preParams.H2i
-		round.save.NTildej[i] = preParams.PaillierSK.N
 	}
+	round.save.H1j[i] = preParams.H1i
+	round.save.H2j[i] = preParams.H2i
+	round.save.NTildej[i] = preParams.PaillierSK.N
 
 	Phi := new(big.Int).Mul(new(big.Int).Lsh(round.save.P, 1), new(big.Int).Lsh(round.save.Q, 1))
 	ContextI := append(round.temp.ssid, big.NewInt(int64(i)).Bytes()...)
