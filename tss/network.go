@@ -4,4 +4,5 @@ package tss
 const (
 	ZIL  = "ZIL"
 	MINA = "MINA"
+	BTC  = "BTC"
 )

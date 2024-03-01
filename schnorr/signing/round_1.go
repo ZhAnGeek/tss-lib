@@ -47,6 +47,9 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	round.number = 1
 	round.started = true
 	round.resetOK()
+	if round.Network() == "" {
+		round.SetNetwork(tss.BTC)
+	}
 
 	i := round.PartyID().Index
 	round.ok[i] = true

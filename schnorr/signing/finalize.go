@@ -56,7 +56,13 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		if round.Network() == tss.ZIL {
 			negC = modQ.Sub(round.EC().Params().N, round.temp.c)
 		}
-		RHS, err := round.temp.Rjs[j].Add(round.temp.bigWs[j].ScalarMult(negC))
+		var RHS *crypto.ECPoint
+		var err error
+		if round.Network() == tss.BTC && round.temp.negPrivateKey == true {
+			RHS, err = round.temp.Rjs[j].Sub(round.temp.bigWs[j].ScalarMult(negC))
+		} else {
+			RHS, err = round.temp.Rjs[j].Add(round.temp.bigWs[j].ScalarMult(negC))
+		}
 		if err != nil {
 			return round.WrapError(errors.New("zj check failed"), Pj)
 		}
@@ -67,7 +73,7 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	}
 	if round.temp.KeyDerivationDelta != nil {
 		sumZDelta := modQ.Mul(round.temp.c, round.temp.KeyDerivationDelta)
-		if round.Network() == tss.ZIL {
+		if round.Network() == tss.ZIL || (round.Network() == tss.BTC && round.temp.negPrivateKey) {
 			sumZ = modQ.Sub(sumZ, sumZDelta)
 		} else {
 			sumZ = modQ.Add(sumZ, sumZDelta)

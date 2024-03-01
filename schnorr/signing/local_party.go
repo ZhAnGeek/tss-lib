@@ -64,6 +64,7 @@ type (
 		pointDi            *crypto.ECPoint
 		pointEi            *crypto.ECPoint
 		deCommit           cmt.HashDeCommitment
+		negPrivateKey      bool
 
 		// round 2
 		cjs  []*big.Int
@@ -106,6 +107,7 @@ func NewLocalParty(
 	p.temp.KeyDerivationDelta = keyDerivationDelta
 	p.temp.m = msg
 	p.temp.cjs = make([]*big.Int, partyCount)
+	p.temp.negPrivateKey = false
 
 	p.temp.Djs = make([]*crypto.ECPoint, partyCount)
 	p.temp.Ejs = make([]*crypto.ECPoint, partyCount)

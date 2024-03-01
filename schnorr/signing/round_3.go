@@ -196,6 +196,9 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(errors.New("PubKey derivation failed"), round.PartyID())
 		}
 	}
+	if pkDelta.Y().Bit(0) == 1 {
+		round.temp.negPrivateKey = true
+	}
 
 	// compute challenge
 	var c_ []byte
@@ -218,7 +221,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 
 	// compute signature share zi
 	zi := modQ.Add(round.temp.di, modQ.Mul(round.temp.ei, round.temp.rhos[i]))
-	if round.Network() == tss.ZIL {
+	if round.Network() == tss.ZIL || (round.Network() == tss.BTC && round.temp.negPrivateKey) {
 		zi = modQ.Sub(zi, modQ.Mul(round.temp.wi, c))
 	} else {
 		zi = modQ.Add(zi, modQ.Mul(round.temp.wi, c))

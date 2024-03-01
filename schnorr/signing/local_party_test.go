@@ -142,7 +142,7 @@ func TestE2EConcurrent(t *testing.T) {
 	assert.NoError(t, err)
 	pkNew := keys[0].PubKey
 	pkExt.PublicKey = *pkNew
-	path := []uint32{0, 1, 2, 2}
+	path := []uint32{0, 1, 2, 3}
 	ec := tss.S256()
 	delta, childExtKey, err := ckd.DeriveChildKeyFromHierarchyForSchnorr(ctx, path, pkExt, ec.Params().N, ec)
 	assert.NoError(t, err)
