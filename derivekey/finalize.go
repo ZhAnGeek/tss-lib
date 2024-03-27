@@ -14,7 +14,6 @@ import (
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
@@ -70,8 +69,6 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 		ilNum = new(big.Int).SetBytes(reSampleBytes[:qBytesLen])
 	}
 	round.temp.cChainCode = ilr[32:]
-	log.Debug(ctx, "%s Derived ilNum: 0x%x\nChildChaincode: 0x%x\n",
-		round.PartyID(), ilNum, new(big.Int).SetBytes(round.temp.cChainCode))
 
 	result := &DeriveKeyResultMessage{
 		Bssid:           round.temp.bssid.Bytes(),

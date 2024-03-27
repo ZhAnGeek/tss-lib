@@ -15,15 +15,8 @@ func DeriveChildKeyFromHierarchyForSchnorr(curve elliptic.Curve, pubKey *crypto.
 		return nil, err
 	}
 	if pk.Y().Bit(0) == 1 {
-		ilNum := new(big.Int).SetBytes(delta)
-		ilNum = new(big.Int).Sub(curve.Params().N, ilNum)
-		negDeltaG := crypto.ScalarBaseMult(curve, ilNum)
-		NegPk, err := pubKey.Add(negDeltaG)
-		if err != nil {
-			return nil, err
-		}
-		pk = NegPk
-		return pk, fmt.Errorf("should negate ilNum")
+		cPk := pk.Neg()
+		pk = cPk
 	}
 	return pk, err
 }
