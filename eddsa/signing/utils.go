@@ -8,12 +8,13 @@ package signing
 
 import (
 	"crypto/subtle"
+	"hash"
+	"math/big"
+
 	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"github.com/Safulet/tss-lib-private/tss"
-	"hash"
-	"math/big"
 )
 
 // VerifyEdwards verifies a message 'hash' using the given public keys and signature.
@@ -34,6 +35,7 @@ func VerifyEdwards(pub *crypto.ECPoint, msg []byte, r, s *big.Int, hashFunc func
 	negX := new(big.Int).Sub(ec.Params().P, pub.X())
 
 	h := hashFunc()
+	h.Reset()
 	h.Write(sigBytes[:32])
 	h.Write(pubBytes[:])
 	h.Write(msg)
