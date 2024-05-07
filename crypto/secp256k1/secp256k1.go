@@ -9,7 +9,7 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 )
 
 type Secp256k1Curve struct {

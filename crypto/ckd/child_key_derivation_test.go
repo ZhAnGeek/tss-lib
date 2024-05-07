@@ -19,7 +19,7 @@ import (
 	. "github.com/Safulet/tss-lib-private/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
 	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -21,7 +21,7 @@ import (
 	"github.com/Safulet/tss-lib-private/crypto/secp256k1"
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 )
@@ -112,13 +112,13 @@ func NewExtendedKeyFromString(key string, curve elliptic.Curve) (*ExtendedKey, e
 	keyData := payload[45:78]
 
 	var pubKeyPoint crypto.ECPoint
-	if c, ok := curve.(*secp256k1.Secp256k1Curve); ok {
+	if _, ok := curve.(*secp256k1.Secp256k1Curve); ok {
 		// Ensure the public key parses correctly and is actually on the secp256k1 curve.
-		pk, err := btcec.ParsePubKey(keyData, c.KoblitzCurve)
+		pk, err := btcec.ParsePubKey(keyData)
 		if err != nil {
 			return nil, err
 		}
-		pubKey, err := crypto.NewECPoint(curve, pk.X, pk.Y)
+		pubKey, err := crypto.NewECPoint(curve, pk.X(), pk.ToECDSA().Y)
 		if err != nil {
 			return nil, err
 		}

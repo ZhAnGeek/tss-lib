@@ -20,7 +20,7 @@ import (
 	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
 	kcdsa_keygen "github.com/Safulet/tss-lib-private/kcdsa/keygen"
 	schnorr_keygen "github.com/Safulet/tss-lib-private/schnorr/keygen"
-	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
@@ -51,7 +51,7 @@ func (rpk *RestoredPrivateKey) ToECDSAPriv() (*ecdsa.PrivateKey, error) {
 		return nil, errors.New("invalid private key length")
 	}
 
-	privKey, _ := btcec.PrivKeyFromBytes(rpk.curve, privBz) // privBz is big-endian
+	privKey, _ := btcec.PrivKeyFromBytes(privBz) // privBz is big-endian
 
 	return privKey.ToECDSA(), nil
 }
