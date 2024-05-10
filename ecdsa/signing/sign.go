@@ -121,7 +121,7 @@ func (round *sign1) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *sign1) NextRound() tss.Round {
 	round.started = false
-	return &signout{round}
+	return &sign2{round}
 }
 
 func (round *sign1) prepare() error {

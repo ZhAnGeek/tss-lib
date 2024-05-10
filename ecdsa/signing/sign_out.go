@@ -50,11 +50,11 @@ func VerifySig(ec elliptic.Curve, R *crypto.ECPoint, S *big.Int, m *big.Int, PK 
 }
 
 func newRound2(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {
-	return &signout{&sign1{
+	return &sign2{&sign1{
 		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 2, false}}}
 }
 
-func (round *signout) Start(ctx context.Context) *tss.Error {
+func (round *sign2) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -142,16 +142,16 @@ func (round *signout) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *signout) CanAccept(_ tss.ParsedMessage) bool {
+func (round *sign2) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }
 
-func (round *signout) Update() (bool, *tss.Error) {
+func (round *sign2) Update() (bool, *tss.Error) {
 	// not expecting any incoming messages in this round
 	return false, nil
 }
 
-func (round *signout) NextRound() tss.Round {
+func (round *sign2) NextRound() tss.Round {
 	return nil // finished!
 }

@@ -18,7 +18,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-func (round *roundout) Start(ctx context.Context) *tss.Error {
+func (round *roundout5) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -70,16 +70,16 @@ func (round *roundout) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *roundout) CanAccept(_ tss.ParsedMessage) bool {
+func (round *roundout5) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }
 
-func (round *roundout) Update() (bool, *tss.Error) {
+func (round *roundout5) Update() (bool, *tss.Error) {
 	// not expecting any incoming messages in this round
 	return false, nil
 }
 
-func (round *roundout) NextRound() tss.Round {
+func (round *roundout5) NextRound() tss.Round {
 	return nil // finished!
 }

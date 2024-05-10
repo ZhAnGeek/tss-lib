@@ -49,7 +49,7 @@ type (
 	round5 struct {
 		*round4
 	}
-	finalization struct {
+	finalization6 struct {
 		*round5
 	}
 )
@@ -60,7 +60,7 @@ var (
 	_ tss.Round = (*round3)(nil)
 	_ tss.Round = (*round4)(nil)
 	_ tss.Round = (*round5)(nil)
-	_ tss.Round = (*finalization)(nil)
+	_ tss.Round = (*finalization6)(nil)
 )
 
 // ----- //

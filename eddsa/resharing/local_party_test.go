@@ -13,15 +13,15 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/eddsa/signing"
 
 	"github.com/Safulet/tss-lib-private/log"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/eddsa/keygen"
 	. "github.com/Safulet/tss-lib-private/eddsa/resharing"
-	"github.com/Safulet/tss-lib-private/eddsa/signing"
 	"github.com/Safulet/tss-lib-private/test"
 	"github.com/Safulet/tss-lib-private/tss"
 )

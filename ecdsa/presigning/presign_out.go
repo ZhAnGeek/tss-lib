@@ -22,11 +22,11 @@ import (
 )
 
 func newRound4(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
-	return &presignout{&presign3{&presign2{&presign1{
+	return &presign4{&presign3{&presign2{&presign1{
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 4, false}}}}}
 }
 
-func (round *presignout) Start(ctx context.Context) *tss.Error {
+func (round *presign4) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -143,15 +143,15 @@ func (round *presignout) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *presignout) Update() (bool, *tss.Error) {
+func (round *presign4) Update() (bool, *tss.Error) {
 	return false, nil
 }
 
-func (round *presignout) CanAccept(_ tss.ParsedMessage) bool {
+func (round *presign4) CanAccept(_ tss.ParsedMessage) bool {
 	return false
 }
 
-func (round *presignout) NextRound() tss.Round {
+func (round *presign4) NextRound() tss.Round {
 	round.started = false
 	return nil
 }

@@ -26,7 +26,7 @@ func getSignature(r []byte, s []byte) []byte {
 	return ret
 }
 
-func (round *finalization) Start(ctx context.Context) *tss.Error {
+func (round *finalization4) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -111,16 +111,16 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *finalization) CanAccept(_ tss.ParsedMessage) bool {
+func (round *finalization4) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }
 
-func (round *finalization) Update() (bool, *tss.Error) {
+func (round *finalization4) Update() (bool, *tss.Error) {
 	// not expecting any incoming messages in this round
 	return false, nil
 }
 
-func (round *finalization) NextRound() tss.Round {
+func (round *finalization4) NextRound() tss.Round {
 	return nil // finished!
 }

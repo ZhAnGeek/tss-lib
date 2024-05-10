@@ -24,11 +24,11 @@ import (
 )
 
 func newRound3(params *tss.Parameters, key *keygen.LocalPartySaveData, predata *presigning.PreSignatureData, data *common.SignatureData, temp *localTempData, out chan<- tss.Message, end chan<- *common.SignatureData, dump chan<- *LocalDumpPB) tss.Round {
-	return &identification1{&signout{&sign1{
+	return &identification3{&sign2{&sign1{
 		&base{params, key, predata, data, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 3, false}}}}
 }
 
-func (round *identification1) Start(ctx context.Context) *tss.Error {
+func (round *identification3) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -202,7 +202,7 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *identification1) Update() (bool, *tss.Error) {
+func (round *identification3) Update() (bool, *tss.Error) {
 	for j, msg := range round.temp.R5msgH {
 		if round.ok[j] {
 			continue
@@ -218,7 +218,7 @@ func (round *identification1) Update() (bool, *tss.Error) {
 	return true, nil
 }
 
-func (round *identification1) CanAccept(msg tss.ParsedMessage) bool {
+func (round *identification3) CanAccept(msg tss.ParsedMessage) bool {
 	if _, ok := msg.Content().(*IdentificationRound1Message1); ok {
 		return msg.IsBroadcast()
 	}
@@ -228,7 +228,7 @@ func (round *identification1) CanAccept(msg tss.ParsedMessage) bool {
 	return false
 }
 
-func (round *identification1) NextRound() tss.Round {
+func (round *identification3) NextRound() tss.Round {
 	round.started = false
-	return &identification2{round}
+	return &identification4{round}
 }

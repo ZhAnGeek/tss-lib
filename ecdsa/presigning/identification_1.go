@@ -22,11 +22,11 @@ import (
 )
 
 func newRound5(params *tss.Parameters, key *keygen.LocalPartySaveData, temp *localTempData, out chan<- tss.Message, end chan<- *PreSignatureData, dump chan<- *LocalDumpPB) tss.Round {
-	return &identification1{&presignout{&presign3{&presign2{&presign1{
+	return &identification5{&presign4{&presign3{&presign2{&presign1{
 		&base{params, key, temp, out, end, dump, make([]bool, len(params.Parties().IDs())), false, 5, false}}}}}}
 }
 
-func (round *identification1) Start(ctx context.Context) *tss.Error {
+func (round *identification5) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -140,9 +140,6 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 			return round.WrapError(err, Pi)
 		}
 		BetaEnc := modN2.Mul(Q3Enc, FinvEnc)
-		if err != nil {
-			return round.WrapError(err, Pi)
-		}
 		DeltaShareEnc, err = round.key.PaillierSK.HomoAdd(DeltaShareEnc, BetaEnc)
 		if err != nil {
 			return round.WrapError(err, Pi)
@@ -180,7 +177,7 @@ func (round *identification1) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *identification1) Update() (bool, *tss.Error) {
+func (round *identification5) Update() (bool, *tss.Error) {
 	for j, msg := range round.temp.R5msgH {
 		if round.ok[j] {
 			continue
@@ -195,7 +192,7 @@ func (round *identification1) Update() (bool, *tss.Error) {
 	return true, nil
 }
 
-func (round *identification1) CanAccept(msg tss.ParsedMessage) bool {
+func (round *identification5) CanAccept(msg tss.ParsedMessage) bool {
 	if _, ok := msg.Content().(*IdentificationRound1Message1); ok {
 		return msg.IsBroadcast()
 	}
@@ -205,7 +202,7 @@ func (round *identification1) CanAccept(msg tss.ParsedMessage) bool {
 	return false
 }
 
-func (round *identification1) NextRound() tss.Round {
+func (round *identification5) NextRound() tss.Round {
 	round.started = false
-	return &identification2{round}
+	return &identification6{round}
 }

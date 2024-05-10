@@ -219,7 +219,7 @@ func (round *round1) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *round1) NextRound() tss.Round {
 	round.started = false
-	return &finalization{round}
+	return &finalization2{round}
 }
 
 // ----- //

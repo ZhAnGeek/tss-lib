@@ -40,24 +40,24 @@ type (
 	sign1 struct {
 		*base
 	}
-	signout struct {
+	sign2 struct {
 		*sign1
 	}
 
 	// identification rounds
-	identification1 struct {
-		*signout
+	identification3 struct {
+		*sign2
 	}
-	identification2 struct {
-		*identification1
+	identification4 struct {
+		*identification3
 	}
 )
 
 var (
 	_ tss.Round = (*sign1)(nil)
-	_ tss.Round = (*signout)(nil)
-	_ tss.Round = (*identification1)(nil)
-	_ tss.Round = (*identification2)(nil)
+	_ tss.Round = (*sign2)(nil)
+	_ tss.Round = (*identification3)(nil)
+	_ tss.Round = (*identification4)(nil)
 )
 
 // ----- //

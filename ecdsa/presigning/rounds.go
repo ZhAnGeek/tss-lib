@@ -43,14 +43,14 @@ type (
 	presign3 struct {
 		*presign2
 	}
-	presignout struct {
+	presign4 struct {
 		*presign3
 	}
-	identification1 struct {
-		*presignout
+	identification5 struct {
+		*presign4
 	}
-	identification2 struct {
-		*identification1
+	identification6 struct {
+		*identification5
 	}
 )
 
@@ -58,9 +58,9 @@ var (
 	_ tss.Round = (*presign1)(nil)
 	_ tss.Round = (*presign2)(nil)
 	_ tss.Round = (*presign3)(nil)
-	_ tss.Round = (*presignout)(nil)
-	_ tss.Round = (*identification1)(nil)
-	_ tss.Round = (*identification2)(nil)
+	_ tss.Round = (*presign4)(nil)
+	_ tss.Round = (*identification5)(nil)
+	_ tss.Round = (*identification6)(nil)
 )
 
 // ----- //

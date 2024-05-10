@@ -211,5 +211,5 @@ func (round *presign3) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *presign3) NextRound() tss.Round {
 	round.started = false
-	return &presignout{round}
+	return &presign4{round}
 }

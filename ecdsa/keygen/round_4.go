@@ -138,7 +138,7 @@ func (round *round4) Start(ctx context.Context) *tss.Error {
 			for c := 1; c <= round.Threshold(); c++ {
 				z = modQ.Mul(z, kj)
 				BigXj, err = BigXj.Add(Vc[c].ScalarMult(z))
-				if err != nil {
+				if BigXj == nil || err != nil {
 					culprits = append(culprits, Pj)
 				}
 			}
@@ -197,5 +197,5 @@ func (round *round4) Update() (bool, *tss.Error) {
 
 func (round *round4) NextRound() tss.Round {
 	round.started = false
-	return &roundout{round}
+	return &roundout5{round}
 }

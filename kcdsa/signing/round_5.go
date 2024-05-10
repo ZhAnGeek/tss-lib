@@ -185,5 +185,5 @@ func (round *round5) CanAccept(msg tss.ParsedMessage) bool {
 
 func (round *round5) NextRound() tss.Round {
 	round.started = false
-	return &finalization{round}
+	return &finalization6{round}
 }

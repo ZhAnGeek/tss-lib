@@ -17,7 +17,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *finalization) Start(ctx context.Context) *tss.Error {
+func (round *finalization2) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -55,6 +55,9 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 
 		sumZ, err = sumZ.Add(pointVj)
 	}
+	if sumZ == nil {
+		return round.WrapError(errors.New("sumZ failed"), round.PartyID())
+	}
 	round.data.M = sumZ.X().Bytes()
 
 	hmac512 := hmac.New(sha512.New, round.temp.pChainCode)
@@ -83,16 +86,16 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *finalization) CanAccept(_ tss.ParsedMessage) bool {
+func (round *finalization2) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }
 
-func (round *finalization) Update() (bool, *tss.Error) {
+func (round *finalization2) Update() (bool, *tss.Error) {
 	// not expecting any incoming messages in this round
 	return false, nil
 }
 
-func (round *finalization) NextRound() tss.Round {
+func (round *finalization2) NextRound() tss.Round {
 	return nil // finished!
 }

@@ -18,7 +18,7 @@ import (
 	"github.com/Safulet/tss-lib-private/tss"
 )
 
-func (round *finalization) VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
+func (round *finalization6) VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
 	return VerifySig(round.EC(), ctx, s, e, m, pubkey)
 }
 
@@ -62,7 +62,7 @@ func VerifySig(ec elliptic.Curve, _ context.Context, s *big.Int, e *big.Int, m [
 	return e.Cmp(new(big.Int).SetBytes(common.ReverseBytes(e2Bytes[:]))) == 0
 }
 
-func (round *finalization) Start(ctx context.Context) *tss.Error {
+func (round *finalization6) Start(ctx context.Context) *tss.Error {
 	if round.started {
 		return round.WrapError(errors.New("round already started"))
 	}
@@ -132,16 +132,16 @@ func (round *finalization) Start(ctx context.Context) *tss.Error {
 	return nil
 }
 
-func (round *finalization) CanAccept(_ tss.ParsedMessage) bool {
+func (round *finalization6) CanAccept(_ tss.ParsedMessage) bool {
 	// not expecting any incoming messages in this round
 	return false
 }
 
-func (round *finalization) Update() (bool, *tss.Error) {
+func (round *finalization6) Update() (bool, *tss.Error) {
 	// not expecting any incoming messages in this round
 	return false, nil
 }
 
-func (round *finalization) NextRound() tss.Round {
+func (round *finalization6) NextRound() tss.Round {
 	return nil // finished!
 }

@@ -14,7 +14,6 @@ import (
 )
 
 func SharedPartyUpdater(ctx context.Context, party tss.Party, msg tss.Message, errCh chan<- *tss.Error) {
-	// do not send a message from this party back to itself
 	if party.PartyID() == msg.GetFrom() {
 		return
 	}

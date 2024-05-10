@@ -10,17 +10,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"reflect"
+	"regexp"
+	"strconv"
 	"sync"
 
 	"github.com/Safulet/tss-lib-private/log"
 )
 
+var (
+	_ Party = (*BaseParty)(nil)
+)
+
 type Party interface {
 	Start(ctx context.Context) *Error
-	// The main entry point when updating a party's state from the wire.
+	// UpdateFromBytes The main entry point when updating a party's state from the wire.
 	// isBroadcast should represent whether the message was received via a reliable broadcast
 	UpdateFromBytes(ctx context.Context, wireBytes []byte, from *PartyID, isBroadcast bool) (ok bool, err *Error)
-	// You may use this entry point to update a party's state when running locally or in tests
+	// Update You may use this entry point to update a party's state when running locally or in tests
 	Update(ctx context.Context, msg ParsedMessage) (ok bool, err *Error)
 	Running() bool
 	WaitingFor() []*PartyID
@@ -43,13 +50,27 @@ type Party interface {
 	advance()
 	lock()
 	unlock()
+	updateRoundNumber()
 }
 
 type BaseParty struct {
 	mtx        sync.Mutex
 	rnd        Round
 	msgPool    []*ParsedMessage
-	FirstRound Round
+	StartRound Round
+	RndNumber  int
+}
+
+func (p *BaseParty) Start(_ context.Context) *Error {
+	panic("not implemented")
+}
+
+func (p *BaseParty) UpdateFromBytes(_ context.Context, _ []byte, _ *PartyID, _ bool) (ok bool, err *Error) {
+	panic("not implemented")
+}
+
+func (p *BaseParty) Update(_ context.Context, _ ParsedMessage) (ok bool, err *Error) {
+	panic("not implemented")
 }
 
 func (p *BaseParty) Running() bool {
@@ -65,14 +86,7 @@ func (p *BaseParty) WaitingFor() []*PartyID {
 	return p.rnd.WaitingFor()
 }
 
-func (p *BaseParty) WrapError(err error, culprits ...*PartyID) *Error {
-	if p.rnd == nil {
-		return NewError(err, "", -1, nil, culprits...)
-	}
-	return p.rnd.WrapError(err, culprits...)
-}
-
-// an implementation of ValidateMessage that is shared across the different types of parties (keygen, signing, dynamic groups)
+// ValidateMessage an implementation of ValidateMessage that is shared across the different types of parties (keygen, signing, dynamic groups)
 func (p *BaseParty) ValidateMessage(msg ParsedMessage) (bool, *Error) {
 	if msg == nil || msg.Content() == nil {
 		return false, p.WrapError(fmt.Errorf("received nil msg: %s", msg))
@@ -86,11 +100,34 @@ func (p *BaseParty) ValidateMessage(msg ParsedMessage) (bool, *Error) {
 	return true, nil
 }
 
-func (p *BaseParty) AtRoundNumber() int {
+func (p *BaseParty) StoreMessage(_ context.Context, _ ParsedMessage) (bool, *Error) {
+	panic("not implemented")
+}
+
+func (p *BaseParty) FirstRound() Round {
+	panic("not implemented")
+}
+
+func (p *BaseParty) WrapError(err error, culprits ...*PartyID) *Error {
 	if p.rnd == nil {
-		return 0
+		return NewError(err, "", -1, nil, culprits...)
 	}
-	return p.rnd.RoundNumber()
+	return p.rnd.WrapError(err, culprits...)
+}
+
+func (p *BaseParty) PartyID() *PartyID {
+	panic("not implemented")
+}
+
+func (p *BaseParty) String() string {
+	if p.round() == nil {
+		return "round: <nil>"
+	}
+	return fmt.Sprintf("round: %d", p.round().RoundNumber())
+}
+
+func (p *BaseParty) AtRoundNumber() int {
+	return p.RndNumber
 }
 
 func (p *BaseParty) ExpectMsgRound() int {
@@ -136,13 +173,6 @@ func (p *BaseParty) IsFinished() bool {
 	return p.rnd.IsFinished()
 }
 
-func (p *BaseParty) String() string {
-	if p.round() == nil {
-		return "round: <nil>"
-	}
-	return fmt.Sprintf("round: %d", p.round().RoundNumber())
-}
-
 // -----
 // Private lifecycle methods
 
@@ -151,6 +181,7 @@ func (p *BaseParty) setRound(round Round) *Error {
 		return p.WrapError(errors.New("a round is already set on this party"))
 	}
 	p.rnd = round
+	p.updateRoundNumber()
 	return nil
 }
 
@@ -160,6 +191,9 @@ func (p *BaseParty) round() Round {
 
 func (p *BaseParty) advance() {
 	p.rnd = p.rnd.NextRound()
+	if p.rnd != nil {
+		p.updateRoundNumber()
+	}
 }
 
 func (p *BaseParty) lock() {
@@ -168,6 +202,15 @@ func (p *BaseParty) lock() {
 
 func (p *BaseParty) unlock() {
 	p.mtx.Unlock()
+}
+
+func (p *BaseParty) updateRoundNumber() {
+	if p.round() != nil {
+		typeOfRound := reflect.TypeOf(p.round())
+		re := regexp.MustCompile("[0-9]+")
+		parsed, _ := strconv.ParseInt(re.FindAllString(typeOfRound.String(), -1)[0], 10, 32)
+		p.RndNumber = int(parsed)
+	}
 }
 
 // ----- //
@@ -184,12 +227,13 @@ func BaseStart(ctx context.Context, p Party, task string, prepare ...func(Round)
 		return p.WrapError(fmt.Errorf("could not start. this party has an invalid PartyID: %+v", p.PartyID()))
 	}
 	if p.round() != nil {
+		p.updateRoundNumber()
 		p.round().SetStarted(false)
 		return p.round().Start(ctx) // start from restored round
-		// return p.WrapError(errors.New("could not start. this party is in an unexpected state. use the constructor and Start()"))
 	}
 	round := p.FirstRound()
 	if err := p.setRound(round); err != nil {
+		p.updateRoundNumber()
 		return err
 	}
 	if 1 < len(prepare) {
@@ -226,11 +270,12 @@ func BaseRestore(ctx context.Context, p Party, task string) *Error {
 	if err != nil {
 		return err
 	}
+	p.updateRoundNumber()
 	p.round().SetStarted(true)
 	return nil
 }
 
-// an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)
+// BaseUpdate an implementation of Update that is shared across the different types of parties (keygen, signing, dynamic groups)
 func BaseUpdate(ctx context.Context, p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	defer func() {
 		if err := recover(); err != nil {
@@ -261,6 +306,7 @@ func BaseUpdate(ctx context.Context, p Party, msg ParsedMessage, task string) (o
 		}
 		if p.round().CanProceed() {
 			if p.advance(); p.round() != nil {
+				p.updateRoundNumber()
 				if err := p.round().Start(ctx); err != nil {
 					return r(false, err)
 				}
@@ -278,7 +324,7 @@ func BaseUpdate(ctx context.Context, p Party, msg ParsedMessage, task string) (o
 	return r(true, nil)
 }
 
-// Non-recursive version of BaseUpdate, in order to use it, it should make sure that party is updated by messages in correct round order
+// BaseUpdateNR Non-recursive version of BaseUpdate, in order to use it, it should make sure that party is updated by messages in correct round order
 func BaseUpdateNR(ctx context.Context, p Party, msg ParsedMessage, task string) (ok bool, err *Error) {
 	// fast-fail on an invalid message; do not lock the mutex yet
 	if _, err := p.ValidateMessage(msg); err != nil {
@@ -300,6 +346,7 @@ func BaseUpdateNR(ctx context.Context, p Party, msg ParsedMessage, task string) 
 		}
 		if p.round().CanProceed() {
 			if p.advance(); p.round() != nil {
+				p.updateRoundNumber()
 				if err := p.round().Start(ctx); err != nil {
 					rndNum := p.round().RoundNumber()
 					log.Debug(ctx, "party %v: %s round %d started with Err", p.round().Params().PartyID(), task, rndNum)

@@ -67,7 +67,7 @@ type (
 		// sign1
 		SigmaShare *big.Int
 
-		// identification1
+		// identification3
 		K              *big.Int
 		R1msgK         []*big.Int
 		ChiShareAlphas []*big.Int

@@ -117,5 +117,5 @@ func (round *round3) Update() (bool, *tss.Error) {
 
 func (round *round3) NextRound() tss.Round {
 	round.started = false
-	return &roundout{round}
+	return &roundout4{round}
 }
