@@ -11,7 +11,7 @@ require (
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/consensys/gnark-crypto v0.12.1
 	github.com/decred/dcrd/dcrec/edwards/v2 v2.0.2
-	github.com/ethereum/go-ethereum v1.13.13
+	github.com/ethereum/go-ethereum v1.13.15
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.8.4
 	go.opentelemetry.io/otel v1.17.0
