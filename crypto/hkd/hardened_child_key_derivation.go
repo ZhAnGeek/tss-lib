@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/Safulet/tss-lib-private/common"
 	"github.com/Safulet/tss-lib-private/crypto"
 	"github.com/Safulet/tss-lib-private/tss"
 )
@@ -38,14 +39,21 @@ func DeriveHardenedChildPublicKey(curve elliptic.Curve, pubKey *crypto.ECPoint, 
 
 		}
 
-		deltaG = crypto.ScalarBaseMult(curve, ilNum)
-		if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 {
-			return nil, fmt.Errorf("invalid child")
-		}
-
-		childCryptoPk, cpkErr := pubKey.Add(deltaG)
-		if cpkErr != nil {
-			return nil, cpkErr
+		var childCryptoPk *crypto.ECPoint
+		if tss.SameCurve(curve, tss.Curve25519()) {
+			modN := common.ModInt(curve.Params().N)
+			keyDerivationDeltaInverse := modN.ModInverse(ilNum)
+			childCryptoPk = pubKey.ScalarMult(keyDerivationDeltaInverse)
+		} else {
+			deltaG = crypto.ScalarBaseMult(curve, ilNum)
+			if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 {
+				return nil, fmt.Errorf("invalid child")
+			}
+			var cpkErr error
+			childCryptoPk, cpkErr = pubKey.Add(deltaG)
+			if cpkErr != nil {
+				return nil, cpkErr
+			}
 		}
 		childPkX = childCryptoPk.X()
 		childPkY = childCryptoPk.Y()

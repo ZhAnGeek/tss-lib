@@ -276,17 +276,27 @@ func DeriveChildKeyOfEcdsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 		return nil, nil, err
 	}
 
-	deltaG := crypto.ScalarBaseMult(curve, ilNum)
-	if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 {
-		err := errors.New("invalid child")
-		log.Error(ctx, "error invalid child")
-		return nil, nil, err
-	}
+	var childCryptoPk *crypto.ECPoint
+	if tss.SameCurve(curve, tss.Curve25519()) {
+		modN := common.ModInt(curve.Params().N)
+		keyDerivationDeltaInverse := modN.ModInverse(ilNum)
+		childCryptoPk = pk.PublicKey.ScalarMult(keyDerivationDeltaInverse)
+	} else {
 
-	childCryptoPk, err := pk.PublicKey.Add(deltaG)
-	if err != nil {
-		log.Error(ctx, "error adding delta G to parent key")
-		return nil, nil, err
+		deltaG := crypto.ScalarBaseMult(curve, ilNum)
+		if deltaG.X().Sign() == 0 || deltaG.Y().Sign() == 0 {
+			err := errors.New("invalid child")
+			log.Error(ctx, "error invalid child")
+			return nil, nil, err
+		}
+
+		var err error
+		childCryptoPk, err = pk.PublicKey.Add(deltaG)
+		if err != nil {
+			log.Error(ctx, "error adding delta G to parent key")
+			return nil, nil, err
+		}
+
 	}
 
 	childPk := &ExtendedKey{
