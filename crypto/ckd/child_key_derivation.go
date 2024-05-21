@@ -232,6 +232,27 @@ func DeriveChildKeyFromHierarchy(ctx context.Context, indicesHierarchy []uint32,
 	return ilNum, k, nil
 }
 
+func DeriveChildKeyFromHierarchyForKCDSA(ctx context.Context, indicesHierarchy []uint32, pk *ExtendedKey, mod *big.Int, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
+	var k = pk
+	var err error
+	var childKey *ExtendedKey
+	mod_ := common.ModInt(mod)
+	var ilNum *big.Int
+
+	for index := range indicesHierarchy {
+		ilNumOld := ilNum
+		ilNum, childKey, err = DeriveChildKeyOfKcdsa(ctx, indicesHierarchy[index], k, curve)
+		if err != nil {
+			return nil, nil, err
+		}
+		k = childKey
+		if ilNumOld != nil {
+			ilNum = mod_.Mul(ilNum, ilNumOld)
+		}
+	}
+	return ilNum, k, nil
+}
+
 // DeriveChildKeyOfEcdsa Derive a child key from the given parent key. The function returns "IL" ("I left"), per BIP-32 spec. It also
 // returns the derived child key.
 func DeriveChildKeyOfEcdsa(ctx context.Context, index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
@@ -298,6 +319,45 @@ func DeriveChildKeyOfEcdsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 		}
 
 	}
+
+	childPk := &ExtendedKey{
+		PublicKey:  *childCryptoPk,
+		Depth:      pk.Depth + 1,
+		ChildIndex: index,
+		ChainCode:  childChainCode,
+		ParentFP:   hash160(pkPublicKeyBytes)[:4],
+		Version:    pk.Version,
+	}
+	return ilNum, childPk, nil
+}
+
+// DeriveChildKeyOfKcdsa Derive a child key from the given parent key. The function returns "IL" ("I left"), per BIP-32 spec. It also
+// returns the derived child key.
+func DeriveChildKeyOfKcdsa(ctx context.Context, index uint32, pk *ExtendedKey, curve elliptic.Curve) (*big.Int, *ExtendedKey, error) {
+	if index >= HardenedKeyStart {
+		return nil, nil, errors.New("the index must be non-hardened")
+	}
+	if pk.Depth >= maxDepth {
+		return nil, nil, errors.New("cannot derive key beyond max depth")
+	}
+
+	pkPublicKeyBytes := serializeCompressed(pk.PublicKey.X(), pk.PublicKey.Y())
+
+	data := make([]byte, 37)
+	copy(data, pkPublicKeyBytes)
+	binary.BigEndian.PutUint32(data[33:], index)
+
+	// I = HMAC-SHA512(Key = chainCode, Data=data)
+	hmac512 := hmac.New(sha512.New, pk.ChainCode)
+	hmac512.Write(data)
+	ilr := hmac512.Sum(nil)
+	il := ilr[:32]
+	childChainCode := ilr[32:]
+	ilNum := new(big.Int).SetBytes(il)
+
+	modN := common.ModInt(curve.Params().N)
+	keyDerivationDeltaInverse := modN.ModInverse(ilNum)
+	childCryptoPk := pk.PublicKey.ScalarMult(keyDerivationDeltaInverse)
 
 	childPk := &ExtendedKey{
 		PublicKey:  *childCryptoPk,
