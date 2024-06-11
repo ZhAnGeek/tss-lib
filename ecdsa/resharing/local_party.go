@@ -87,7 +87,11 @@ func NewLocalParty(
 	oldPartyCount := len(params.OldParties().IDs())
 	subset := key
 	if params.IsOldCommittee() {
-		subset = keygen.BuildLocalSaveDataSubset(key, params.OldParties().IDs())
+		if key.LocalPreParams.Validate() {
+			subset = keygen.BuildLocalSaveDataSubset(key, params.OldParties().IDs())
+		} else {
+			subset = keygen.BuildLocalSaveDataSubsetNoPreparams(key, params.OldParties().IDs())
+		}
 	}
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),
