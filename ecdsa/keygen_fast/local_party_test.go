@@ -18,11 +18,11 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/log"
+	"github.com/Safulet/tss-lib-private/v2/log"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 const (

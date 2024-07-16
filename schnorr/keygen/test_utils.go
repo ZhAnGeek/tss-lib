@@ -16,12 +16,12 @@ import (
 	"runtime"
 	"sort"
 
-	keygen2 "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/frost/keygen"
+	keygen2 "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/frost/keygen"
 	"github.com/pkg/errors"
 
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 const (

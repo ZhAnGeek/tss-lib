@@ -12,14 +12,14 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	cmts "github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
-	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	cmts "github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	zkpmod "github.com/Safulet/tss-lib-private/v2/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/v2/crypto/zkp/prm"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"go.opentelemetry.io/otel/trace"
 )

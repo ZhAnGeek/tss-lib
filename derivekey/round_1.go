@@ -13,16 +13,16 @@ import (
 	"fmt"
 	"math/big"
 
-	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
 	starkcurve "github.com/consensys/gnark-crypto/ecc/stark-curve"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/hash2curve"
-	zkpeqlog "github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/hash2curve"
+	zkpeqlog "github.com/Safulet/tss-lib-private/v2/crypto/zkp/eqlog"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 const (

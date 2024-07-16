@@ -11,10 +11,10 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/paillier"
-	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/paillier"
+	zkpaffg "github.com/Safulet/tss-lib-private/v2/crypto/zkp/affg"
 )
 
 type MtAOut struct {

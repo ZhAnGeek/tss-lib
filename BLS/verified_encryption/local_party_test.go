@@ -15,14 +15,14 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/BLS/decryption"
-	"github.com/Safulet/tss-lib-private/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/common"
-	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
-	"github.com/Safulet/tss-lib-private/log"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/BLS/decryption"
+	"github.com/Safulet/tss-lib-private/v2/BLS/keygen"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 	"github.com/stretchr/testify/assert"
 )
 

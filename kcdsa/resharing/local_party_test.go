@@ -12,16 +12,16 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/log"
+	"github.com/Safulet/tss-lib-private/v2/log"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/kcdsa/keygen"
-	. "github.com/Safulet/tss-lib-private/kcdsa/resharing"
-	"github.com/Safulet/tss-lib-private/kcdsa/signing"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/kcdsa/keygen"
+	. "github.com/Safulet/tss-lib-private/v2/kcdsa/resharing"
+	"github.com/Safulet/tss-lib-private/v2/kcdsa/signing"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 const (

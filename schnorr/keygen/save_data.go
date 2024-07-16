@@ -11,9 +11,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/frost/keygen"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/frost/keygen"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 type LocalSecrets struct {

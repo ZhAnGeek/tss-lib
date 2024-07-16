@@ -14,12 +14,12 @@ import (
 	"fmt"
 	"io"
 
-	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
 	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/blake2b"
 
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fp"
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fp"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fq"
 )
 
 const version = 0xcb

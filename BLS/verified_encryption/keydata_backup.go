@@ -12,13 +12,13 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 type (

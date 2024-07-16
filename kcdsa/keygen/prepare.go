@@ -13,9 +13,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto/paillier"
-	"github.com/Safulet/tss-lib-private/log"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto/paillier"
+	"github.com/Safulet/tss-lib-private/v2/log"
 )
 
 const (

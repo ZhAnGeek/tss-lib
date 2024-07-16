@@ -12,12 +12,12 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/bls12381"
-	"github.com/Safulet/tss-lib-private/log"
-	test "github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/BLS/keygen"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	test "github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"github.com/stretchr/testify/assert"
 )

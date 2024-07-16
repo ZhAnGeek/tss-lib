@@ -3,7 +3,7 @@ package mapping
 import (
 	"fmt"
 
-	"github.com/Safulet/tss-lib-private/crypto/hash2curve/curve"
+	"github.com/Safulet/tss-lib-private/v2/crypto/hash2curve/curve"
 	C "github.com/armfazh/tozan-ecc/curve"
 	GF "github.com/armfazh/tozan-ecc/field"
 )

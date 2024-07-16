@@ -10,9 +10,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Safulet/tss-lib-private/BLS/keygen"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/BLS/keygen"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"go.opentelemetry.io/otel/trace"
 )

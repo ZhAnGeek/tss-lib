@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	M "github.com/Safulet/tss-lib-private/crypto/hash2curve/mapping"
+	M "github.com/Safulet/tss-lib-private/v2/crypto/hash2curve/mapping"
 	C "github.com/armfazh/tozan-ecc/curve"
 	"github.com/armfazh/tozan-ecc/field"
 	GF "github.com/armfazh/tozan-ecc/field"

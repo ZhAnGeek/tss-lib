@@ -10,9 +10,9 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fp"
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
-	"github.com/Safulet/tss-lib-private/crypto/signatures/mina"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fp"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/v2/crypto/signatures/mina"
 )
 
 // Handles the packing of bits and fields according to Mina spec

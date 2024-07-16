@@ -9,12 +9,12 @@ package utils
 import (
 	"testing"
 
-	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
-	kcdsa_keygen "github.com/Safulet/tss-lib-private/kcdsa/keygen"
-	schnorr_keygen "github.com/Safulet/tss-lib-private/schnorr/keygen"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	kcdsa_keygen "github.com/Safulet/tss-lib-private/v2/kcdsa/keygen"
+	schnorr_keygen "github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 	"github.com/stretchr/testify/assert"
 )

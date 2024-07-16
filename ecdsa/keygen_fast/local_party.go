@@ -9,9 +9,9 @@ package keygen_fast
 import (
 	"context"
 
-	frost "github.com/Safulet/tss-lib-private/frost/keygen"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	frost "github.com/Safulet/tss-lib-private/v2/frost/keygen"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"go.opentelemetry.io/otel/trace"
 )

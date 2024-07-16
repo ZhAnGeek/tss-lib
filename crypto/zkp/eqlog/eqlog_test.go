@@ -11,12 +11,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/v2/common"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	. "github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	. "github.com/Safulet/tss-lib-private/v2/crypto/zkp/eqlog"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 var (

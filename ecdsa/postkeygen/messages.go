@@ -9,12 +9,12 @@ package postkeygen
 import (
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto/paillier"
-	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
-	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
-	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto/paillier"
+	zkpfac "github.com/Safulet/tss-lib-private/v2/crypto/zkp/fac"
+	zkpmod "github.com/Safulet/tss-lib-private/v2/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/v2/crypto/zkp/prm"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into schnorr-keygen.pb.go

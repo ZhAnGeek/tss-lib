@@ -18,8 +18,8 @@ import (
 
 	"golang.org/x/crypto/blake2b"
 
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fp"
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fp"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fq"
 )
 
 var b = new(fp.Fp).SetUint64(5)

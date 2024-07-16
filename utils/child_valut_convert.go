@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
-	schnorr_keygen "github.com/Safulet/tss-lib-private/schnorr/keygen"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	schnorr_keygen "github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
 )
 
 func ApplyDeltaToECDSALocalPartySaveData(ec elliptic.Curve, threshold int, keys []ecdsa_keygen.LocalPartySaveData, delta *big.Int) ([]ecdsa_keygen.LocalPartySaveData, error) {
@@ -116,7 +116,7 @@ func ApplyDeltaToEDDSALocalPartySaveData(ec elliptic.Curve, threshold int, keys 
 	}
 	modN := common.ModInt(ec.Params().N)
 	for i := range keys {
-		x := keys[i].LocalSecrets.Xi
+		x := new(big.Int).Mod(keys[i].LocalSecrets.Xi, ec.Params().N)
 		refBigX := crypto.ScalarBaseMult(ec, x)
 		if refBigX == nil {
 			return nil, errors.New("invalid keystore x")

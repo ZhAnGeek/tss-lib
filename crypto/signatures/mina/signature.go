@@ -9,8 +9,8 @@ package mina
 import (
 	"fmt"
 
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fp"
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fp"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fq"
 )
 
 // Signature is a Mina compatible signature either for payment or delegation

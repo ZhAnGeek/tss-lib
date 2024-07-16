@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	_const "github.com/Safulet/tss-lib-private/const"
+	_const "github.com/Safulet/tss-lib-private/v2/const"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )

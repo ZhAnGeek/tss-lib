@@ -3,7 +3,7 @@ package curve
 import (
 	"math/big"
 
-	GF "github.com/Safulet/tss-lib-private/crypto/hash2curve/field"
+	GF "github.com/Safulet/tss-lib-private/v2/crypto/hash2curve/field"
 	C "github.com/armfazh/tozan-ecc/curve"
 )
 

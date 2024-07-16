@@ -13,9 +13,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func (round *finalization6) VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {

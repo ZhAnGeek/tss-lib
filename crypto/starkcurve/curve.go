@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/v2/common"
 	starkcurve "github.com/consensys/gnark-crypto/ecc/stark-curve"
 
 	fp "github.com/consensys/gnark-crypto/ecc/stark-curve/fp"

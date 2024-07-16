@@ -16,7 +16,7 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/v2/common"
 	bls "github.com/ethereum/go-ethereum/crypto/bls12381"
 )
 

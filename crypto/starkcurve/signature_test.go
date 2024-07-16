@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/v2/common"
 	"github.com/consensys/gnark-crypto/ecc/stark-curve/fp"
 	hash "github.com/consensys/gnark-crypto/ecc/stark-curve/pedersen-hash"
 	"github.com/stretchr/testify/assert"

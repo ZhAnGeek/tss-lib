@@ -10,14 +10,14 @@ import (
 	"context"
 	"testing"
 
-	. "github.com/Safulet/tss-lib-private/common"
-	. "github.com/Safulet/tss-lib-private/crypto"
-	. "github.com/Safulet/tss-lib-private/crypto/mta"
-	"github.com/Safulet/tss-lib-private/test"
+	. "github.com/Safulet/tss-lib-private/v2/common"
+	. "github.com/Safulet/tss-lib-private/v2/crypto"
+	. "github.com/Safulet/tss-lib-private/v2/crypto/mta"
+	"github.com/Safulet/tss-lib-private/v2/test"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 var (

@@ -4,7 +4,7 @@ import (
 	"crypto/elliptic"
 	"filippo.io/edwards25519"
 	"filippo.io/edwards25519/field"
-	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/v2/common"
 	"math/big"
 )
 

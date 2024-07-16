@@ -12,13 +12,13 @@ import (
 	"fmt"
 	"math/big"
 
-	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
-	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
-	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
-	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/log"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	zkpfac "github.com/Safulet/tss-lib-private/v2/crypto/zkp/fac"
+	zkpmod "github.com/Safulet/tss-lib-private/v2/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/v2/crypto/zkp/prm"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"go.opentelemetry.io/otel/trace"
 )

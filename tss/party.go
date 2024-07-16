@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/log"
+	"github.com/Safulet/tss-lib-private/v2/log"
 )
 
 var (
@@ -246,7 +246,7 @@ func BaseStart(ctx context.Context, p Party, task string, prepare ...func(Round)
 	}
 	log.Info(ctx, "party %v: %s round %d starting", p.round().Params().PartyID(), task, 1)
 	defer func() {
-		log.Debug(ctx, "party %v: %s round %d finished", p.round().Params().PartyID(), task, 1)
+		log.Info(ctx, "party %v: %s round %d finished", p.round().Params().PartyID(), task, 1)
 	}()
 	return p.round().Start(ctx)
 }
@@ -300,7 +300,7 @@ func BaseUpdate(ctx context.Context, p Party, msg ParsedMessage, task string) (o
 		return r(false, err)
 	}
 	if p.round() != nil {
-		log.Debug(ctx, "party %s: %s round %d update", p.round().Params().PartyID(), task, p.round().RoundNumber())
+		log.Info(ctx, "party %s: %s round %d update", p.round().Params().PartyID(), task, p.round().RoundNumber())
 		if _, err := p.round().Update(); err != nil {
 			return r(false, err)
 		}
@@ -340,7 +340,7 @@ func BaseUpdateNR(ctx context.Context, p Party, msg ParsedMessage, task string) 
 		return false, err
 	}
 	if p.round() != nil {
-		log.Debug(ctx, "party %v: %s round %d update", p.round().Params().PartyID(), task, p.round().RoundNumber())
+		log.Info(ctx, "party %v: %s round %d update", p.round().Params().PartyID(), task, p.round().RoundNumber())
 		if _, err := p.round().Update(); err != nil {
 			return false, err
 		}
@@ -349,7 +349,7 @@ func BaseUpdateNR(ctx context.Context, p Party, msg ParsedMessage, task string) 
 				p.updateRoundNumber()
 				if err := p.round().Start(ctx); err != nil {
 					rndNum := p.round().RoundNumber()
-					log.Debug(ctx, "party %v: %s round %d started with Err", p.round().Params().PartyID(), task, rndNum)
+					log.Error(ctx, "party %v: %s round %d started with Err", p.round().Params().PartyID(), task, rndNum)
 					return false, err
 				}
 				rndNum := p.round().RoundNumber()
@@ -400,7 +400,7 @@ func BaseUpdatePool(ctx context.Context, p Party, msg ParsedMessage, task string
 		}
 		hRnd := (*hMsg).Content().RoundNumber()
 		if hRnd > p.ExpectMsgRound() {
-			log.Debug(ctx, "party %v: %s message pool not updateable %d", p.PartyID(), task, hRnd)
+			log.Debug(ctx, "party %v: %s message pool not updatable %d", p.PartyID(), task, hRnd)
 			break
 		}
 		ok, hMsg = p.PopMsgFromPool()

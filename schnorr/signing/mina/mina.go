@@ -12,12 +12,12 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fp"
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
-	"github.com/Safulet/tss-lib-private/crypto/signatures/mina"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fp"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/v2/crypto/signatures/mina"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func SchnorrVerify(ec elliptic.Curve, pubkey *crypto.ECPoint, msg []byte, signature []byte) error {

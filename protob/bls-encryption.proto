@@ -5,7 +5,7 @@
 // file LICENSE at the root of the source code distribution tree.
 
 syntax = "proto3";
-package binance.tsslib.BLS.encryption;
+package binance.tsslib.v2.BLS.encryption;
 option go_package = "BLS/encryption";
 
 /*

@@ -14,11 +14,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	. "github.com/Safulet/tss-lib-private/crypto/ckd"
-	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	. "github.com/Safulet/tss-lib-private/v2/crypto/ckd"
+	"github.com/Safulet/tss-lib-private/v2/crypto/edwards25519"
+	"github.com/Safulet/tss-lib-private/v2/tss"
+
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/stretchr/testify/assert"
 )

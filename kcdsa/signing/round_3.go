@@ -13,12 +13,12 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/commitments"
-	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	zkpenc "github.com/Safulet/tss-lib-private/v2/crypto/zkp/enc"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"

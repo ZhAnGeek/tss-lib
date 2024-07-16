@@ -14,8 +14,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func SchnorrVerify(ec elliptic.Curve, pubKey *crypto.ECPoint, msg []byte, signature []byte) error {

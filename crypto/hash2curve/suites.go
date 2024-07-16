@@ -5,8 +5,8 @@ import (
 	_ "crypto/sha256" // To link the sha256 module
 	_ "crypto/sha512" // To link the sha512 module
 	"fmt"
-	C "github.com/Safulet/tss-lib-private/crypto/hash2curve/curve"
-	M "github.com/Safulet/tss-lib-private/crypto/hash2curve/mapping"
+	C "github.com/Safulet/tss-lib-private/v2/crypto/hash2curve/curve"
+	M "github.com/Safulet/tss-lib-private/v2/crypto/hash2curve/mapping"
 )
 
 // SuiteID is the identifier of supported hash to curve suites.

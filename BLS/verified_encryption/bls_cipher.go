@@ -11,10 +11,10 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/BLS/encryption"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/bls12381"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/BLS/encryption"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func BLSEncryptionAndReturnRandomness(ec elliptic.Curve, pk *crypto.ECPoint, message []byte) (encryption.EncryptedData, []byte, []byte, *big.Int, error) {
