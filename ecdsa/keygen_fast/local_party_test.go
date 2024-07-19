@@ -30,7 +30,7 @@ const (
 	testThreshold    = TestThreshold
 )
 
-func setUp(level log.Level) {
+func setUp(level string) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}

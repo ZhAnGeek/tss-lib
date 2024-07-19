@@ -300,7 +300,7 @@ func BaseUpdate(ctx context.Context, p Party, msg ParsedMessage, task string) (o
 		return r(false, err)
 	}
 	if p.round() != nil {
-		log.Info(ctx, "party %s: %s round %d update", p.round().Params().PartyID(), task, p.round().RoundNumber())
+		log.Info(ctx, "party %s: %s round %d update, type: %s, from: %s", p.round().Params().PartyID(), task, p.round().RoundNumber(), msg.Type(), msg.GetFrom())
 		if _, err := p.round().Update(); err != nil {
 			return r(false, err)
 		}

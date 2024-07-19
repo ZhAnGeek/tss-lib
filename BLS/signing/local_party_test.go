@@ -32,7 +32,7 @@ var (
 	ec    = tss.GetBLSCurveBySuite(suite)
 )
 
-func setUp(level log.Level) {
+func setUp(level string) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}

@@ -47,7 +47,7 @@ const (
 	testFixtureDirFormatStarkNet = "%s/../test/_ecdsa_fixtures_%d_%d/starkcurve"
 )
 
-func setUp(level log.Level) {
+func setUp(level string) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}

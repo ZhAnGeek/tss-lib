@@ -8,24 +8,21 @@ package log
 
 import "context"
 
-// Level log level
-type Level int
-
 const (
-	// FatalLevel error log level
-	FatalLevel Level = iota + 1
-	// ErrorLevel error log level
-	ErrorLevel
-	// WarnLevel warn log level
-	WarnLevel
-	// InfoLevel info log level
-	InfoLevel
-	// DebugLevel debug log level
-	DebugLevel
+	// Fatal error log level
+	FatalLevel = "fatal"
+	// Error error log level
+	ErrorLevel = "error"
+	// Warn warn log level
+	WarnLevel = "warn"
+	// Info info log level
+	InfoLevel = "info"
+	// Debug debug log level
+	DebugLevel = "debug"
 )
 
 type ILogger interface {
-	SetLogLevel(level Level) error
+	SetLogLevel(level string) error
 	Debug(context.Context, string, ...interface{})
 	Info(context.Context, string, ...interface{})
 	Warn(context.Context, string, ...interface{})

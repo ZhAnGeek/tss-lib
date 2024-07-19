@@ -12,7 +12,7 @@ func SetLogger(mLogger ILogger) {
 	logger = mLogger
 }
 
-func SetLogLevel(level Level) error {
+func SetLogLevel(level string) error {
 	return logger.SetLogLevel(level)
 }
 
