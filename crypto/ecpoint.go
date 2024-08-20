@@ -297,8 +297,20 @@ func (p *ECPoint) UnmarshalJSON(payload []byte) error {
 		}
 		p.curve = ec
 	} else {
-		// forward compatible, use global ec as default value
-		p.curve = tss.EC()
+		// forward compatible, find ec from possible list
+		curvesList := []elliptic.Curve{
+			tss.S256(),
+			tss.P256(),
+			tss.Edwards()}
+		for _, ec := range curvesList {
+			_, err := NewECPoint(ec, p.coords[0], p.coords[1])
+			if err == nil {
+				p.curve = ec
+			}
+		}
+		if p.curve == nil {
+			return fmt.Errorf("cannot find a curve with given coordinates")
+		}
 	}
 
 	if !p.IsOnCurve() {

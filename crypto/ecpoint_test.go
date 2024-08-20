@@ -191,3 +191,42 @@ func TestInfinityPoint(t *testing.T) {
 		assert.Nil(t, O2.Y(), "infinity point coordinate should be nil")
 	}
 }
+
+func OldJsonMarshal(p *ECPoint) ([]byte, error) {
+	return json.Marshal(&struct {
+		Coords [2]*big.Int
+	}{
+		Coords: [2]*big.Int{p.X(), p.Y()},
+	})
+}
+
+func TestJsonUnmarshalPoint(t *testing.T) {
+	ec := tss.Curve25519()
+	point := ScalarBaseMult(ec, big.NewInt(667667))
+	bzs, err := OldJsonMarshal(point)
+	assert.NoError(t, err)
+	var point2 ECPoint
+	err = json.Unmarshal(bzs, &point2)
+	assert.Error(t, err)
+
+	ec = tss.P256()
+	point = ScalarBaseMult(ec, big.NewInt(667667))
+	bzs, err = OldJsonMarshal(point)
+	assert.NoError(t, err)
+	err = json.Unmarshal(bzs, &point2)
+	assert.NoError(t, err)
+
+	ec = tss.S256()
+	point = ScalarBaseMult(ec, big.NewInt(667667))
+	bzs, err = OldJsonMarshal(point)
+	assert.NoError(t, err)
+	err = json.Unmarshal(bzs, &point2)
+	assert.NoError(t, err)
+
+	ec = tss.Edwards()
+	point = ScalarBaseMult(ec, big.NewInt(667667))
+	bzs, err = OldJsonMarshal(point)
+	assert.NoError(t, err)
+	err = json.Unmarshal(bzs, &point2)
+	assert.NoError(t, err)
+}
