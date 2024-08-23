@@ -13,8 +13,6 @@ import (
 	"github.com/Safulet/tss-lib-private/v2/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/v2/log"
-
-	"github.com/btcsuite/btcd/chaincfg"
 )
 
 func UpdatePublicKeyAndAdjustBigXj(ctx context.Context, keyDerivationDelta *big.Int, keys []keygen.LocalPartySaveData, extendedChildPk *ecdsa.PublicKey, ec elliptic.Curve) error {
@@ -72,14 +70,15 @@ func DerivingPubkeyFromPath(ctx context.Context, masterPub *crypto.ECPoint, chai
 		return nil, nil, err
 	}
 
-	net := &chaincfg.MainNetParams
 	extendedParentPk := &ckd.ExtendedKey{
 		PublicKey:  *pk,
 		Depth:      0,
 		ChildIndex: 0,
 		ChainCode:  chainCode[:],
 		ParentFP:   []byte{0x00, 0x00, 0x00, 0x00},
-		Version:    net.HDPrivateKeyID[:],
+		// The version bytes comes from HDPrivateKeyID in
+		// https://github.com/btcsuite/btcd/blob/029e5a3cb555f8362d46e05a7310f254d0efcf97/chaincfg/params.go#L424C38-L424C42
+		Version: []byte{0x4, 0x88, 0xad, 0xe4},
 	}
 
 	return ckd.DeriveChildKeyFromHierarchy(ctx, path, extendedParentPk, ec.Params().N, ec)
