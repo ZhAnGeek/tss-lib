@@ -1,0 +1,40 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib.v2.ecdsa.keyshare_affine_transform;
+option go_package = "ecdsa/keyshare_affine_transform";
+
+/*
+ * Represents a BROADCAST message sent during Round 1 of the ECDSA TSS key transform protocol.
+ */
+message KTRound1Message {
+  bytes VHash = 1;
+}
+
+/*
+ * Represents a BROADCAST message sent during Round 1 of the ECDSA TSS key transform protocol.
+ */
+message KTRound2Message1 {
+  repeated bytes vs = 1;
+  repeated bytes Ai = 2;
+  bytes rid = 3;
+  bytes cmtRandomness = 4;
+}
+
+/*
+ * Represents a P2P message sent to each party during Round 2 of the ECDSA TSS key transform protocol.
+ */
+message KTRound2Message2 {
+  bytes share = 1;
+}
+
+/*
+ * Represents a broadcast message sent to each party during Round 3 of the ECDSA TSS key transform protocol.
+ */
+message KTRound3Message {
+  repeated bytes sch_proof = 1;
+}
