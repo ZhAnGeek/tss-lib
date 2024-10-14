@@ -334,10 +334,12 @@ func Decrypt(suite []byte, shares [][]byte, cipherText []byte, yig2 []*bls.Point
 		if err != nil {
 			return nil, err
 		}
-		message := make([]byte, len(pureMsg))
-		decrypter := cipher.NewCBCDecrypter(aesCipher, iv)
-		decrypter.CryptBlocks(message, pureMsg)
-		return RemovePadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
+		message := make([]byte, 0)
+		decrypter, err := cipher.NewGCM(aesCipher)
+		if err != nil {
+			return nil, err
+		}
+		return decrypter.Open(message, iv[:decrypter.NonceSize()], pureMsg, []byte{})
 	}
 
 	if bytes.Equal(suite, GetBLSSignatureSuiteG2()) {
@@ -385,10 +387,12 @@ func Decrypt(suite []byte, shares [][]byte, cipherText []byte, yig2 []*bls.Point
 		if err != nil {
 			return nil, err
 		}
-		message := make([]byte, len(pureMsg))
-		decrypter := cipher.NewCBCDecrypter(aesCipher, iv)
-		decrypter.CryptBlocks(message, pureMsg)
-		return RemovePadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
+		message := make([]byte, 0)
+		decrypter, err := cipher.NewGCM(aesCipher)
+		if err != nil {
+			return nil, err
+		}
+		return decrypter.Open(message, iv[:decrypter.NonceSize()], pureMsg, []byte{})
 	}
 
 	return nil, fmt.Errorf("no suite")
@@ -523,22 +527,19 @@ func DecryptShare(suite []byte, privateKey PrivateKey, cipherText []byte) ([]byt
 }
 
 func Encrypt(suite []byte, publicKey PublicKey, message []byte) ([]byte, error) {
-	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
-	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+HmacSize)
+	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+16+HmacSize)
 	_, _, _, err := encrypt(suite, encryptedMessage, publicKey, message, nil, nil, nil)
 	return encryptedMessage, err
 }
 
 func EncryptAndReturnRandomness(suite []byte, publicKey PublicKey, message []byte) ([]byte, []byte, []byte, *big.Int, error) {
-	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
-	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+HmacSize)
+	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+16+HmacSize)
 	aseKey, iv, r, err := encrypt(suite, encryptedMessage, publicKey, message, nil, nil, nil)
 	return encryptedMessage, aseKey, iv, r, err
 }
 
 func EncryptWithRandomness(suite []byte, publicKey PublicKey, message, aesKey, iv []byte, r *big.Int) ([]byte, error) {
-	message = PadToLengthBytesInPlacePKCSS7(message, aes.BlockSize)
-	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+HmacSize)
+	encryptedMessage := make([]byte, aes.BlockSize+PointG2Size+PointG1Size+Sha256SumSize+len(message)+16+HmacSize)
 	_, _, _, err := encrypt(suite, encryptedMessage, publicKey, message, aesKey, iv, r)
 	return encryptedMessage, err
 }
@@ -600,13 +601,16 @@ func encryptWithAes(message, aesKey, iv []byte) ([]byte, []byte, []byte) {
 	if err != nil {
 		panic("aes key gen failed")
 	}
-	encrypter := cipher.NewCBCEncrypter(aesCipher, iv)
+	encrypter, err := cipher.NewGCM(aesCipher)
+	if err != nil {
+		panic("create gcm failed")
+	}
 
-	out := make([]byte, len(message))
-	encrypter.CryptBlocks(out, message)
+	out := make([]byte, 0)
+	res := encrypter.Seal(out, iv[:encrypter.NonceSize()], message, []byte{})
 
-	hmInputs := make([]byte, len(message))
-	copy(hmInputs, out)
+	hmInputs := make([]byte, len(message)+encrypter.Overhead())
+	copy(hmInputs, res)
 	hm := hmac.New(sha256.New, iv)
 	hmBytes := hm.Sum(hmInputs)
 	return aesKey, hmBytes, iv
