@@ -79,7 +79,7 @@ func (k *ExtendedKey) String() string {
 	serializedBytes = append(serializedBytes, k.ParentFP...)
 	serializedBytes = append(serializedBytes, childNumBytes[:]...)
 	serializedBytes = append(serializedBytes, k.ChainCode...)
-	pubKeyBytes := serializeCompressed(k.PublicKey.X(), k.PublicKey.Y())
+	pubKeyBytes := SerializeCompressed(k.PublicKey.X(), k.PublicKey.Y())
 	serializedBytes = append(serializedBytes, pubKeyBytes...)
 
 	checkSum := doubleHashB(serializedBytes)[:4]
@@ -182,7 +182,7 @@ func paddedBytes(size int, src []byte) []byte {
 }
 
 // SerializeCompressed serializes a public key 33-byte compressed format
-func serializeCompressed(publicKeyX *big.Int, publicKeyY *big.Int) []byte {
+func SerializeCompressed(publicKeyX *big.Int, publicKeyY *big.Int) []byte {
 	b := make([]byte, 0, PubKeyBytesLenCompressed)
 	format := pubKeyCompressed
 	if isOdd(publicKeyY) {
@@ -243,7 +243,7 @@ func DeriveChildKeyOfEcdsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 		return nil, nil, errors.New("cannot derive key beyond max depth")
 	}
 
-	pkPublicKeyBytes := serializeCompressed(pk.PublicKey.X(), pk.PublicKey.Y())
+	pkPublicKeyBytes := SerializeCompressed(pk.PublicKey.X(), pk.PublicKey.Y())
 
 	data := make([]byte, 37)
 	copy(data, pkPublicKeyBytes)
@@ -373,4 +373,76 @@ func GenerateSeed(length uint8) ([]byte, error) {
 	}
 
 	return buf, nil
+}
+
+// DeriveTweakedKey Derive a child key from the given parent key.
+// returns tweakDelta
+func DeriveTweakedKey(pk *crypto.ECPoint, keyDerivationDelta *big.Int, inputs []byte) (*big.Int, *crypto.ECPoint, error) {
+	if pk == nil || !pk.IsOnCurve() {
+		return nil, nil, errors.New("invalid public key")
+	}
+	ec := pk.Curve()
+	if keyDerivationDelta.Cmp(common.Zero) == -1 {
+		return nil, nil, errors.New("child key derivation delta should not less than zero")
+	}
+	if keyDerivationDelta.Cmp(ec.Params().N) != -1 {
+		return nil, nil, errors.New("child key derivation delta should not be greater than curve order")
+	}
+
+	cDelta := crypto.ScalarBaseMult(ec, keyDerivationDelta)
+	cPK, err := pk.Add(cDelta)
+	if err != nil {
+		return nil, nil, err
+	}
+	if cPK.Y().Bit(0) == 1 {
+		cPK = cPK.Neg()
+	}
+
+	bzs := cPK.X().Bytes()
+	bzs = append(bzs, inputs...)
+	tBz := common.TaggedHash256([]byte("TapTweak"), bzs)
+	t := new(big.Int).SetBytes(tBz)
+	if t.Cmp(ec.Params().N) != -1 {
+		return nil, nil, errors.New("invalid tweak")
+	}
+	tDelta := crypto.ScalarBaseMult(ec, t)
+	dPK, err := cPK.Add(tDelta)
+	if err != nil {
+		return nil, nil, err
+	}
+	return t, dPK, nil
+}
+
+func TweakedPublickKeyFromRootKey(rootPK *crypto.ECPoint, childDelta *big.Int, tweakDelta *big.Int) (*crypto.ECPoint, error) {
+	if rootPK == nil || !rootPK.IsOnCurve() {
+		return nil, errors.New("invalid public key")
+	}
+	ec := rootPK.Curve()
+	if childDelta.Cmp(common.Zero) == -1 {
+		return nil, errors.New("child key derivation delta should not less than zero")
+	}
+	if childDelta.Cmp(ec.Params().N) != -1 {
+		return nil, errors.New("child key derivation delta should not be greater than curve order")
+	}
+	if tweakDelta.Cmp(common.Zero) == -1 {
+		return nil, errors.New("tweak key delta should not less than zero")
+	}
+	if tweakDelta.Cmp(ec.Params().N) != -1 {
+		return nil, errors.New("tweak key delta should not be greater than curve order")
+	}
+
+	cDelta := crypto.ScalarBaseMult(ec, childDelta)
+	cPK, err := rootPK.Add(cDelta)
+	if err != nil {
+		return nil, err
+	}
+	if cPK.Y().Bit(0) == 1 {
+		cPK = cPK.Neg()
+	}
+	tDelta := crypto.ScalarBaseMult(ec, tweakDelta)
+	dPK, err := cPK.Add(tDelta)
+	if err != nil {
+		return nil, err
+	}
+	return dPK, nil
 }

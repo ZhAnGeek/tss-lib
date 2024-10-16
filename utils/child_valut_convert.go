@@ -14,11 +14,70 @@ import (
 
 	"github.com/Safulet/tss-lib-private/v2/common"
 	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
 	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
 	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
 	schnorr_keygen "github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
 )
+
+func ApplyCkdXAndTweakToOneECDSAKeySave(ec elliptic.Curve, key *ecdsa_keygen.LocalPartySaveData, childDelta *big.Int, tweakInputs []byte) (*ecdsa_keygen.LocalPartySaveData, error) {
+	modN := common.ModInt(ec.Params().N)
+	// find index
+	idx, err := key.OriginalIndex()
+	if err != nil {
+		return nil, err
+	}
+	n := len(key.BigXj)
+
+	tweakDelta, finalPK, err := ckd.DeriveTweakedKey(key.ECDSAPub, childDelta, tweakInputs)
+	if err != nil {
+		return nil, err
+	}
+
+	cDelta := crypto.ScalarBaseMult(ec, childDelta)
+	cPK, err := key.ECDSAPub.Add(cDelta)
+	if err != nil {
+		return nil, err
+	}
+	key.Xi = modN.Add(key.Xi, childDelta)
+	for i := 0; i < n; i++ {
+		key.BigXj[i], err = key.BigXj[i].Add(cDelta)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if cPK.Y().Bit(0) == 1 {
+		cPK = cPK.Neg()
+		key.Xi = modN.Sub(common.Zero, key.Xi)
+		for i := 0; i < n; i++ {
+			key.BigXj[i] = key.BigXj[i].Neg()
+		}
+	}
+	tDelta := crypto.ScalarBaseMult(ec, tweakDelta)
+	dPK, err := cPK.Add(tDelta)
+	if err != nil {
+		return nil, err
+	}
+	if !dPK.Equals(finalPK) {
+		return nil, err
+	}
+	key.ECDSAPub = dPK
+	key.Xi = modN.Add(key.Xi, tweakDelta)
+	for i := 0; i < n; i++ {
+		key.BigXj[i], err = key.BigXj[i].Add(tDelta)
+		if err != nil {
+			return nil, err
+		}
+	}
+	// check x_i * G
+	BigXi := crypto.ScalarBaseMult(ec, key.Xi)
+	if !BigXi.Equals(key.BigXj[idx]) {
+		return nil, errors.New("BigXi not correct")
+	}
+
+	return key, nil
+}
 
 func ApplyDeltaToECDSALocalPartySaveData(ec elliptic.Curve, threshold int, keys []ecdsa_keygen.LocalPartySaveData, delta *big.Int) ([]ecdsa_keygen.LocalPartySaveData, error) {
 	_, scrambler, err := vss.Create(ec, threshold, big.NewInt(0), keys[0].Ks)
@@ -96,6 +155,39 @@ func ApplyDeltaToECDSALocalPartySaveData(ec elliptic.Curve, threshold int, keys 
 	}
 
 	return keys, nil
+}
+
+func ApplyCkdToOneEDDSAKeySave(ec elliptic.Curve, key *eddsa_keygen.LocalPartySaveData, childDelta *big.Int) (*eddsa_keygen.LocalPartySaveData, error) {
+	modN := common.ModInt(ec.Params().N)
+	// find index
+	idx, err := key.OriginalIndex()
+	if err != nil {
+		return nil, err
+	}
+	n := len(key.BigXj)
+
+	cDelta := crypto.ScalarBaseMult(ec, childDelta)
+	cPK, err := key.PubKey.Add(cDelta)
+	if err != nil {
+		return nil, err
+	}
+	key.Xi = modN.Add(key.Xi, childDelta)
+	for i := 0; i < n; i++ {
+		key.BigXj[i], err = key.BigXj[i].Add(cDelta)
+		if err != nil {
+			return nil, err
+		}
+	}
+	key.PubKey = cPK
+	key.EDDSAPub = cPK
+
+	// check x_i * G
+	BigXi := crypto.ScalarBaseMult(ec, key.Xi)
+	if !BigXi.Equals(key.BigXj[idx]) {
+		return nil, errors.New("BigXi not correct")
+	}
+
+	return key, nil
 }
 
 func ApplyDeltaToEDDSALocalPartySaveData(ec elliptic.Curve, threshold int, keys []eddsa_keygen.LocalPartySaveData, delta *big.Int) ([]eddsa_keygen.LocalPartySaveData, error) {
