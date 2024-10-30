@@ -296,3 +296,23 @@ func TestTweak(t *testing.T) {
 	outputKey := txscript.ComputeTaprootOutputKey(btcCPK, scriptRoot)
 	fmt.Println("   from btcec PK:", hex.EncodeToString(outputKey.SerializeCompressed()))
 }
+
+func TestPallas(t *testing.T) {
+	ctx := context.Background()
+	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+	privKeyScaler := big.NewInt(667)
+
+	pkExt, err := NewExtendedKeyFromString(testVec1MasterPubKey, tss.S256())
+	assert.NoError(t, err)
+
+	ec := tss.Pallas()
+	pkNew, err := crypto.NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
+	pkNew = pkNew.ScalarMult(privKeyScaler)
+	pkExt.PublicKey = *pkNew
+
+	path := []uint32{0, 1, 2, 2, 3, 5, 6, 7, 1, 0}
+	delta, childExtKey, err := DeriveChildKeyFromHierarchy(ctx, path, pkExt, ec.Params().N, ec)
+	assert.NoError(t, err)
+	assert.False(t, delta.Uint64() == 0, "delta is not zero")
+	assert.True(t, childExtKey.PublicKey.IsOnCurve())
+}

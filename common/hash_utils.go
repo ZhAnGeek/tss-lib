@@ -7,6 +7,7 @@
 package common
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"math/big"
@@ -64,5 +65,25 @@ func RejectionSampleFixedBitLen(q *big.Int, eHash *big.Int) *big.Int {
 			cur.SetBit(cur, i, 0)
 		}
 	}
+	return cur
+}
+
+// RejectionSampleLessThanIfNecessary return val or resample val' if val >= q
+// assuming val, q >= 0, q < 2^256
+func RejectionSampleLessThanIfNecessary(q, val *big.Int) *big.Int {
+	if val.Cmp(q) == -1 {
+		return val
+	}
+	qBytesLen := len(q.Bytes())
+	cur := val
+	tag := []byte("RejectSampleLessThan#v1#")
+	ctx := context.Background()
+
+	bzs := cur.Bytes()
+	for cur.Cmp(q) != -1 || cur.Cmp(big.NewInt(0)) != 1 {
+		bzs = SHA512_256_TAGGED(ctx, tag, bzs)[:qBytesLen]
+		cur = new(big.Int).SetBytes(bzs)
+	}
+
 	return cur
 }

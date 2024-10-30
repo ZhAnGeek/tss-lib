@@ -3,9 +3,11 @@ package common
 import (
 	"context"
 	"encoding/hex"
-	"github.com/stretchr/testify/assert"
+	"fmt"
 	"math/big"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHashFunc(t *testing.T) {
@@ -29,4 +31,26 @@ func TestHashFunc(t *testing.T) {
 
 	h2Tag := SHA512_256i_TAGGED(ctx, tag, h1InputBigInt...)
 	assert.Equal(t, h2Tag, new(big.Int).SetBytes(expectedH1Tag))
+}
+
+func TestHashResample(t *testing.T) {
+	q := big.NewInt(137)
+
+	for i := 0; i < 150; i++ {
+		e := RejectionSampleFixedBitLen(q, big.NewInt(int64(i)))
+		fmt.Printf("(%d, %s) ", i, e)
+	}
+	fmt.Println()
+
+	for i := 0; i < 150; i++ {
+		e := RejectionSampleV2(q, big.NewInt(int64(i)))
+		fmt.Printf("(%d, %s) ", i, e)
+	}
+	fmt.Println()
+
+	for i := 0; i < 150; i++ {
+		e := RejectionSampleLessThanIfNecessary(q, big.NewInt(int64(i)))
+		fmt.Printf("(%d, %s) ", i, e)
+	}
+
 }

@@ -258,11 +258,8 @@ func DeriveChildKeyOfEcdsa(ctx context.Context, index uint32, pk *ExtendedKey, c
 	ilNum := new(big.Int).SetBytes(il)
 
 	// Pallas order 0x40000000000000000000000000000000224698fc0994a8dd8c46eb2100000001
-	// where the 1st byte 0100
-	// set to zero the first two bits to ensure ilNum falls in range
 	if tss.SameCurve(curve, tss.Pallas()) {
-		ilNum = new(big.Int).SetBit(ilNum, 255, 0)
-		ilNum = new(big.Int).SetBit(ilNum, 254, 0)
+		ilNum = common.RejectionSampleLessThanIfNecessary(tss.Pallas().Params().N, ilNum)
 	}
 
 	// refering to https://www.zkdocs.com/docs/zkdocs/protocol-primitives/random-sampling/#rejection-sampling

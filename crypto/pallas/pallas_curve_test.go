@@ -8,8 +8,12 @@ package curves
 
 import (
 	crand "crypto/rand"
+	"encoding/hex"
+	"fmt"
+	"math/big"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fp"
@@ -77,6 +81,38 @@ func TestPointPallasRandom(t *testing.T) {
 		},
 	}
 	require.True(t, a.Equal(e))
+}
+
+func TestCheck(t *testing.T) {
+	ss := new(ScalarPallas).Random(testRng()).(*ScalarPallas)
+	g := new(Ep).Generator()
+
+	ppt := new(Ep).Mul(g, ss.value)
+	fmt.Println(ppt.X().BigInt(), ppt.Y().BigInt())
+
+	bzs := make([]byte, 32)
+	hex.Decode(bzs, []byte("855fa195054c3a0628538c6b9c40c93a1be4d795ed3e44357de3f024e037793e"))
+	retP, err := new(Ep).FromAffineCompressed(bzs)
+	assert.NoError(t, err)
+	// fmt.Println("P1.X:", retP.X().BigInt())
+	fmt.Println("P1.Y:", retP.Y().BigInt())
+
+	bzs = make([]byte, 32)
+	hex.Decode(bzs, []byte("855fa195054c3a0628538c6b9c40c93a1be4d795ed3e44357de3f024e03779be"))
+	retP2, err := new(Ep).FromAffineCompressed(bzs)
+	assert.NoError(t, err)
+	// fmt.Println("P2.X:", retP2.X().BigInt())
+	fmt.Println("P2.Y:", retP2.Y().BigInt())
+
+	retP3 := new(Ep).Neg(retP2)
+	// fmt.Println("P3.X:", retP3.X().BigInt())
+	fmt.Println("P3.Y:", retP3.Y().BigInt())
+
+	N := Pallas().Params().N
+	fmt.Println("N:", N)
+	sum := new(big.Int).Add(retP.Y().BigInt(), retP2.Y().BigInt())
+	fmt.Println("sum:", sum)
+
 }
 
 func TestPointPallasSerialize(t *testing.T) {
