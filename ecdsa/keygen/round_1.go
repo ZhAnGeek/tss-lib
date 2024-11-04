@@ -108,10 +108,6 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 		round.out <- msg
 	}
 
-	ids, err = vss.CheckIndexes(round.EC(), ids)
-	if err != nil {
-		return round.WrapError(errors.New("error index"), round.PartyID())
-	}
 	round.save.Ks = ids
 	round.save.ShareID = ids[i]
 

@@ -80,7 +80,12 @@ func ApplyCkdXAndTweakToOneECDSAKeySave(ec elliptic.Curve, key *ecdsa_keygen.Loc
 }
 
 func ApplyDeltaToECDSALocalPartySaveData(ec elliptic.Curve, threshold int, keys []ecdsa_keygen.LocalPartySaveData, delta *big.Int) ([]ecdsa_keygen.LocalPartySaveData, error) {
-	_, scrambler, err := vss.Create(ec, threshold, big.NewInt(0), keys[0].Ks)
+	idsPossibleChange := make([]*big.Int, len(keys[0].Ks))
+	for i := range idsPossibleChange {
+		idsPossibleChange[i] = new(big.Int).Set(keys[0].Ks[i])
+	}
+
+	_, scrambler, err := vss.Create(ec, threshold, big.NewInt(0), idsPossibleChange)
 	if err != nil {
 		return nil, errors.New("create scrambler failed")
 	}
@@ -191,7 +196,11 @@ func ApplyCkdToOneEDDSAKeySave(ec elliptic.Curve, key *eddsa_keygen.LocalPartySa
 }
 
 func ApplyDeltaToEDDSALocalPartySaveData(ec elliptic.Curve, threshold int, keys []eddsa_keygen.LocalPartySaveData, delta *big.Int) ([]eddsa_keygen.LocalPartySaveData, error) {
-	_, scrambler, err := vss.Create(ec, threshold, big.NewInt(0), keys[0].Ks)
+	idsPossibleChange := make([]*big.Int, len(keys[0].Ks))
+	for i := range idsPossibleChange {
+		idsPossibleChange[i] = new(big.Int).Set(keys[0].Ks[i])
+	}
+	_, scrambler, err := vss.Create(ec, threshold, big.NewInt(0), idsPossibleChange)
 	if err != nil {
 		return nil, errors.New("create scrambler failed")
 	}
@@ -273,7 +282,11 @@ func ApplyDeltaToEDDSALocalPartySaveData(ec elliptic.Curve, threshold int, keys 
 }
 
 func ApplyDeltaToSchnorrLocalPartySaveData(ec elliptic.Curve, threshold int, keys []schnorr_keygen.LocalPartySaveData, delta *big.Int) ([]schnorr_keygen.LocalPartySaveData, error) {
-	_, scrambler, err := vss.Create(ec, threshold, big.NewInt(0), keys[0].Ks)
+	idsPossibleChange := make([]*big.Int, len(keys[0].Ks))
+	for i := range idsPossibleChange {
+		idsPossibleChange[i] = new(big.Int).Set(keys[0].Ks[i])
+	}
+	_, scrambler, err := vss.Create(ec, threshold, big.NewInt(0), idsPossibleChange)
 	if err != nil {
 		return nil, errors.New("create scrambler failed")
 	}

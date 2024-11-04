@@ -39,9 +39,8 @@ var (
 	one  = big.NewInt(1)
 )
 
-// CheckIndexes check share ids of Shamir's Secret Sharing, return error if duplicate or 0 value found
+// CheckIndexes Check share ids of Shamir's Secret Sharing, return error if duplicate or 0 value found
 func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
-	ret := make([]*big.Int, len(indexes))
 	visited := make(map[string]struct{})
 	for i, v := range indexes {
 		vMod := new(big.Int).Mod(v, ec.Params().N)
@@ -53,9 +52,9 @@ func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
 			return nil, fmt.Errorf("duplicate indexes %s", vModStr)
 		}
 		visited[vModStr] = struct{}{}
-		ret[i] = vMod
+		indexes[i] = vMod
 	}
-	return ret, nil
+	return indexes, nil // TODO no change indexes
 }
 
 // Returns a new array of secret shares created by Shamir's Secret Sharing Algorithm,

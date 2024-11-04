@@ -130,6 +130,13 @@ func TestConvertECDSAKeyStore(t *testing.T) {
 
 	assert.True(t, rawPub.Equal(priPub))
 
+	// test Ks too big
+	for i := range keys {
+		for j := range keys[i].Ks {
+			keys[i].Ks[j] = new(big.Int).Add(keys[i].Ks[j], ec.Params().N)
+		}
+		keys[i].ShareID = new(big.Int).Add(keys[i].ShareID, ec.Params().N)
+	}
 	keys, err = ApplyDeltaToECDSALocalPartySaveData(ec, test.TestThreshold, keys, big.NewInt(999))
 	assert.NoError(t, err)
 	restoredPriv, err = RestoreECDSAPrivateKey(ec, test.TestThreshold, keys)
@@ -184,6 +191,13 @@ func TestConvertEDDSAKeyStore(t *testing.T) {
 	fmt.Println("derived cPK.X:", childExtKey.PublicKey.X())
 	fmt.Println("derived cPK.Y:", childExtKey.PublicKey.Y())
 
+	// test Ks too big
+	for i := range keys {
+		for j := range keys[i].Ks {
+			keys[i].Ks[j] = new(big.Int).Add(keys[i].Ks[j], ec.Params().N)
+		}
+		keys[i].ShareID = new(big.Int).Add(keys[i].ShareID, ec.Params().N)
+	}
 	keys, err = ApplyDeltaToEDDSALocalPartySaveData(ec, test.TestThreshold, keys, delta)
 	assert.NoError(t, err)
 	restoredPriv, err = RestoreEDDSAPrivateKey(ec, test.TestThreshold, keys)
@@ -223,6 +237,13 @@ func TestConvertSchnorrS256KeyStore(t *testing.T) {
 	assert.True(t, priPub.IsOnCurve(priPub.X, priPub.Y))
 	assert.True(t, rawPub.Equal(priPub))
 
+	// test Ks too big
+	for i := range keys {
+		for j := range keys[i].Ks {
+			keys[i].Ks[j] = new(big.Int).Add(keys[i].Ks[j], ec.Params().N)
+		}
+		keys[i].ShareID = new(big.Int).Add(keys[i].ShareID, ec.Params().N)
+	}
 	keys, err = ApplyDeltaToSchnorrLocalPartySaveData(ec, test.TestThreshold, keys, big.NewInt(999))
 	assert.NoError(t, err)
 	restoredPriv, err = RestoreSchnorrPrivate(ec, test.TestThreshold, keys)
