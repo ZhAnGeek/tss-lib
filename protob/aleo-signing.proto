@@ -1,0 +1,67 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib.v2.aleo.signing;
+option go_package = "aleo/signing";
+
+/*
+ * Represents a BROADCAST message sent to all parties during Round 1 of the Aleo TSS signing protocol.
+ */
+message SignRound1Message {
+  bytes commitment = 1;
+  repeated bytes pointV_sk_sig = 2;
+  repeated bytes proofV_sk_sig = 3;
+  repeated bytes pointV_r_sig = 4;
+  repeated bytes proofV_r_sig = 5;
+}
+
+/*
+ * Represents a BROADCAST message sent to all parties during Round 2 of the Aleo TSS signing protocol.
+ */
+message SignRound2Message {
+  repeated bytes de_commitment = 1;
+  repeated bytes proofD = 2;
+  repeated bytes proofE = 3;
+  bytes sk_tag = 4;
+}
+
+/*
+ * Represents a BROADCAST message sent to all parties during Round 3 of the Aleo TSS signing protocol.
+ */
+message SignRound3Message {
+  repeated bytes share_list = 1;
+  repeated bytes proof_list = 2;
+}
+
+/*
+ * Represents a BROADCAST message sent to all parties during Round 3 of the Aleo TSS signing protocol.
+ */
+message SignRound4Message {
+  bytes response_share = 1;
+}
+
+message RequestOut {
+  bytes challenge = 1;
+  bytes response = 2;
+  bytes sk_tag = 3;
+  bytes tvk = 4;
+  bytes tcm = 5;
+  bytes scm = 6;
+}
+
+message SDataOut {
+  bytes tvk = 1;
+  bytes sk_tag = 2;
+  repeated bytes g_r = 3;
+  repeated bytes h_r_list = 4;
+  repeated bytes gamma_list = 5;
+}
+
+message SignData {
+  bytes ssid = 1;
+  bytes r = 2;
+}

@@ -13,6 +13,7 @@ const (
 	P256             ID = "P256"
 	Curve25519       ID = "Curve25519"
 	Edwards25519     ID = "Edwards25519"
+	EdBLS12377       ID = "EdBls12377"
 	SECP256K1        ID = "SECP256K1"
 	SECP256K1_3ISO   ID = "SECP256K1_3ISO"
 	BLS12381G1       ID = "BLS12381G1"
@@ -59,6 +60,13 @@ func (id ID) Get() C.EllCurve {
 			f.Elt("0x52036cee2b6ffe738cc740797779e89800700a4d4141d8ab75eb4dca135978a3"),
 			str2bigInt("0x1000000000000000000000000000000014def9dea2f79cd65812631a5cf5d3ed"),
 			big.NewInt(8))
+	case EdBLS12377:
+		f := GF.EDBLS12377.Get()
+		return C.TwistedEdwards.New(string(id), f,
+			f.Elt("-1"),
+			f.Elt("0xbcd"),
+			str2bigInt("0x4aad957a68b2955982d1347970dec005293a3afc43c8afeb95aee9ac33fd9ff"),
+			big.NewInt(4))
 	case BLS12381G1:
 		f := GF.BLS12381G1.Get()
 		return C.Weierstrass.New(string(id), f,

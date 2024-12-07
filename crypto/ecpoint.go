@@ -15,7 +15,6 @@ import (
 	"math/big"
 
 	"github.com/Safulet/tss-lib-private/v2/tss"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
 
 // ECPoint convenience helper
@@ -28,7 +27,7 @@ type ECPoint struct {
 var (
 	eight = big.NewInt(8)
 	// For ed25519 and curve25519
-	eightInv = new(big.Int).ModInverse(eight, edwards.Edwards().Params().N)
+	eightInv = new(big.Int).ModInverse(eight, tss.Edwards().Params().N)
 )
 
 // NewECPoint creates a new ECPoint and checks that the given coordinates are on the elliptic curve or infinity point.
@@ -129,6 +128,9 @@ func IsInfinityCoords(curve elliptic.Curve, x, y *big.Int) bool {
 	if x == nil && y == nil {
 		return true
 	}
+	if tss.SameCurve(curve, tss.Bls12377G1()) || tss.SameCurve(curve, tss.Bls12377G2()) {
+		return y.Cmp(zero) == 0
+	}
 	x1, y1 := IntInfinityCoords(curve)
 	return x.Cmp(x1) == 0 && y.Cmp(y1) == 0
 }
@@ -139,6 +141,9 @@ func IntInfinityCoords(curve elliptic.Curve) (*big.Int, *big.Int) {
 	}
 	if tss.SameCurve(curve, tss.Curve25519()) {
 		return one, zero
+	}
+	if tss.SameCurve(curve, tss.EdBls12377()) {
+		return zero, one
 	}
 	return zero, zero
 }

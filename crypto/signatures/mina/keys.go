@@ -15,7 +15,7 @@ import (
 	"io"
 
 	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"golang.org/x/crypto/blake2b"
 
 	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fp"

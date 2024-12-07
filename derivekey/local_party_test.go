@@ -73,6 +73,19 @@ func TestH2C(t *testing.T) {
 	assert.NoError(t, err, "should hash to curve")
 }
 
+func TestH2CEdBLS12377(t *testing.T) {
+	dst := "QUUX-V01-CS02-with-edbls12377_XMD:SHA-512_ELL2_RO_"
+	hashToCurve, err := hash2curve.EdBLS12377_XMDSHA512_ELL2_RO_.Get([]byte(dst))
+	assert.NoError(t, err, "should init h2c")
+	h2cPoint := hashToCurve.Hash([]byte("abc"))
+	h2cPx := h2cPoint.X().Polynomial()[0]
+	h2cPy := h2cPoint.Y().Polynomial()[0]
+	fmt.Println("x:", fmt.Sprintf("0x%x", h2cPx))
+	fmt.Println("y:", fmt.Sprintf("0x%x", h2cPy))
+	_, err = crypto.NewECPoint(tss.EdBls12377(), h2cPx, h2cPy)
+	assert.NoError(t, err, "should hash to curve")
+}
+
 func TestH2CBLS(t *testing.T) {
 	dst := "QUUX-V01-CS02-with-BLS12381G2_XMD:SHA-256_SSWU_RO_"
 	hashToCurve, err := hash2curve.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))

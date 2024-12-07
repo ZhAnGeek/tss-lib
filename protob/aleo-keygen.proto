@@ -1,0 +1,35 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib.v2.aleo.keygen;
+option go_package = "aleo/keygen";
+
+/*
+ * Represents a BROADCAST message sent during Round 1 of the Aleo TSS keygen protocol.
+ */
+message KGRound1Message {
+  bytes sig_commitment = 1;
+  bytes r_commitment = 2;
+}
+
+/*
+ * Represents a P2P message sent to each party during Round 2 of the Aleo TSS keygen protocol.
+ */
+message KGRound2Message1 {
+  bytes sig_share = 1;
+  bytes r_share = 2;
+}
+
+/*
+ * Represents a BROADCAST message sent to each party during Round 2 of the Aleo TSS keygen protocol.
+ */
+message KGRound2Message2 {
+  repeated bytes sig_de_commitment = 1;
+  repeated bytes r_de_commitment = 2;
+  repeated bytes sig_proof = 3;
+  repeated bytes r_proof = 4;
+}

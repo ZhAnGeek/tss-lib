@@ -1,0 +1,54 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib.v2.aleo.resharing;
+option go_package = "aleo/resharing";
+
+/*
+ * The Round 1 data is broadcast to peers of the New Committee in this message.
+ */
+message DGRound1Message {
+    bytes sig_pub_x = 1;
+    bytes sig_pub_y = 2;
+    bytes sig_v_commitment = 3;
+
+    bytes r_pub_x = 4;
+    bytes r_pub_y = 5;
+    bytes r_v_commitment = 6;
+
+    bytes ssid = 7;
+}
+
+/*
+ * The Round 2 "ACK" is broadcast to peers of the Old Committee in this message.
+ */
+message DGRound2Message {
+}
+
+/*
+ * The Round 3 data is sent to peers of the New Committee in this message.
+ */
+message DGRound3Message1 {
+    bytes sig_share = 1;
+    bytes r_share = 2;
+}
+
+/*
+ * The Round 3 data is broadcast to peers of the New Committee in this message.
+ */
+message DGRound3Message2 {
+    repeated bytes sig_decommitment = 1;
+    repeated bytes sig_proof = 2;
+    repeated bytes r_decommitment = 3;
+    repeated bytes r_proof = 4;
+}
+
+/*
+ * The Round 4 "ACK" is broadcast to peers of the Old and New Committees from the New Committee in this message.
+ */
+message DGRound4Message {
+}

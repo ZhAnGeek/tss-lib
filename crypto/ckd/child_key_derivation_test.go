@@ -19,7 +19,8 @@ import (
 	. "github.com/Safulet/tss-lib-private/v2/crypto/ckd"
 	"github.com/Safulet/tss-lib-private/v2/crypto/edwards25519"
 	"github.com/Safulet/tss-lib-private/v2/tss"
-	"github.com/btcsuite/btcd/txscript"
+
+	// "github.com/btcsuite/btcd/txscript"
 
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/stretchr/testify/assert"
@@ -291,10 +292,10 @@ func TestTweak(t *testing.T) {
 	assert.NotNil(t, dPK2)
 	assert.True(t, dPK2.Equals(dPK))
 
-	btcCPK, err := btcec.ParsePubKey(cPKBzs)
-	assert.NoError(t, err)
-	outputKey := txscript.ComputeTaprootOutputKey(btcCPK, scriptRoot)
-	fmt.Println("   from btcec PK:", hex.EncodeToString(outputKey.SerializeCompressed()))
+	// btcCPK, err := btcec.ParsePubKey(cPKBzs)
+	// assert.NoError(t, err)
+	// outputKey := txscript.ComputeTaprootOutputKey(btcCPK, scriptRoot)
+	// fmt.Println("   from btcec PK:", hex.EncodeToString(outputKey.SerializeCompressed()))
 }
 
 func TestPallas(t *testing.T) {
@@ -306,6 +307,26 @@ func TestPallas(t *testing.T) {
 	assert.NoError(t, err)
 
 	ec := tss.Pallas()
+	pkNew, err := crypto.NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
+	pkNew = pkNew.ScalarMult(privKeyScaler)
+	pkExt.PublicKey = *pkNew
+
+	path := []uint32{0, 1, 2, 2, 3, 5, 6, 7, 1, 0}
+	delta, childExtKey, err := DeriveChildKeyFromHierarchy(ctx, path, pkExt, ec.Params().N, ec)
+	assert.NoError(t, err)
+	assert.False(t, delta.Uint64() == 0, "delta is not zero")
+	assert.True(t, childExtKey.PublicKey.IsOnCurve())
+}
+
+func TestEdBls12377(t *testing.T) {
+	ctx := context.Background()
+	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+	privKeyScaler := big.NewInt(667)
+
+	pkExt, err := NewExtendedKeyFromString(testVec1MasterPubKey, tss.S256())
+	assert.NoError(t, err)
+
+	ec := tss.EdBls12377()
 	pkNew, err := crypto.NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
 	pkNew = pkNew.ScalarMult(privKeyScaler)
 	pkExt.PublicKey = *pkNew

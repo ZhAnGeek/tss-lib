@@ -23,7 +23,7 @@ import (
 	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -215,7 +215,7 @@ func DeriveChildKeyFromHierarchy(ctx context.Context, indicesHierarchy []uint32,
 	if !ok {
 		return nil, nil, errors.New("get curve name failed")
 	}
-	if cname == tss.Ed25519 {
+	if cname == tss.Ed25519 || cname == tss.EDBLS12377 {
 		deriveFunc = DeriveChildKeyOfEddsa
 	} else {
 		deriveFunc = DeriveChildKeyOfEcdsa

@@ -1,0 +1,21 @@
+// Copyright © 2019 Binance
+//
+// This file is part of Binance. The full Binance copyright notice, including
+// terms governing use, modification, and redistribution, is contained in the
+// file LICENSE at the root of the source code distribution tree.
+
+syntax = "proto3";
+package binance.tsslib.v2.aleo.postsigning;
+option go_package = "aleo/postsigning";
+
+/*
+ * Represents a BROADCAST message sent to all parties during Round 3 of the Aleo TSS signing protocol.
+ */
+message PSignRound1Message {
+  bytes response_share = 1;
+}
+
+message RequestData {
+  bytes challenge = 1;
+  bytes response = 2;
+}

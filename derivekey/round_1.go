@@ -47,6 +47,13 @@ func getHashToCurveInstance(ec elliptic.Curve) (hash2curve.HashToPoint, error) {
 			return nil, err
 		}
 	}
+	if tss.SameCurve(ec, tss.EdBls12377()) {
+		dst := EDBLS12377_HTG_DST
+		hashToCurve, err = hash2curve.EdBLS12377_XMDSHA512_ELL2_RO_.Get([]byte(dst))
+		if err != nil {
+			return nil, err
+		}
+	}
 	if tss.SameCurve(ec, tss.Bls12381G2()) {
 		dst := BLSG2_HTG_DST
 		hashToCurve, err = hash2curve.BLS12381G2_XMDSHA256_SSWU_RO_.Get([]byte(dst))

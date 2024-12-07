@@ -12,7 +12,7 @@ import (
 	"fmt"
 
 	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 )
 
 // Transaction is a Mina transaction for payments or delegations
