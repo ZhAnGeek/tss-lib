@@ -93,6 +93,10 @@ func (round *round1) Start(ctx context.Context) *tss.Error {
 	round.temp.ui = ui
 	round.temp.shares = shares
 
+	round.save.NTildej = round.key.NTildej
+	round.save.H1j, round.save.H2j = round.key.H1j, round.key.H2j
+	round.save.PaillierPKs = round.key.PaillierPKs
+
 	return nil
 }
 

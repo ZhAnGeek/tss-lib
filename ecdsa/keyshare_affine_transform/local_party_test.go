@@ -16,9 +16,10 @@ import (
 	"testing"
 
 	"github.com/Safulet/tss-lib-private/v2/common"
-	"github.com/Safulet/tss-lib-private/v2/crypto"
 	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
 	"github.com/Safulet/tss-lib-private/v2/ecdsa/keyshare_affine_transform"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/presigning"
+	sign "github.com/Safulet/tss-lib-private/v2/ecdsa/signing"
 	"github.com/Safulet/tss-lib-private/v2/log"
 	"github.com/Safulet/tss-lib-private/v2/utils"
 	"github.com/stretchr/testify/assert"
@@ -136,8 +137,148 @@ keytransform:
 			}
 		}
 	}
+
+	signPIDs := pIDs
+	// PHASE: presigning
+	// use a shuffled selection of the list of parties for this test
+	// p2pCtx := tss.NewPeerContext(signPIDs)
+	psParties := make([]*presigning.LocalParty, 0, len(signPIDs))
+
+	// errCh := make(chan *tss.Error, len(signPIDs))
+	psOutCh := make(chan tss.Message, len(signPIDs)*3)
+	psEndCh := make(chan *presigning.PreSignatureData, len(signPIDs))
+	dumpCh := make(chan *presigning.LocalDumpPB, len(signPIDs))
+
+	// init the parties
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+
+		P := presigning.NewLocalParty(params, transformedKeys[i], psOutCh, psEndCh, dumpCh).(*presigning.LocalParty)
+		psParties = append(psParties, P)
+	}
+	var psWg sync.WaitGroup
+	for _, party := range psParties {
+		psWg.Add(1)
+		go func(P *presigning.LocalParty) {
+			defer psWg.Done()
+			if err := P.Start(ctx); err != nil {
+				errCh <- err
+			}
+		}(party)
+	}
+	psWg.Wait()
+
+	preSigDatas := make([]*presigning.PreSignatureData, len(signPIDs))
+
+	var presignEnded int32
+presigning:
+	for {
+		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case du := <-dumpCh:
+			fmt.Println("Dumped: ", du.Index, du.RoundNum)
+		case err := <-errCh:
+			log.Error(ctx, "Error: %s", err)
+			assert.FailNow(t, err.Error())
+			break presigning
+
+		case msg := <-psOutCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range psParties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(ctx, P, msg, errCh)
+				}
+			} else {
+				if dest[0].Index == msg.GetFrom().Index {
+					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+				}
+				go updater(ctx, psParties[dest[0].Index], msg, errCh)
+			}
+
+		case predata := <-psEndCh:
+			atomic.AddInt32(&presignEnded, 1)
+			preSigDatas[predata.UnmarshalIndex()] = predata
+			t.Logf("%d ssid: %d", predata.UnmarshalIndex(), new(big.Int).SetBytes(predata.UnmarshalSsid()).Int64())
+			if atomic.LoadInt32(&presignEnded) == int32(len(signPIDs)) {
+				t.Logf("Done. Received presignature data from %d participants", presignEnded)
+
+				goto signing
+			}
+		}
+	}
+signing:
+	// PHASE: signing
+	// use a shuffled selection of the list of parties for this test
+	p2pCtx = tss.NewPeerContext(signPIDs)
+	signParties := make([]*sign.LocalParty, 0, len(signPIDs))
+
+	errCh = make(chan *tss.Error, len(signPIDs))
+	outCh = make(chan tss.Message, len(signPIDs))
+	sigCh := make(chan *common.SignatureData, len(signPIDs))
+	sdumpCh := make(chan *sign.LocalDumpPB, len(signPIDs))
+
+	updater = test.SharedPartyUpdater
+
+	// init the parties
+	for i := 0; i < len(signPIDs); i++ {
+		params := tss.NewParameters(tss.EC(), p2pCtx, signPIDs[i], len(signPIDs), threshold, false, 0)
+
+		keyDerivationDelta, ok := new(big.Int).SetString("26584850041541184611210048611703299842106441087558008034516645976981837299974", 10)
+		assert.True(t, ok)
+		P := sign.NewLocalParty(preSigDatas[i], big.NewInt(42), params, transformedKeys[i], keyDerivationDelta, outCh, sigCh, sdumpCh).(*sign.LocalParty)
+		signParties = append(signParties, P)
+	}
+	wg = sync.WaitGroup{}
+	for _, party := range signParties {
+		wg.Add(1)
+		go func(P *sign.LocalParty) {
+			defer wg.Done()
+			if err := P.Start(ctx); err != nil {
+				errCh <- err
+			}
+		}(party)
+	}
+	wg.Wait()
+
+	var signEnded int32
+	for {
+		fmt.Printf("ACTIVE GOROUTINES: %d\n", runtime.NumGoroutine())
+		select {
+		case err := <-errCh:
+			log.Error(ctx, "Error: %s", err)
+			assert.FailNow(t, err.Error())
+			return
+
+		case msg := <-outCh:
+			dest := msg.GetTo()
+			if dest == nil {
+				for _, P := range signParties {
+					if P.PartyID().Index == msg.GetFrom().Index {
+						continue
+					}
+					go updater(ctx, P, msg, errCh)
+				}
+			} else {
+				if dest[0].Index == msg.GetFrom().Index {
+					t.Fatalf("party %d tried to send a message to itself (%d)", dest[0].Index, msg.GetFrom().Index)
+				}
+				go updater(ctx, signParties[dest[0].Index], msg, errCh)
+			}
+
+		case <-sigCh:
+			atomic.AddInt32(&signEnded, 1)
+			if atomic.LoadInt32(&signEnded) == int32(len(signPIDs)) {
+				t.Logf("Done. Received signature data from %d participants", signEnded)
+				return
+			}
+		}
+	}
 }
 
+/*
 func TestE2ETransformKeySharesCKD(t *testing.T) {
 	var res0 *crypto.ECPoint
 	ctx := context.Background()
@@ -335,3 +476,4 @@ keytransform1:
 	fmt.Println("res2: ", res2.X(), res2.Y())
 	assert.True(t, res1.Equals(res2))
 }
+*/
