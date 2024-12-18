@@ -23,7 +23,7 @@ func (round *round5) Start(ctx context.Context) *tss.Error {
 	_, span := tracer.StartWithFuncSpan(ctx)
 	defer span.End()
 
-	round.number = 4
+	round.number = 5
 	round.started = true
 	round.resetOK()
 

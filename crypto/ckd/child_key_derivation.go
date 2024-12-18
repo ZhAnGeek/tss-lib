@@ -23,7 +23,7 @@ import (
 	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"github.com/btcsuite/btcd/btcec/v2"
-	"github.com/btcsuite/btcd/btcutil/base58"
+	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 )
 

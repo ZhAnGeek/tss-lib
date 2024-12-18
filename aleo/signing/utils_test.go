@@ -30,7 +30,7 @@ func TestComputeChallenge(t *testing.T) {
 	_prSigy, _ := new(big.Int).SetString("3545406330044058190785473621322141320079676276854717810727910148147922475667", 10)
 	prSig, _ := crypto.NewECPoint(ec, _prSigx, _prSigy)
 
-	signInputsStr := `{"signer":"aleo1mhtp5enrhgx2za9m09eg5pk4a463fp6ujs8rrmnxv98k7eq9yvpqv0xn66","function_id":"16971ebf5dbe0bc0521b080ae7b00fdf4eb358156d4ef1157fe65e4f2d432209","is_root":"false","inputs":[{"fields":["0680d1bdad95b97d85b5bdd5b9d16902d0000830040000000000000000000000","0000000001000000000000000000000000000000000000000000000000000000"],"index":0,"input_type":"constant"},{"fields":["0680d1bdad95b97d85b5bdd5b9d16902d0000830040000000000000000000000","0000000001000000000000000000000000000000000000000000000000000000"],"index":1,"input_type":"public"},{"fields":["bbad35ccc6741942e976f3e4140daadbeb280eb9281d62dccdc29edec80a4604","f0020000d0bdad95b97d85b5bdd5b9d1050310c010000000000000c00109580e","d538035a887f2bd032612b90779609c59f9c525faee2ecf0fabd479400000000"],"index":2,"input_type":"external_record"}]}`
+	signInputsStr := `{"signer":"aleo1mhtp5enrhgx2za9m09eg5pk4a463fp6ujs8rrmnxv98k7eq9yvpqv0xn66","function_id":"16971ebf5dbe0bc0521b080ae7b00fdf4eb358156d4ef1157fe65e4f2d432209","is_root":false,"inputs":[{"fields":["0680d1bdad95b97d85b5bdd5b9d16902d0000830040000000000000000000000","0000000001000000000000000000000000000000000000000000000000000000"],"index":0,"input_type":"constant"},{"fields":["0680d1bdad95b97d85b5bdd5b9d16902d0000830040000000000000000000000","0000000001000000000000000000000000000000000000000000000000000000"],"index":1,"input_type":"public"},{"fields":["bbad35ccc6741942e976f3e4140daadbeb280eb9281d62dccdc29edec80a4604","f0020000d0bdad95b97d85b5bdd5b9d1050310c010000000000000c00109580e","d538035a887f2bd032612b90779609c59f9c525faee2ecf0fabd479400000000"],"index":2,"input_type":"external_record"}]}`
 	var signInputs RInputs
 	err := json.Unmarshal([]byte(signInputsStr), &signInputs)
 	assert.NoError(t, err)
@@ -54,4 +54,23 @@ func TestToFields(t *testing.T) {
 	inputs := []string{"60018bbdb5a99dbea1adbdab9d8b96400b00100c20000000000000000000000000000008"}
 	ret := toFields(inputs[0])
 	fmt.Println("ret:", ret)
+}
+
+func TestToAddress(t *testing.T) {
+	ec := tss.EdBls12377()
+	x, _ := new(big.Int).SetString("966502560882496505477033789750380321143849446189826487120017086806551615197", 10)
+	y, _ := new(big.Int).SetString("5987688235928665266882163321979084778662874839083753556735349867846368433782", 10)
+	p, err := crypto.NewECPoint(ec, x, y)
+	assert.NoError(t, err)
+	addr, err := ToAddress(p)
+	assert.NoError(t, err)
+	assert.Equal(t, "aleo1mhtp5enrhgx2za9m09eg5pk4a463fp6ujs8rrmnxv98k7eq9yvpqv0xn66", addr)
+
+	x, _ = new(big.Int).SetString("4226122011757053937871959034729048222687601818542835418135072409080620458124", 10)
+	y, _ = new(big.Int).SetString("7337717904611926698582241552445855069717681336139157472110427007390158089384", 10)
+	p, err = crypto.NewECPoint(ec, x, y)
+	assert.NoError(t, err)
+	addr, err = ToAddress(p)
+	assert.NoError(t, err)
+	assert.Equal(t, "aleo13sswzun3wyf36xpvwv7skfhg4r9fp8hkp08y36qyt47fs70x2uystjyswu", addr)
 }

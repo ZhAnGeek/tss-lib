@@ -25,7 +25,7 @@ type InputStr struct {
 type RInputsStr struct {
 	Signer     string
 	FunctionID string `json:"function_id"`
-	IsRoot     string `json:"is_root"`
+	IsRoot     bool   `json:"is_root"`
 	Inputs     []InputStr
 }
 
@@ -43,7 +43,9 @@ type RInputs struct {
 }
 
 func (m *RInputs) UnmarshalJSON(data []byte) error {
-	var res RInputsStr
+	res := RInputsStr{
+		IsRoot: true, // defaults to true
+	}
 	err := json.Unmarshal(data, &res)
 	if err != nil {
 		return err
@@ -52,15 +54,7 @@ func (m *RInputs) UnmarshalJSON(data []byte) error {
 	v, err := hex.DecodeString(res.FunctionID)
 	val := new(big.Int).SetBytes(common.ReverseBytes(v))
 	m.FunctionID = val
-	if res.IsRoot == "" {
-		m.IsRoot = true // set default "true"
-	} else {
-		if res.IsRoot == "false" {
-			m.IsRoot = false
-		} else {
-			m.IsRoot = true
-		}
-	}
+	m.IsRoot = res.IsRoot
 
 	m.Inputs = make([]Input, len(res.Inputs))
 	for i := range res.Inputs {

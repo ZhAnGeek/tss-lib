@@ -21,7 +21,7 @@ import (
 	"github.com/Safulet/tss-lib-private/v2/crypto"
 	"github.com/Safulet/tss-lib-private/v2/crypto/signatures/mina"
 	"github.com/Safulet/tss-lib-private/v2/tss"
-	"github.com/btcsuite/btcd/btcutil/bech32"
+	"github.com/tnakagawa/goref/bech32m"
 )
 
 func ComputeRecordsH(signInputs RInputs) []*crypto.ECPoint {
@@ -135,21 +135,18 @@ func ToAddress(addressPoint *crypto.ECPoint) (string, error) {
 	for i := 0; i < totalBlocks; i++ {
 		start := i * 5
 		end := start + 5
-		if end > 256 {
-			end = 256
-		}
 		var v uint8
 		for j := start; j < end; j++ {
-			v = (v << 1) + bitVec.Element(j)
+			ele := uint8(0)
+			if j < 256 {
+				ele = bitVec.Element(j)
+			}
+			v = (v << 1) + ele
 		}
 		ret[i] = v
 	}
 
-	res, err := bech32.EncodeM("aleo", ret)
-	if err != nil {
-		return "", err
-	}
-
+	res := bech32m.Encode("aleo", ret, bech32m.Bech32m)
 	return res, nil
 
 }
