@@ -10,14 +10,14 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
-	zkpaffg "github.com/Safulet/tss-lib-private/crypto/zkp/affg"
-	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
-	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
-	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	cmt "github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	zkpaffg "github.com/Safulet/tss-lib-private/v2/crypto/zkp/affg"
+	zkpenc "github.com/Safulet/tss-lib-private/v2/crypto/zkp/enc"
+	zkplogstar "github.com/Safulet/tss-lib-private/v2/crypto/zkp/logstar"
+	zkpsch "github.com/Safulet/tss-lib-private/v2/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into kcdsa-signing.pb.go

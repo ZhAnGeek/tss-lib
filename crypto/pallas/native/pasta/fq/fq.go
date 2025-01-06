@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta"
 )
 
 type Fq fiat_pasta_fq_montgomery_domain_field_element

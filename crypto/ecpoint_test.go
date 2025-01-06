@@ -16,9 +16,9 @@ import (
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
-	"github.com/Safulet/tss-lib-private/tss"
+	. "github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/edwards25519"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func TestFlattenECPoints(t *testing.T) {
@@ -190,4 +190,43 @@ func TestInfinityPoint(t *testing.T) {
 		assert.Nil(t, O2.X(), "infinity point coordinate should be nil")
 		assert.Nil(t, O2.Y(), "infinity point coordinate should be nil")
 	}
+}
+
+func OldJsonMarshal(p *ECPoint) ([]byte, error) {
+	return json.Marshal(&struct {
+		Coords [2]*big.Int
+	}{
+		Coords: [2]*big.Int{p.X(), p.Y()},
+	})
+}
+
+func TestJsonUnmarshalPoint(t *testing.T) {
+	ec := tss.Curve25519()
+	point := ScalarBaseMult(ec, big.NewInt(667667))
+	bzs, err := OldJsonMarshal(point)
+	assert.NoError(t, err)
+	var point2 ECPoint
+	err = json.Unmarshal(bzs, &point2)
+	assert.Error(t, err)
+
+	ec = tss.P256()
+	point = ScalarBaseMult(ec, big.NewInt(667667))
+	bzs, err = OldJsonMarshal(point)
+	assert.NoError(t, err)
+	err = json.Unmarshal(bzs, &point2)
+	assert.NoError(t, err)
+
+	ec = tss.S256()
+	point = ScalarBaseMult(ec, big.NewInt(667667))
+	bzs, err = OldJsonMarshal(point)
+	assert.NoError(t, err)
+	err = json.Unmarshal(bzs, &point2)
+	assert.NoError(t, err)
+
+	ec = tss.Edwards()
+	point = ScalarBaseMult(ec, big.NewInt(667667))
+	bzs, err = OldJsonMarshal(point)
+	assert.NoError(t, err)
+	err = json.Unmarshal(bzs, &point2)
+	assert.NoError(t, err)
 }

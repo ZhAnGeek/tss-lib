@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta"
 )
 
 // FieldLimbs is the number of limbs needed to represent this field

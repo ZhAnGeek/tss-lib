@@ -13,13 +13,15 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
-	kcdsa_keygen "github.com/Safulet/tss-lib-private/kcdsa/keygen"
-	schnorr_keygen "github.com/Safulet/tss-lib-private/schnorr/keygen"
+	aleo_keygen "github.com/Safulet/tss-lib-private/v2/aleo/keygen"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	kcdsa_keygen "github.com/Safulet/tss-lib-private/v2/kcdsa/keygen"
+	schnorr_keygen "github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
+
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/decred/dcrd/dcrec/edwards/v2"
 )
@@ -168,4 +170,43 @@ func RestoreSchnorrPrivate(ec elliptic.Curve, threshold int, keys []schnorr_keyg
 	}
 
 	return NewRestoredPrivateKey(ec, sk), nil
+}
+
+func RestoreAleoPrivate(ec elliptic.Curve, threshold int, keys []aleo_keygen.LocalPartySaveData) (*RestoredPrivateKey, *RestoredPrivateKey, error) {
+	var skSigshares vss.Shares
+	for _, key := range keys {
+		skSigshares = append(skSigshares, &vss.Share{
+			Threshold: threshold,
+			ID:        key.ShareID,
+			Share:     key.SkSigShare,
+		})
+	}
+	skSig, err := skSigshares.ReConstruct(ec)
+	if err != nil {
+		return nil, nil, errors.New("reconstruct should not fail")
+	}
+
+	PkSig := crypto.ScalarBaseMult(ec, skSig)
+	if !PkSig.Equals(keys[0].PkSig) {
+		return nil, nil, errors.New("pubkey derived from skSig should equal pk")
+	}
+
+	var rSigshares vss.Shares
+	for _, key := range keys {
+		rSigshares = append(rSigshares, &vss.Share{
+			Threshold: threshold,
+			ID:        key.ShareID,
+			Share:     key.RSigShare,
+		})
+	}
+	rSig, err := rSigshares.ReConstruct(ec)
+	if err != nil {
+		return nil, nil, errors.New("reconstruct should not fail")
+	}
+
+	PrSig := crypto.ScalarBaseMult(ec, rSig)
+	if !PrSig.Equals(keys[0].PrSig) {
+		return nil, nil, errors.New("pubkey derived from rSig should equal pk")
+	}
+	return NewRestoredPrivateKey(ec, skSig), NewRestoredPrivateKey(ec, rSig), nil
 }

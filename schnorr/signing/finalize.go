@@ -10,13 +10,13 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/schnorr/signing/btc"
-	"github.com/Safulet/tss-lib-private/schnorr/signing/mina"
-	"github.com/Safulet/tss-lib-private/schnorr/signing/zil"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/schnorr/signing/btc"
+	"github.com/Safulet/tss-lib-private/v2/schnorr/signing/mina"
+	"github.com/Safulet/tss-lib-private/v2/schnorr/signing/zil"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func getSignature(r []byte, s []byte) []byte {

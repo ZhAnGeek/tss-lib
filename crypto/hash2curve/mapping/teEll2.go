@@ -3,7 +3,7 @@ package mapping
 import (
 	"fmt"
 
-	"github.com/Safulet/tss-lib-private/crypto/hash2curve/curve"
+	"github.com/Safulet/tss-lib-private/v2/crypto/hash2curve/curve"
 	C "github.com/armfazh/tozan-ecc/curve"
 	GF "github.com/armfazh/tozan-ecc/field"
 )
@@ -23,6 +23,9 @@ func newTEEll2(e C.T) MapToCurve {
 	case curve.Edwards25519:
 		rat = curve.FromTe2Mt25519()
 		ell2Map = newMTEll2(rat.Codomain().(C.M))
+	case curve.EdBLS12377:
+		rat = e.ToWeierstrassC()
+		ell2Map = newWCEll2s(rat.Codomain().(C.WC), e)
 	default:
 		rat = e.ToWeierstrassC()
 		ell2Map = newWCEll2(rat.Codomain().(C.WC))

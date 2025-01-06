@@ -10,10 +10,10 @@ import (
 	"crypto/elliptic"
 	ed "filippo.io/edwards25519"
 	"fmt"
-	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
+	"github.com/Safulet/tss-lib-private/v2/crypto/edwards25519"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
+	"github.com/Safulet/tss-lib-private/v2/common"
 )
 
 // referred from https://sagecell.sagemath.org/?q=czvfze

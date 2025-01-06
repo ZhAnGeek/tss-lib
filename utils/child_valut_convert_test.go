@@ -13,17 +13,98 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/ckd"
-	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
-	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
-	schnorr_keygen "github.com/Safulet/tss-lib-private/schnorr/keygen"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/ckd"
+	"github.com/Safulet/tss-lib-private/v2/crypto/edwards25519"
+	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	schnorr_keygen "github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestConvertECDSAKeyShare(t *testing.T) {
+	ec := tss.S256()
+
+	keys, _, err := ecdsa_keygen.LoadKeygenTestFixturesRandomSet(test.TestThreshold+1, test.TestParticipants)
+	assert.NoError(t, err, "should load keygen fixtures")
+	assert.Equal(t, test.TestThreshold+1, len(keys))
+	restoredPriv, err := RestoreECDSAPrivateKey(ec, test.TestThreshold, keys)
+	assert.NoError(t, err)
+	assert.NotNil(t, restoredPriv)
+	fmt.Println("restoredPriv", restoredPriv.sk.String())
+
+	privKey, err := restoredPriv.ToECDSAPriv()
+	assert.NoError(t, err)
+	assert.NotNil(t, privKey)
+
+	rawPub := keys[0].ECDSAPub.ToECDSAPubKey()
+	rawPub.Curve = ec
+	assert.True(t, rawPub.IsOnCurve(rawPub.X, rawPub.Y))
+	priPub := &privKey.PublicKey
+	priPub.Curve = ec
+	assert.True(t, priPub.IsOnCurve(priPub.X, priPub.Y))
+
+	assert.True(t, rawPub.Equal(priPub))
+
+	for i := 0; i < len(keys); i++ {
+		result, err := ApplyCkdXAndTweakToOneECDSAKeySave(ec, &keys[i], big.NewInt(123), []byte{1, 2, 3})
+		assert.NoError(t, err)
+		keys[i] = *result
+	}
+
+	restoredPriv, err = RestoreECDSAPrivateKey(ec, test.TestThreshold, keys)
+	assert.NoError(t, err)
+	assert.NotNil(t, restoredPriv)
+	fmt.Println("restoredPriv", restoredPriv.sk.String())
+
+	refPK := crypto.ScalarBaseMult(ec, restoredPriv.sk)
+	assert.True(t, refPK.Equals(keys[0].ECDSAPub))
+	fmt.Println("refPK:", refPK.X().String())
+	fmt.Println("actPK:", keys[0].ECDSAPub.X().String())
+
+}
+
+func TestConvertEDDSAKeyShare(t *testing.T) {
+	ec := tss.Edwards()
+
+	keys, _, err := eddsa_keygen.LoadKeygenTestFixturesRandomSet(test.TestThreshold+1, test.TestParticipants)
+	assert.NoError(t, err, "should load keygen fixtures")
+	assert.Equal(t, test.TestThreshold+1, len(keys))
+	restoredPriv, err := RestoreEDDSAPrivateKey(ec, test.TestThreshold, keys)
+	assert.NoError(t, err)
+	assert.NotNil(t, restoredPriv)
+	fmt.Println("restoredPriv", restoredPriv.sk.String())
+
+	privKey, err := restoredPriv.ToEdwardsPriv()
+	assert.NoError(t, err)
+	assert.NotNil(t, privKey)
+
+	rawPub := keys[0].EDDSAPub.ToECDSAPubKey()
+	rawPub.Curve = ec
+	assert.True(t, rawPub.IsOnCurve(rawPub.X, rawPub.Y))
+	priPub := privKey.PubKey().ToECDSA()
+	priPub.Curve = ec
+	assert.True(t, priPub.IsOnCurve(priPub.X, priPub.Y))
+	assert.True(t, rawPub.Equal(priPub))
+
+	for i := 0; i < len(keys); i++ {
+		result, err := ApplyCkdToOneEDDSAKeySave(ec, &keys[i], big.NewInt(123))
+		assert.NoError(t, err)
+		keys[i] = *result
+	}
+
+	restoredPriv, err = RestoreEDDSAPrivateKey(ec, test.TestThreshold, keys)
+	assert.NoError(t, err)
+	assert.NotNil(t, restoredPriv)
+	fmt.Println("restoredPriv", restoredPriv.sk.String())
+	refPK := crypto.ScalarBaseMult(ec, restoredPriv.sk)
+	assert.True(t, refPK.Equals(keys[0].PubKey))
+	fmt.Println("refPK:", refPK.X().String())
+	fmt.Println("actPK:", keys[0].PubKey.X().String())
+}
 
 func TestConvertECDSAKeyStore(t *testing.T) {
 	ec := tss.S256()
@@ -49,13 +130,19 @@ func TestConvertECDSAKeyStore(t *testing.T) {
 
 	assert.True(t, rawPub.Equal(priPub))
 
+	// test Ks too big
+	for i := range keys {
+		for j := range keys[i].Ks {
+			keys[i].Ks[j] = new(big.Int).Add(keys[i].Ks[j], ec.Params().N)
+		}
+		keys[i].ShareID = new(big.Int).Add(keys[i].ShareID, ec.Params().N)
+	}
 	keys, err = ApplyDeltaToECDSALocalPartySaveData(ec, test.TestThreshold, keys, big.NewInt(999))
 	assert.NoError(t, err)
 	restoredPriv, err = RestoreECDSAPrivateKey(ec, test.TestThreshold, keys)
 	assert.NoError(t, err)
 	assert.NotNil(t, restoredPriv)
 	fmt.Println("restoredPriv", restoredPriv.sk.String())
-
 }
 
 func TestConvertEDDSAKeyStore(t *testing.T) {
@@ -104,6 +191,13 @@ func TestConvertEDDSAKeyStore(t *testing.T) {
 	fmt.Println("derived cPK.X:", childExtKey.PublicKey.X())
 	fmt.Println("derived cPK.Y:", childExtKey.PublicKey.Y())
 
+	// test Ks too big
+	for i := range keys {
+		for j := range keys[i].Ks {
+			keys[i].Ks[j] = new(big.Int).Add(keys[i].Ks[j], ec.Params().N)
+		}
+		keys[i].ShareID = new(big.Int).Add(keys[i].ShareID, ec.Params().N)
+	}
 	keys, err = ApplyDeltaToEDDSALocalPartySaveData(ec, test.TestThreshold, keys, delta)
 	assert.NoError(t, err)
 	restoredPriv, err = RestoreEDDSAPrivateKey(ec, test.TestThreshold, keys)
@@ -143,6 +237,13 @@ func TestConvertSchnorrS256KeyStore(t *testing.T) {
 	assert.True(t, priPub.IsOnCurve(priPub.X, priPub.Y))
 	assert.True(t, rawPub.Equal(priPub))
 
+	// test Ks too big
+	for i := range keys {
+		for j := range keys[i].Ks {
+			keys[i].Ks[j] = new(big.Int).Add(keys[i].Ks[j], ec.Params().N)
+		}
+		keys[i].ShareID = new(big.Int).Add(keys[i].ShareID, ec.Params().N)
+	}
 	keys, err = ApplyDeltaToSchnorrLocalPartySaveData(ec, test.TestThreshold, keys, big.NewInt(999))
 	assert.NoError(t, err)
 	restoredPriv, err = RestoreSchnorrPrivate(ec, test.TestThreshold, keys)

@@ -5,7 +5,7 @@
 // file LICENSE at the root of the source code distribution tree.
 
 syntax = "proto3";
-package binance.tsslib.ecdsa.postkeygen;
+package binance.tsslib.v2.ecdsa.postkeygen;
 option go_package = "ecdsa/postkeygen";
 
 message KGRound1MessageAck {

@@ -13,9 +13,9 @@ import (
 	"errors"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func (round *finalization6) VerifySig(ctx context.Context, s *big.Int, e *big.Int, m []byte, pubkey *crypto.ECPoint) bool {
@@ -38,7 +38,7 @@ func VerifySig(ec elliptic.Curve, _ context.Context, s *big.Int, e *big.Int, m [
 	g := crypto.NewECPointNoCurveCheck(ec, ec.Params().Gx, ec.Params().Gy)
 	eG := g.ScalarMult(e)
 	// if y coordinate of pk is even, then eG should negate
-	needsNeg := pubkey.Y().Bit(0) == 0
+	needsNeg := pubkey.Y().Bit(0) != 1
 	if needsNeg {
 		Y2 := new(big.Int).Sub(ec.Params().P, eG.Y())
 		eG2, err := crypto.NewECPoint(ec, eG.X(), Y2)

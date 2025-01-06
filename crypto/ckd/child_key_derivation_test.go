@@ -14,11 +14,14 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	. "github.com/Safulet/tss-lib-private/crypto/ckd"
-	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	. "github.com/Safulet/tss-lib-private/v2/crypto/ckd"
+	"github.com/Safulet/tss-lib-private/v2/crypto/edwards25519"
+	"github.com/Safulet/tss-lib-private/v2/tss"
+
+	// "github.com/btcsuite/btcd/txscript"
+
 	"github.com/btcsuite/btcd/btcec/v2"
 	"github.com/stretchr/testify/assert"
 )
@@ -236,4 +239,101 @@ func EddsaAddPrivKeyScalar(privKey []byte, delta *big.Int) ([]byte, error) {
 	newPrivKey = new(big.Int).Mod(newPrivKey, tss.Edwards().Params().N)
 
 	return newPrivKey.Bytes(), nil
+}
+
+func TestTweak(t *testing.T) {
+	ec := tss.S256()
+	x, ok := new(big.Int).SetString("1828307302012674931449945392197267086825110449075201724319664289190566180070", 10)
+	assert.True(t, ok)
+	y, ok := new(big.Int).SetString("108967561010032683365600735245754855617998807828220035994730941308935449407367", 10)
+	P, err := crypto.NewECPoint(ec, x, y)
+	assert.NoError(t, err)
+	fmt.Println("y:", P.Y().String())
+	// the Schnorr type usage, only consider even y coordinate in public key
+	// if y.Bit(0) != 0 {
+	// 	P = P.Neg()
+	// 	fmt.Println("neg y:", P.Y().String())
+	// }
+
+	chaincode, err := hex.DecodeString("d8b005bf35725076afb01783f68ebc674155f5db5ac58b88785557dea2beb856")
+	assert.NoError(t, err)
+	extPK := &ExtendedKey{
+		PublicKey:  *P,
+		Depth:      0,
+		ChildIndex: 0,
+		ChainCode:  chaincode,
+		ParentFP:   []byte{0x00, 0x00, 0x00, 0x00},
+		// Version:    []byte{0x4, 0x88, 0xad, 0xe4},
+	}
+	ctx := context.Background()
+	cDelta, extCPK, err := DeriveChildKeyFromHierarchy(ctx, []uint32{86, 0, 0, 0, 0}, extPK, ec.Params().N, ec)
+	assert.NoError(t, err)
+	fmt.Println("ckd delta:", cDelta.String())
+	cPK := &extCPK.PublicKey
+	cPKBzs := SerializeCompressed(cPK.X(), cPK.Y())
+	fmt.Println("(ckd)        cPK:", hex.EncodeToString(cPKBzs))
+
+	var scriptRoot []byte
+	tDelta, dPK, err := DeriveTweakedKey(cPK, big.NewInt(0), scriptRoot)
+	assert.NoError(t, err)
+	dPKBzs := SerializeCompressed(dPK.X(), dPK.Y())
+	fmt.Println("(ckd+tweak)  dPK:", hex.EncodeToString(dPKBzs))
+	dPK2, err := TweakedPublickKeyFromRootKey(P, cDelta, tDelta)
+	assert.NoError(t, err)
+	assert.NotNil(t, dPK2)
+	assert.True(t, dPK2.Equals(dPK))
+
+	tDelta, dPK, err = DeriveTweakedKey(&extPK.PublicKey, cDelta, scriptRoot)
+	assert.NoError(t, err)
+	dPKBzs = SerializeCompressed(dPK.X(), dPK.Y())
+	fmt.Println("(ckd+tweak)  dPK:", hex.EncodeToString(dPKBzs))
+	dPK2, err = TweakedPublickKeyFromRootKey(&extPK.PublicKey, cDelta, tDelta)
+	assert.NoError(t, err)
+	assert.NotNil(t, dPK2)
+	assert.True(t, dPK2.Equals(dPK))
+
+	// btcCPK, err := btcec.ParsePubKey(cPKBzs)
+	// assert.NoError(t, err)
+	// outputKey := txscript.ComputeTaprootOutputKey(btcCPK, scriptRoot)
+	// fmt.Println("   from btcec PK:", hex.EncodeToString(outputKey.SerializeCompressed()))
+}
+
+func TestPallas(t *testing.T) {
+	ctx := context.Background()
+	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+	privKeyScaler := big.NewInt(667)
+
+	pkExt, err := NewExtendedKeyFromString(testVec1MasterPubKey, tss.S256())
+	assert.NoError(t, err)
+
+	ec := tss.Pallas()
+	pkNew, err := crypto.NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
+	pkNew = pkNew.ScalarMult(privKeyScaler)
+	pkExt.PublicKey = *pkNew
+
+	path := []uint32{0, 1, 2, 2, 3, 5, 6, 7, 1, 0}
+	delta, childExtKey, err := DeriveChildKeyFromHierarchy(ctx, path, pkExt, ec.Params().N, ec)
+	assert.NoError(t, err)
+	assert.False(t, delta.Uint64() == 0, "delta is not zero")
+	assert.True(t, childExtKey.PublicKey.IsOnCurve())
+}
+
+func TestEdBls12377(t *testing.T) {
+	ctx := context.Background()
+	testVec1MasterPubKey := "xpub661MyMwAqRbcFtXgS5sYJABqqG9YLmC4Q1Rdap9gSE8NqtwybGhePY2gZ29ESFjqJoCu1Rupje8YtGqsefD265TMg7usUDFdp6W1EGMcet8"
+	privKeyScaler := big.NewInt(667)
+
+	pkExt, err := NewExtendedKeyFromString(testVec1MasterPubKey, tss.S256())
+	assert.NoError(t, err)
+
+	ec := tss.EdBls12377()
+	pkNew, err := crypto.NewECPoint(ec, ec.Params().Gx, ec.Params().Gy)
+	pkNew = pkNew.ScalarMult(privKeyScaler)
+	pkExt.PublicKey = *pkNew
+
+	path := []uint32{0, 1, 2, 2, 3, 5, 6, 7, 1, 0}
+	delta, childExtKey, err := DeriveChildKeyFromHierarchy(ctx, path, pkExt, ec.Params().N, ec)
+	assert.NoError(t, err)
+	assert.False(t, delta.Uint64() == 0, "delta is not zero")
+	assert.True(t, childExtKey.PublicKey.IsOnCurve())
 }

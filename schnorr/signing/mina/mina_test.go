@@ -11,13 +11,13 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fq"
-	"github.com/Safulet/tss-lib-private/crypto/signatures/mina"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fq"
+	"github.com/Safulet/tss-lib-private/v2/crypto/signatures/mina"
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 func TestMinaSign(t *testing.T) {

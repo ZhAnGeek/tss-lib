@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 
-	_const "github.com/Safulet/tss-lib-private/const"
+	_const "github.com/Safulet/tss-lib-private/v2/const"
 )
 
 var reFuncRemove = regexp.MustCompile(`[*()]`)

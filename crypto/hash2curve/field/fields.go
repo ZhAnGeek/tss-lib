@@ -11,6 +11,7 @@ const (
 	P256K1     ID = "2^256-2^32-977"
 	BLS12381G1 ID = "BLS12381G1"
 	BLS12381G2 ID = "BLS12381G2"
+	EDBLS12377 ID = "EDBLS12377"
 )
 
 // Get returns an implementation of a field corresponding to the identifier.
@@ -26,6 +27,8 @@ func (id ID) Get() F.Field {
 		return F.NewFp(string(id), "0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab")
 	case BLS12381G2:
 		return F.NewFp2(string(id), "0x1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab")
+	case EDBLS12377:
+		return F.NewFp(string(id), "8444461749428370424248824938781546531375899335154063827935233455917409239041")
 	default:
 		panic("field not supported")
 	}

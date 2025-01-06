@@ -13,12 +13,12 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/commitments"
-	zkpenc "github.com/Safulet/tss-lib-private/crypto/zkp/enc"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	zkpenc "github.com/Safulet/tss-lib-private/v2/crypto/zkp/enc"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/trace"
@@ -126,9 +126,27 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(fmt.Errorf("paillier encryption failed"), Pi)
 	}
 
+	round.temp.pubKeyDelta = round.key.PubKey
+	if round.temp.KeyDerivationDelta != nil {
+		KeyDerivationDeltaInverse := modN.ModInverse(round.temp.KeyDerivationDelta)
+		round.temp.pubKeyDelta = round.key.PubKey.ScalarMult(KeyDerivationDeltaInverse)
+	}
+
 	wi := round.temp.wi
 	if round.temp.KeyDerivationDelta != nil {
+		needsNegPubKey := round.key.PubKey.Y().Bit(0) != 1
+		if needsNegPubKey {
+			wi2 := new(big.Int).Sub(round.EC().Params().N, round.temp.wi)
+			round.temp.wi = new(big.Int).Mod(wi2, round.EC().Params().N)
+		}
+
 		wi = modN.Mul(round.temp.wi, round.temp.KeyDerivationDelta)
+		needsNegPubKeyDelta := round.temp.pubKeyDelta.Y().Bit(0) != 1
+		if needsNegPubKeyDelta {
+			wi2 := new(big.Int).Sub(round.EC().Params().N, wi)
+			wi = new(big.Int).Mod(wi2, round.EC().Params().N)
+			round.temp.wi = wi
+		}
 	}
 	X, XNonce, err := round.key.PaillierSK.EncryptAndReturnRandomness(wi)
 	if err != nil {
@@ -141,12 +159,6 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 	round.temp.XNonce = XNonce
 	round.temp.X = X
 	round.temp.XShare = wi
-
-	round.temp.pubKeyDelta = round.key.PubKey
-	if round.temp.KeyDerivationDelta != nil {
-		KeyDerivationDeltaInverse := modN.ModInverse(round.temp.KeyDerivationDelta)
-		round.temp.pubKeyDelta = round.key.PubKey.ScalarMult(KeyDerivationDeltaInverse)
-	}
 
 	r3msg1 := NewSignRound3Message1(round.PartyID(), K, X)
 	round.out <- r3msg1

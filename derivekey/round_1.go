@@ -13,16 +13,16 @@ import (
 	"fmt"
 	"math/big"
 
-	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
 	starkcurve "github.com/consensys/gnark-crypto/ecc/stark-curve"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/hash2curve"
-	zkpeqlog "github.com/Safulet/tss-lib-private/crypto/zkp/eqlog"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/hash2curve"
+	zkpeqlog "github.com/Safulet/tss-lib-private/v2/crypto/zkp/eqlog"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 const (
@@ -43,6 +43,13 @@ func getHashToCurveInstance(ec elliptic.Curve) (hash2curve.HashToPoint, error) {
 	if tss.SameCurve(ec, tss.Edwards()) {
 		dst := EDWARDS_HTG_DST
 		hashToCurve, err = hash2curve.Edwards25519_XMDSHA512_ELL2_RO_.Get([]byte(dst))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if tss.SameCurve(ec, tss.EdBls12377()) {
+		dst := EDBLS12377_HTG_DST
+		hashToCurve, err = hash2curve.EdBLS12377_XMDSHA512_ELL2_RO_.Get([]byte(dst))
 		if err != nil {
 			return nil, err
 		}

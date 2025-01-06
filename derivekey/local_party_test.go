@@ -19,15 +19,15 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/bls12381"
-	"github.com/Safulet/tss-lib-private/crypto/hash2curve"
-	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	"github.com/Safulet/tss-lib-private/log"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/v2/crypto/hash2curve"
+	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 	starkcurve "github.com/consensys/gnark-crypto/ecc/stark-curve"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +47,7 @@ const (
 	testFixtureDirFormatStarkNet = "%s/../test/_ecdsa_fixtures_%d_%d/starkcurve"
 )
 
-func setUp(level log.Level) {
+func setUp(level string) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}
@@ -70,6 +70,19 @@ func TestH2C(t *testing.T) {
 	fmt.Println("x:", fmt.Sprintf("0x%x", h2cPx))
 	fmt.Println("y:", fmt.Sprintf("0x%x", h2cPy))
 	_, err = crypto.NewECPoint(tss.S256(), h2cPx, h2cPy)
+	assert.NoError(t, err, "should hash to curve")
+}
+
+func TestH2CEdBLS12377(t *testing.T) {
+	dst := "QUUX-V01-CS02-with-edbls12377_XMD:SHA-512_ELL2_RO_"
+	hashToCurve, err := hash2curve.EdBLS12377_XMDSHA512_ELL2_RO_.Get([]byte(dst))
+	assert.NoError(t, err, "should init h2c")
+	h2cPoint := hashToCurve.Hash([]byte("abc"))
+	h2cPx := h2cPoint.X().Polynomial()[0]
+	h2cPy := h2cPoint.Y().Polynomial()[0]
+	fmt.Println("x:", fmt.Sprintf("0x%x", h2cPx))
+	fmt.Println("y:", fmt.Sprintf("0x%x", h2cPy))
+	_, err = crypto.NewECPoint(tss.EdBls12377(), h2cPx, h2cPy)
 	assert.NoError(t, err, "should hash to curve")
 }
 

@@ -5,16 +5,16 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 	"github.com/stretchr/testify/assert"
 
-	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
-	kcdsa_keygen "github.com/Safulet/tss-lib-private/kcdsa/keygen"
-	schnorr_keygen "github.com/Safulet/tss-lib-private/schnorr/keygen"
+	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	kcdsa_keygen "github.com/Safulet/tss-lib-private/v2/kcdsa/keygen"
+	schnorr_keygen "github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
 )
 
 func TestRestoreEcdsaSK(t *testing.T) {

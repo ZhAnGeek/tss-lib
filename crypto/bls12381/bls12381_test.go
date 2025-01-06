@@ -77,7 +77,6 @@ func TestEncryptAndDecryptSignatureG2Suite(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	m, err = PadToLengthBytesInPlace(m, aes.BlockSize)
 	if err != nil {
 		panic(err)
 	}

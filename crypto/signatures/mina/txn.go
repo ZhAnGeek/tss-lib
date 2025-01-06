@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
 	"github.com/btcsuite/btcutil/base58"
 )
 

@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
 )
 
 type (
@@ -39,7 +39,7 @@ var (
 	one  = big.NewInt(1)
 )
 
-// Check share ids of Shamir's Secret Sharing, return error if duplicate or 0 value found
+// CheckIndexes Check share ids of Shamir's Secret Sharing, return error if duplicate or 0 value found
 func CheckIndexes(ec elliptic.Curve, indexes []*big.Int) ([]*big.Int, error) {
 	visited := make(map[string]struct{})
 	for i, v := range indexes {

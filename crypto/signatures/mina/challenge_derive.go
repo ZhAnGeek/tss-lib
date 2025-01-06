@@ -9,7 +9,7 @@ package mina
 import (
 	"fmt"
 
-	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
 )
 
 type MinaTSchnorrHandler struct{}

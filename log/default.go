@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	_const "github.com/Safulet/tss-lib-private/const"
+	_const "github.com/Safulet/tss-lib-private/v2/const"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -61,7 +61,7 @@ func newDefaultLogger() *defaultLogger {
 	return &defaultLogger{zapLogger: zapLogger}
 }
 
-func (d *defaultLogger) SetLogLevel(level Level) error {
+func (d *defaultLogger) SetLogLevel(level string) error {
 	zapLevel := zapcore.DebugLevel
 	switch level {
 	case DebugLevel:

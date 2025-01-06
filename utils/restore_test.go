@@ -7,15 +7,16 @@
 package utils
 
 import (
+	"fmt"
 	"testing"
 
-	ecdsa_keygen "github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	eddsa_keygen "github.com/Safulet/tss-lib-private/eddsa/keygen"
-	kcdsa_keygen "github.com/Safulet/tss-lib-private/kcdsa/keygen"
-	schnorr_keygen "github.com/Safulet/tss-lib-private/schnorr/keygen"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
-	"github.com/decred/dcrd/dcrec/edwards/v2"
+	aleo_keygen "github.com/Safulet/tss-lib-private/v2/aleo/keygen"
+	ecdsa_keygen "github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	eddsa_keygen "github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	kcdsa_keygen "github.com/Safulet/tss-lib-private/v2/kcdsa/keygen"
+	schnorr_keygen "github.com/Safulet/tss-lib-private/v2/schnorr/keygen"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -44,7 +45,7 @@ func TestRestoreECDSAPrivateKey(t *testing.T) {
 }
 
 func TestRestoreEdwardsPrivateKey(t *testing.T) {
-	ec := edwards.Edwards()
+	ec := tss.Edwards()
 
 	keys, _, err := eddsa_keygen.LoadKeygenTestFixturesRandomSet(test.TestThreshold+1, test.TestParticipants)
 	assert.NoError(t, err, "should load keygen fixtures")
@@ -107,4 +108,19 @@ func TestRestoreSchnorrPallasPrivateKey(t *testing.T) {
 	restoredPriv, err := RestoreSchnorrPrivate(ec, test.TestThreshold, keys)
 	assert.NoError(t, err)
 	assert.NotNil(t, restoredPriv)
+}
+
+func TestRestoreAleoPrivateKey(t *testing.T) {
+	ec := tss.EdBls12377()
+
+	keys, _, err := aleo_keygen.LoadKeygenTestFixturesRandomSet(test.TestThreshold+1, test.TestParticipants)
+	assert.NoError(t, err, "should load keygen fixtures")
+	assert.Equal(t, test.TestThreshold+1, len(keys))
+	skPriv, rPriv, err := RestoreAleoPrivate(ec, test.TestThreshold, keys)
+	assert.NoError(t, err)
+	assert.NotNil(t, skPriv)
+	assert.NotNil(t, rPriv)
+
+	fmt.Println("skSig:", skPriv.sk.String())
+	fmt.Println("rSig:", rPriv.sk.String())
 }

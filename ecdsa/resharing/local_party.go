@@ -11,13 +11,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/crypto"
-	cmt "github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	"github.com/Safulet/tss-lib-private/ecdsa/keygen"
-	"github.com/Safulet/tss-lib-private/log"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	cmt "github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	"github.com/Safulet/tss-lib-private/v2/ecdsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"go.opentelemetry.io/otel/trace"
 )
@@ -87,7 +87,11 @@ func NewLocalParty(
 	oldPartyCount := len(params.OldParties().IDs())
 	subset := key
 	if params.IsOldCommittee() {
-		subset = keygen.BuildLocalSaveDataSubset(key, params.OldParties().IDs())
+		if key.LocalPreParams.Validate() {
+			subset = keygen.BuildLocalSaveDataSubset(key, params.OldParties().IDs())
+		} else {
+			subset = keygen.BuildLocalSaveDataSubsetNoPreparams(key, params.OldParties().IDs())
+		}
 	}
 	p := &LocalParty{
 		BaseParty: new(tss.BaseParty),

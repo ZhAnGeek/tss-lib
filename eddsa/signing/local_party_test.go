@@ -14,16 +14,16 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
 
-	"github.com/Safulet/tss-lib-private/log"
+	"github.com/Safulet/tss-lib-private/v2/log"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/blake2b"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/eddsa/keygen"
-	"github.com/Safulet/tss-lib-private/test"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/eddsa/keygen"
+	"github.com/Safulet/tss-lib-private/v2/test"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 const (
@@ -31,7 +31,7 @@ const (
 	testThreshold    = test.TestThreshold
 )
 
-func setUp(level log.Level) {
+func setUp(level string) {
 	if err := log.SetLogLevel(level); err != nil {
 		panic(err)
 	}

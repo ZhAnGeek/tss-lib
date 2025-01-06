@@ -3,7 +3,7 @@ package mapping_test
 import (
 	"testing"
 
-	"github.com/Safulet/tss-lib-private/crypto/hash2curve/mapping"
+	"github.com/Safulet/tss-lib-private/v2/crypto/hash2curve/mapping"
 	C "github.com/armfazh/tozan-ecc/curve"
 	"github.com/armfazh/tozan-ecc/curve/toy"
 )

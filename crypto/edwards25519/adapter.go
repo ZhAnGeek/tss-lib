@@ -2,10 +2,11 @@ package edwards25519
 
 import (
 	"crypto/elliptic"
+	"math/big"
+
 	"filippo.io/edwards25519"
 	"filippo.io/edwards25519/field"
-	"github.com/Safulet/tss-lib-private/common"
-	"math/big"
+	"github.com/Safulet/tss-lib-private/v2/common"
 )
 
 var (
@@ -114,11 +115,13 @@ func (curve Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 	if k == nil {
 		return nil, nil
 	}
+	var dupK = make([]byte, len(k))
+	copy(dupK, k)
 	p, err := NewPoint(x1, y1)
 	if err != nil {
 		return nil, nil
 	}
-	r, err := edwards25519.NewScalar().SetCanonicalBytes(common.ReverseBytes(common.PadToLengthBytesInPlace(k, 32)))
+	r, err := edwards25519.NewScalar().SetCanonicalBytes(common.ReverseBytes(common.PadToLengthBytesInPlace(dupK, 32)))
 	if err != nil {
 		return nil, nil
 	}
@@ -128,7 +131,9 @@ func (curve Curve) ScalarMult(x1, y1 *big.Int, k []byte) (x, y *big.Int) {
 }
 
 func (curve Curve) ScalarBaseMult(k []byte) (x, y *big.Int) {
-	r, err := edwards25519.NewScalar().SetCanonicalBytes(common.ReverseBytes(common.PadToLengthBytesInPlace(k, 32)))
+	var dupK = make([]byte, len(k))
+	copy(dupK, k)
+	r, err := edwards25519.NewScalar().SetCanonicalBytes(common.ReverseBytes(common.PadToLengthBytesInPlace(dupK, 32)))
 	if err != nil {
 		return nil, nil
 	}

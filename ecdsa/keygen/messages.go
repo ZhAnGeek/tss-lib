@@ -10,15 +10,15 @@ import (
 	"crypto/elliptic"
 	"math/big"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/paillier"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
-	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
-	zkpprm "github.com/Safulet/tss-lib-private/crypto/zkp/prm"
-	zkpsch "github.com/Safulet/tss-lib-private/crypto/zkp/sch"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/paillier"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	zkpfac "github.com/Safulet/tss-lib-private/v2/crypto/zkp/fac"
+	zkpmod "github.com/Safulet/tss-lib-private/v2/crypto/zkp/mod"
+	zkpprm "github.com/Safulet/tss-lib-private/v2/crypto/zkp/prm"
+	zkpsch "github.com/Safulet/tss-lib-private/v2/crypto/zkp/sch"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 // These messages were generated from Protocol Buffers definitions into ecdsa-keygen.pb.go

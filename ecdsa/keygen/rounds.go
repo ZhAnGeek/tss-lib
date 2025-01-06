@@ -7,7 +7,7 @@
 package keygen
 
 import (
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 )
 
 const (

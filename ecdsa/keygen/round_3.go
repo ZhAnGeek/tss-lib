@@ -12,14 +12,14 @@ import (
 	"math/big"
 	sync "sync"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 	"go.opentelemetry.io/otel/trace"
 
-	zkpfac "github.com/Safulet/tss-lib-private/crypto/zkp/fac"
-	zkpmod "github.com/Safulet/tss-lib-private/crypto/zkp/mod"
+	zkpfac "github.com/Safulet/tss-lib-private/v2/crypto/zkp/fac"
+	zkpmod "github.com/Safulet/tss-lib-private/v2/crypto/zkp/mod"
 )
 
 func (round *round3) Start(ctx context.Context) *tss.Error {

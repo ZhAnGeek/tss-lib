@@ -12,15 +12,15 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/Safulet/tss-lib-private/common"
-	"github.com/Safulet/tss-lib-private/crypto"
-	"github.com/Safulet/tss-lib-private/crypto/commitments"
-	"github.com/Safulet/tss-lib-private/crypto/mta"
-	"github.com/Safulet/tss-lib-private/crypto/vss"
-	zkplogstar "github.com/Safulet/tss-lib-private/crypto/zkp/logstar"
-	"github.com/Safulet/tss-lib-private/log"
-	"github.com/Safulet/tss-lib-private/tracer"
-	"github.com/Safulet/tss-lib-private/tss"
+	"github.com/Safulet/tss-lib-private/v2/common"
+	"github.com/Safulet/tss-lib-private/v2/crypto"
+	"github.com/Safulet/tss-lib-private/v2/crypto/commitments"
+	"github.com/Safulet/tss-lib-private/v2/crypto/mta"
+	"github.com/Safulet/tss-lib-private/v2/crypto/vss"
+	zkplogstar "github.com/Safulet/tss-lib-private/v2/crypto/zkp/logstar"
+	"github.com/Safulet/tss-lib-private/v2/log"
+	"github.com/Safulet/tss-lib-private/v2/tracer"
+	"github.com/Safulet/tss-lib-private/v2/tss"
 
 	"go.opentelemetry.io/otel/trace"
 )
@@ -191,7 +191,7 @@ func (round *round3) Start(ctx context.Context) *tss.Error {
 		return round.WrapError(errors.New("public key is not on the curve"))
 	}
 	round.save.BigR = BigR
-	// PRINT public key & private share
+	// PRINT party id & public key
 	log.Debug(ctx, "%s public key: %x", round.PartyID(), PubKey)
 
 	errChs := make(chan *tss.Error, len(round.Parties().IDs())-1)

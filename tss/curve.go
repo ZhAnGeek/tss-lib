@@ -12,13 +12,14 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/Safulet/tss-lib-private/crypto/bls12381"
-	"github.com/Safulet/tss-lib-private/crypto/curve25519"
-	"github.com/Safulet/tss-lib-private/crypto/edwards25519"
-	"github.com/Safulet/tss-lib-private/crypto/secp256k1"
-	"github.com/Safulet/tss-lib-private/crypto/starkcurve"
+	"github.com/Safulet/tss-lib-private/v2/crypto/bls12377"
+	"github.com/Safulet/tss-lib-private/v2/crypto/bls12381"
+	"github.com/Safulet/tss-lib-private/v2/crypto/curve25519"
+	"github.com/Safulet/tss-lib-private/v2/crypto/edwards25519"
+	"github.com/Safulet/tss-lib-private/v2/crypto/secp256k1"
+	"github.com/Safulet/tss-lib-private/v2/crypto/starkcurve"
 
-	curves "github.com/Safulet/tss-lib-private/crypto/pallas"
+	curves "github.com/Safulet/tss-lib-private/v2/crypto/pallas"
 )
 
 type CurveName string
@@ -32,6 +33,9 @@ const (
 	C25519     CurveName = "curve25519"
 	PAllas     CurveName = "pallas"
 	Starkcurve CurveName = "starkcurve"
+	BLS12377G1 CurveName = "bls12377g1"
+	BLS12377G2 CurveName = "bls12377g2"
+	EDBLS12377 CurveName = "edbls12377"
 )
 
 var (
@@ -52,6 +56,9 @@ func init() {
 	registry[C25519] = curve25519.C25519()
 	registry[PAllas] = curves.Pallas()
 	registry[Starkcurve] = starkcurve.Stark()
+	registry[BLS12377G1] = bls12377.G1Curve()
+	registry[BLS12377G2] = bls12377.G2Curve()
+	registry[EDBLS12377] = bls12377.EdBls12377Curve()
 }
 
 func RegisterCurve(name CurveName, curve elliptic.Curve) {
@@ -144,6 +151,18 @@ func Pallas() elliptic.Curve {
 	return curves.Pallas()
 }
 
+func Bls12377G1() elliptic.Curve {
+	return bls12377.G1Curve()
+}
+
+func Bls12377G2() elliptic.Curve {
+	return bls12377.G2Curve()
+}
+
+func EdBls12377() elliptic.Curve {
+	return bls12377.EdBls12377Curve()
+}
+
 func GetAllCurvesList() []elliptic.Curve {
 	curvesList := []elliptic.Curve{
 		S256(),
@@ -153,6 +172,10 @@ func GetAllCurvesList() []elliptic.Curve {
 		Bls12381G2(),
 		Edwards(),
 		Curve25519(),
-		StarkCurve()}
+		StarkCurve(),
+		Bls12377G1(),
+		Bls12377G2(),
+		EdBls12377(),
+	}
 	return curvesList
 }

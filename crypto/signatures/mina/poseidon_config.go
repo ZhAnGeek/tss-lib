@@ -7,7 +7,7 @@
 package mina
 
 import (
-	"github.com/Safulet/tss-lib-private/crypto/pallas/native/pasta/fp"
+	"github.com/Safulet/tss-lib-private/v2/crypto/pallas/native/pasta/fp"
 )
 
 // SBox is the type of exponentiation to perform
